@@ -1,0 +1,62 @@
+% ---------------------------------------------------------------------
+%  2.2.2.5. Phân rã gói "Quản lý công thức nấu ăn"
+% ---------------------------------------------------------------------
+\subsubsection{Phân rã use case “Quản lý công thức nấu ăn”}\label{sssec:pr-cong-thuc}
+
+Gói Quản lý công thức nấu ăn gồm năm use case, được phân rã tại Hình~\ref{fig:uc-cong-thuc}. Ngoại trừ \uc{UC32} Thêm công thức, các thao tác khác bắt đầu từ màn hình chi tiết; vì vậy \uc{UC33}, \uc{UC35} và \uc{UC36} mở rộng \uc{UC34}. Use case \uc{UC36} liên kết công thức với danh sách mua sắm và chỉ khả dụng khi còn thiếu nguyên liệu.
+
+\diagram[0.78\textwidth]{c2-13-uc-cong-thuc}{Biểu đồ use case phân rã gói Quản lý công thức nấu ăn}{fig:uc-cong-thuc}
+
+\begin{ucspec}{UC32}{Thêm công thức nấu ăn}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng lưu một công thức nấu ăn vào bộ sưu tập cá nhân, với nguyên liệu được định lượng và liên kết tới danh mục thực phẩm.}
+\ucfield{Điều kiện trước}{Người dùng đã đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Tại màn hình Công thức, nhấn “Thêm công thức”.}
+\ucstep{2}{Hệ thống}{Hiển thị biểu mẫu nhiều bước: thông tin chung, nguyên liệu, các bước thực hiện (Bảng~\ref{tab:in-cong-thuc}).}
+\ucstep{3}{Người dùng}{Nhập tên món, chọn ảnh, số khẩu phần chuẩn, thời gian chuẩn bị và nấu, bữa phù hợp.}
+\ucstep{4}{Người dùng}{Thêm từng nguyên liệu bằng cách chọn thực phẩm từ gợi ý, nhập số lượng, đơn vị và đánh dấu bắt buộc hay tùy chọn.}
+\ucstep{5}{Người dùng}{Nhập các bước thực hiện theo thứ tự, có thể kéo thả để sắp xếp lại; nhấn “Lưu”.}
+\ucstep{6}{Hệ thống}{Kiểm tra các trường bắt buộc, độ dài, miền giá trị và yêu cầu có ít nhất một nguyên liệu (\br{BR17}).}
+\ucstep{7}{Hệ thống}{Lưu công thức vào bộ sưu tập của người dùng và hiển thị màn hình chi tiết công thức (\uc{UC34}).}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{4a}{Người dùng}{Nguyên liệu chưa có trong danh mục: tạo thực phẩm riêng như ở luồng 3a của \uc{UC25}.}
+\ucstep{4b}{Hệ thống}{Cùng một thực phẩm được thêm hai lần: gộp số lượng theo \br{BR16} và thông báo cho người dùng.}
+\ucstep{5a}{Người dùng}{Thoát giữa chừng: hệ thống lưu bản nháp trên thiết bị và đề nghị khôi phục ở lần mở biểu mẫu kế tiếp.}
+\ucstep{6a}{Hệ thống}{Dữ liệu không hợp lệ: chuyển về bước có lỗi, hiển thị \msg{MSG01} hoặc \msg{MSG02} tại trường tương ứng.}
+\ucfield{Điều kiện sau}{Công thức mới thuộc bộ sưu tập của người dùng, sẵn sàng được đối chiếu với tủ lạnh và tham gia gợi ý món (\uc{UC40}).}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR16}, \br{BR17}}
+\end{ucspec}
+
+\begin{fieldtable}{Dữ liệu đầu vào của một công thức nấu ăn}{tab:in-cong-thuc}
+\frow{Tên món}{Tên hiển thị của công thức}{Có}{Dài 2–100 ký tự}{Canh chua cá lóc}
+\frow{Ảnh minh họa}{Ảnh món ăn}{Không}{Định dạng JPEG hoặc PNG, tối đa 5 MB, tự động nén}{canh-chua.jpg}
+\frow{Số khẩu phần chuẩn}{Số người ăn ứng với định lượng}{Có}{Số nguyên từ 1 đến 20}{4}
+\frow{Thời gian}{Thời gian chuẩn bị và thời gian nấu}{Không}{Số nguyên phút, từ 0 đến 600}{15 và 25}
+\frow{Bữa phù hợp}{Bữa thường dùng món này}{Không}{Chọn một hoặc nhiều trong sáng, trưa, tối}{Trưa, tối}
+\frow{Nguyên liệu}{Danh sách thực phẩm, số lượng, đơn vị, bắt buộc hay tùy chọn}{Có}{Ít nhất 1 nguyên liệu; số lượng dương}{Cá lóc 500 g (bắt buộc)}
+\frow{Các bước thực hiện}{Hướng dẫn nấu theo thứ tự}{Không}{Mỗi bước tối đa 500 ký tự}{Bước 1: Sơ chế cá…}
+\frow{Ghi chú}{Mẹo nấu, lưu ý dinh dưỡng}{Không}{Tối đa 1000 ký tự}{Có thể thay me bằng sấu}
+\end{fieldtable}
+
+\begin{ucspec}{UC34}{Xem chi tiết công thức và đối chiếu nguyên liệu}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng xem đầy đủ một công thức, thay đổi số khẩu phần và biết ngay nguyên liệu nào đã có, nguyên liệu nào còn thiếu trong tủ lạnh.}
+\ucfield{Điều kiện trước}{Người dùng chọn một công thức từ bộ sưu tập, từ công thức mẫu, từ kết quả tìm kiếm hoặc từ danh sách gợi ý.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chọn một công thức.}
+\ucstep{2}{Hệ thống}{Hiển thị ảnh, tên, thời gian, số khẩu phần, các bước thực hiện và danh sách nguyên liệu.}
+\ucstep{3}{Hệ thống}{Với mỗi nguyên liệu, so sánh lượng cần với tổng lượng chưa hết hạn trong tủ của không gian hiện hành sau khi quy đổi đơn vị (\br{BR16}); gắn nhãn “Đủ”, “Thiếu x” hoặc “Không có”, và đánh dấu nguyên liệu đang có lô sắp hết hạn.}
+\ucstep{4}{Người dùng}{Thay đổi số khẩu phần bằng nút tăng, giảm.}
+\ucstep{5}{Hệ thống}{Nhân định lượng theo tỷ lệ mới và đối chiếu lại như bước 3.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{5a}{Người dùng}{Có nguyên liệu thiếu và chọn “Thêm phần thiếu vào danh sách mua sắm”: thực hiện \uc{UC36}.}
+\ucstep{5b}{Người dùng}{Chọn biểu tượng trái tim: thực hiện \uc{UC35}.}
+\ucstep{5c}{Người dùng}{Công thức thuộc bộ sưu tập của mình và chọn “Sửa” hoặc “Xóa”: thực hiện \uc{UC33}.}
+\ucstep{5d}{Người dùng}{Công thức là công thức mẫu và chọn “Lưu về bộ sưu tập”: hệ thống tạo bản sao riêng có thể chỉnh sửa (\br{BR17}).}
+\ucstep{5e}{Người dùng}{Chọn “Thêm vào lịch”: thực hiện \uc{UC37} với món đã được chọn sẵn.}
+\ucfield{Điều kiện sau}{Không thay đổi dữ liệu, trừ khi người dùng thực hiện một trong các use case mở rộng.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR15}, \br{BR16}, \br{BR17}}
+\end{ucspec}
+
+Các use case \uc{UC33}, \uc{UC35} và \uc{UC36} được đặc tả tại Phụ lục~\ref{pl:dac-ta-bo-sung}.

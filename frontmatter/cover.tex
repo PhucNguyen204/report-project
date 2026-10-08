@@ -1,0 +1,70 @@
+% =====================================================================
+%  Trang bìa — giữ nguyên nội dung theo mẫu dsds.docx
+% =====================================================================
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture,overlay]
+  \draw[line width=2.2pt,color=black]
+    ([xshift=2.4cm,yshift=-1.4cm]current page.north west) rectangle
+    ([xshift=-1.4cm,yshift=1.4cm]current page.south east);
+  \draw[line width=0.6pt,color=black]
+    ([xshift=2.55cm,yshift=-1.55cm]current page.north west) rectangle
+    ([xshift=-1.55cm,yshift=1.55cm]current page.south east);
+\end{tikzpicture}
+
+\begin{center}
+\setstretch{1.15}
+{\fontsize{15pt}{18pt}\selectfont\bfseries ĐẠI HỌC BÁCH KHOA HÀ NỘI\par}
+\vspace{2pt}
+{\fontsize{14pt}{17pt}\selectfont\bfseries TRƯỜNG CÔNG NGHỆ THÔNG TIN VÀ TRUYỀN THÔNG\par}
+\vspace{2pt}
+──────── * ───────\par
+\vspace{0.9cm}
+
+\IfFileExists{figures/logo-hust.png}
+  {\includegraphics[height=3.6cm]{figures/logo-hust.png}}
+  {\fbox{\parbox[c][3.2cm][c]{2.4cm}{\centering\small Logo\\HUST}}}\par
+\vspace{1.0cm}
+
+{\fontsize{24pt}{29pt}\selectfont\bfseries BÀI TẬP LỚN\par}
+\vspace{0.3cm}
+{\fontsize{16pt}{20pt}\selectfont\bfseries MÔN: PHÁT TRIỂN ỨNG DỤNG ĐA NỀN TẢNG\par}
+\vspace{0.9cm}
+{\fontsize{15pt}{18pt}\selectfont\bfseries ĐỀ TÀI:\par}
+\vspace{0.2cm}
+{\fontsize{17pt}{22pt}\selectfont\bfseries Xây dựng ứng dụng di động đa nền tảng\par
+“Đi chợ tiện lợi”\par}
+\vspace{0.9cm}
+\end{center}
+
+\begin{center}
+\setstretch{1.25}
+\begin{tabular}{@{}l l@{}}
+\textbf{Nhóm:} & 7\\
+\textbf{Mã học phần:} & IT4788\\
+\textbf{Học kỳ:} & 20261\\
+\textbf{Mã lớp học:} & 172915\\
+\textbf{Giáo viên hướng dẫn:} & Thầy Nguyễn Quốc Tuấn\\
+\end{tabular}\par
+\vspace{0.2cm}
+\textbf{Danh sách sinh viên thực hiện:}
+\end{center}
+
+\begin{center}
+\small
+\begin{tabular}{|c|l|c|l|}
+\hline
+\hd{STT} & \hd{Họ tên} & \hd{Mã sinh viên} & \hd{Email}\\ \hline
+1 & Nguyễn Ngọc Phúc & 20220041 & phuc.nn220041@sis.hust.edu.vn\\ \hline
+2 & Trần Gia Bảo     & 20235019 & bao.tg235019@sis.hust.edu.vn\\ \hline
+3 & Đinh Nhẫn Đức    & 20215350 & duc.dn215350@sis.hust.edu.vn\\ \hline
+4 & Nguyễn Ngọc Tùng & 20204703 & tung.nn204703@sis.hust.edu.vn\\ \hline
+\end{tabular}
+\end{center}
+
+\vfill
+\begin{center}
+{\bfseries Hà Nội, tháng 12 năm 2026\par}
+\end{center}
+\vspace{0.6cm}
+\end{titlepage}

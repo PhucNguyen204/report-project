@@ -1,0 +1,72 @@
+% ---------------------------------------------------------------------
+%  2.2.2.1. Phân rã gói "Xác thực và quản lý tài khoản"
+% ---------------------------------------------------------------------
+\subsubsection{Phân rã use case “Xác thực và quản lý tài khoản”}\label{sssec:pr-tai-khoan}
+
+Gói Xác thực và quản lý tài khoản gồm tám use case từ \uc{UC01} đến \uc{UC08}, được phân rã tại Hình~\ref{fig:uc-tai-khoan}. Các use case \uc{UC01}, \uc{UC03} và \uc{UC04} dành cho Khách; \uc{UC05} đến \uc{UC08} dành cho Người dùng đã đăng nhập. \uc{UC02} Xác thực mã OTP được \uc{UC01} và \uc{UC04} bao gồm để dùng chung cơ chế xác minh email khi đăng ký hoặc khôi phục mật khẩu. Đây cũng là use case duy nhất kết nối trực tiếp với Dịch vụ thư điện tử trên biểu đồ. Use case mở rộng \uc{UC08} cho phép người dùng điều chỉnh ngưỡng nhắc hạn dùng và bật hoặc tắt từng loại thông báo.
+
+\diagram[0.85\textwidth]{c2-03-uc-tai-khoan}{Biểu đồ use case phân rã gói Xác thực và quản lý tài khoản}{fig:uc-tai-khoan}
+
+Trong \uc{UC01}, ứng dụng kiểm tra dữ liệu ngay trên thiết bị, kể cả khi ngoại tuyến, để phản hồi sớm và hạn chế yêu cầu không hợp lệ gửi lên máy chủ. Đặc tả, dữ liệu đầu vào và luồng hoạt động (bao gồm xác thực OTP) lần lượt được trình bày tại Bảng~\ref{tab:UC01}, Bảng~\ref{tab:in-dang-ky} và Hình~\ref{fig:act-dang-ky}.
+
+\begin{ucspec}{UC01}{Đăng ký tài khoản}
+\ucfield{Tác nhân}{Khách (chính); Dịch vụ thư điện tử (phụ, thông qua \uc{UC02})}
+\ucfield{Mô tả}{Cho phép một người chưa có tài khoản tạo tài khoản mới bằng họ tên, email và mật khẩu, sau đó xác thực email để kích hoạt tài khoản.}
+\ucfield{Điều kiện trước}{Khách chưa đăng nhập; ứng dụng đã được cài đặt trên thiết bị.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Khách}{Chọn chức năng “Đăng ký” trên màn hình chào.}
+\ucstep{2}{Hệ thống}{Hiển thị biểu mẫu đăng ký gồm các trường trong Bảng~\ref{tab:in-dang-ky}.}
+\ucstep{3}{Khách}{Nhập họ tên, email, mật khẩu, xác nhận mật khẩu, chọn đồng ý điều khoản sử dụng và nhấn “Đăng ký”.}
+\ucstep{4}{Hệ thống}{Kiểm tra các trường bắt buộc và định dạng dữ liệu ngay trên thiết bị (\br{BR01}).}
+\ucstep{5}{Hệ thống}{Gửi yêu cầu đăng ký lên máy chủ và kiểm tra email chưa được sử dụng.}
+\ucstep{6}{Hệ thống}{Tạo tài khoản ở trạng thái Chờ xác thực, sinh mã OTP và yêu cầu Dịch vụ thư điện tử gửi mã tới email (\br{BR02}).}
+\ucstep{7}{Hệ thống}{Chuyển sang màn hình nhập mã và thực hiện \uc{UC02} Xác thực mã OTP.}
+\ucstep{8}{Hệ thống}{Khi \uc{UC02} thành công, kích hoạt tài khoản, tạo không gian cá nhân (\br{BR04}), tự động đăng nhập và hiển thị màn hình hướng dẫn nhanh.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{4a}{Hệ thống}{Có trường bắt buộc bị bỏ trống: hiển thị \msg{MSG01} ngay dưới trường tương ứng; quay lại bước 3.}
+\ucstep{4b}{Hệ thống}{Email sai định dạng hoặc mật khẩu không đủ mạnh: hiển thị \msg{MSG02} kèm yêu cầu cụ thể chưa đạt; quay lại bước 3.}
+\ucstep{4c}{Hệ thống}{Mật khẩu xác nhận không khớp: hiển thị \msg{MSG29}; quay lại bước 3.}
+\ucstep{5a}{Hệ thống}{Email đã thuộc một tài khoản đang hoạt động: hiển thị \msg{MSG03}, gợi ý đăng nhập hoặc khôi phục mật khẩu; kết thúc use case.}
+\ucstep{5b}{Hệ thống}{Email thuộc một tài khoản còn Chờ xác thực: cập nhật thông tin đăng ký mới, sinh mã OTP mới và chuyển sang bước 7.}
+\ucstep{5c}{Hệ thống}{Không kết nối được máy chủ: hiển thị \msg{MSG33}, giữ nguyên dữ liệu đã nhập để Khách thử lại.}
+\ucstep{6a}{Hệ thống}{Dịch vụ thư điện tử không phản hồi: ghi nhật ký lỗi, vẫn chuyển sang bước 7 và cho phép yêu cầu gửi lại mã sau 60 giây.}
+\ucfield{Điều kiện sau}{Thành công: tài khoản mới ở trạng thái Hoạt động, có một không gian cá nhân và người dùng đang ở trạng thái đăng nhập. Thất bại: không có tài khoản hoạt động nào được tạo.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR01}, \br{BR02}, \br{BR04}}
+\end{ucspec}
+
+\begin{fieldtable}{Dữ liệu đầu vào của biểu mẫu đăng ký tài khoản}{tab:in-dang-ky}
+\frow{Họ tên}{Tên hiển thị của người dùng trong nhóm}{Có}{Dài 2–50 ký tự, chỉ gồm chữ cái và khoảng trắng}{Nguyễn Văn An}
+\frow{Email}{Định danh đăng nhập, nơi nhận mã OTP}{Có}{Đúng định dạng email, tối đa 100 ký tự, chưa thuộc tài khoản hoạt động}{an@gmail.com}
+\frow{Mật khẩu}{Mật khẩu đăng nhập, hiển thị dạng ẩn}{Có}{Dài 8–32 ký tự, có chữ hoa, chữ thường và chữ số}{DiCho2025}
+\frow{Xác nhận mật khẩu}{Nhập lại mật khẩu để tránh gõ nhầm}{Có}{Trùng khớp với trường Mật khẩu}{DiCho2025}
+\frow{Đồng ý điều khoản}{Xác nhận đồng ý điều khoản sử dụng và chính sách quyền riêng tư}{Có}{Phải được chọn}{Đã chọn}
+\end{fieldtable}
+
+\diagram[0.92\textwidth]{c2-04-act-dang-ky}{Biểu đồ hoạt động của use case Đăng ký tài khoản và Xác thực mã OTP}{fig:act-dang-ky}
+
+Hình~\ref{fig:act-dang-ky} chia luồng xử lý thành ba làn: Khách, ứng dụng trên thiết bị và máy chủ. Ứng dụng kiểm tra định dạng để phản hồi nhanh; máy chủ kiểm tra các điều kiện cần dữ liệu tập trung, như tính duy nhất của email và hiệu lực mã OTP. Giới hạn số lần nhập sai và thời hạn của mã giúp giảm nguy cơ dò mã tự động.
+
+Trong \uc{UC03}, hệ thống xác thực thông tin đăng nhập và đăng ký mã thiết bị với Dịch vụ thông báo đẩy để gửi nhắc hạn dùng, thông báo phân công. Đặc tả của \uc{UC03} nằm ở Bảng~\ref{tab:UC03}; các use case \uc{UC02} và \uc{UC04} đến \uc{UC08} được đặc tả tại Phụ lục~\ref{pl:dac-ta-bo-sung}.
+
+\begin{ucspec}{UC03}{Đăng nhập}
+\ucfield{Tác nhân}{Khách}
+\ucfield{Mô tả}{Cho phép người đã có tài khoản xác thực danh tính bằng email và mật khẩu để bắt đầu phiên làm việc.}
+\ucfield{Điều kiện trước}{Khách đã có tài khoản; thiết bị có kết nối mạng.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Khách}{Mở ứng dụng và chọn “Đăng nhập”.}
+\ucstep{2}{Hệ thống}{Hiển thị biểu mẫu gồm email, mật khẩu và tùy chọn “Ghi nhớ đăng nhập”.}
+\ucstep{3}{Khách}{Nhập email, mật khẩu và nhấn “Đăng nhập”.}
+\ucstep{4}{Hệ thống}{Kiểm tra các trường bắt buộc và định dạng email.}
+\ucstep{5}{Hệ thống}{Đối chiếu thông tin đăng nhập với dữ liệu trên máy chủ.}
+\ucstep{6}{Hệ thống}{Cấp mã truy cập và mã làm mới (\br{BR03}), đặt lại bộ đếm đăng nhập sai, đăng ký mã thiết bị với Dịch vụ thông báo đẩy.}
+\ucstep{7}{Hệ thống}{Mở không gian làm việc gần nhất và hiển thị màn hình chính với ba thẻ tóm tắt: thực phẩm sắp hết hạn, danh sách mua sắm hôm nay và bữa ăn hôm nay.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Khách}{Chọn “Quên mật khẩu”: chuyển sang \uc{UC04} Khôi phục mật khẩu.}
+\ucstep{4a}{Hệ thống}{Thiếu email hoặc mật khẩu: hiển thị \msg{MSG01}; quay lại bước 3.}
+\ucstep{5a}{Hệ thống}{Sai email hoặc mật khẩu: hiển thị \msg{MSG05} mà không tiết lộ trường nào sai, tăng bộ đếm đăng nhập sai; quay lại bước 3.}
+\ucstep{5b}{Hệ thống}{Sai lần thứ năm liên tiếp: khóa tạm tài khoản 15 phút và hiển thị \msg{MSG06} (\br{BR03}).}
+\ucstep{5c}{Hệ thống}{Tài khoản bị quản trị viên khóa: hiển thị \msg{MSG21}; kết thúc use case.}
+\ucstep{5d}{Hệ thống}{Tài khoản còn Chờ xác thực: gửi mã OTP mới và chuyển sang \uc{UC02}.}
+\ucfield{Điều kiện sau}{Thành công: một phiên đăng nhập hợp lệ được tạo, Khách trở thành Người dùng. Nếu chọn “Ghi nhớ đăng nhập”, mã làm mới được lưu an toàn trên thiết bị để tự động đăng nhập lần sau.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR03}}
+\end{ucspec}

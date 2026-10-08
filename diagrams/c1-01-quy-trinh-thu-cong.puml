@@ -1,0 +1,52 @@
+@startuml c1-01-quy-trinh-thu-cong
+!include _style.iuml
+
+|Thành viên gia đình|
+start
+:Mở tủ lạnh, kiểm tra bằng mắt
+những thực phẩm còn lại;
+:Ghi nhớ hoặc ghi chú rời rạc
+các mặt hàng cần mua;
+:Nhắn tin, nhắc miệng
+cho người đi chợ;
+note right
+  **Điểm nghẽn 1**
+  Yêu cầu đến từ nhiều kênh,
+  không có danh sách chung
+end note
+|Người đi chợ|
+:Tự tổng hợp yêu cầu
+từ nhiều nguồn;
+:Đi chợ, mua theo trí nhớ
+hoặc ghi chú cá nhân;
+if (Thiếu hoặc trùng mặt hàng?) then (có)
+  :Mua bổ sung lần hai
+  hoặc mua dư thừa;
+  note right
+    **Điểm nghẽn 2**
+    Không biết ai đã mua gì
+  end note
+else (không)
+endif
+:Cất thực phẩm vào tủ lạnh
+mà không ghi nhận hạn dùng;
+|Người nấu ăn|
+:Chọn món theo thói quen,
+chưa đối chiếu với tồn kho;
+:Kiểm tra lại tủ lạnh
+ngay trước khi nấu;
+if (Đủ nguyên liệu?) then (không)
+  :Đổi món hoặc
+  đi mua bổ sung;
+else (có)
+endif
+:Nấu ăn;
+:Thực phẩm ít dùng bị bỏ quên
+cho đến khi hết hạn;
+note right
+  **Điểm nghẽn 3**
+  Không có cảnh báo hạn dùng,
+  phát sinh lãng phí
+end note
+stop
+@enduml

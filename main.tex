@@ -1,0 +1,52 @@
+% !TEX program = xelatex
+% =====================================================================
+%  BÁO CÁO BÀI TẬP LỚN — IT4788 PHÁT TRIỂN ỨNG DỤNG ĐA NỀN TẢNG
+%  Đề tài: Xây dựng ứng dụng di động đa nền tảng “Đi chợ tiện lợi”
+%  Biên dịch: latexmk -xelatex main.tex   (xem README.md)
+% =====================================================================
+\documentclass[a4paper,12pt,oneside]{report}
+\input{config/preamble}
+
+% Mặc định không biên dịch Chương 3–6 và phần kết luận vì đây vẫn là bản khung.
+\newif\ifshowpending
+\showpendingfalse
+
+\newcommand{\pending}{%
+  \par\noindent{\color{rulegray}\itshape Nhóm sẽ hoàn thiện nội dung mục này
+  trong giai đoạn tiếp theo.}\par}
+
+\begin{document}
+
+\input{frontmatter/cover}
+
+\pagestyle{main}
+\setcounter{page}{2}
+
+\addcontentsline{toc}{chapter}{MỤC LỤC}
+\tableofcontents
+\clearpage
+\addcontentsline{toc}{chapter}{DANH MỤC HÌNH VẼ}
+\listoffigures
+\clearpage
+\addcontentsline{toc}{chapter}{DANH MỤC BẢNG BIỂU}
+\listoftables
+
+\input{frontmatter/thuat-ngu}
+\input{frontmatter/loi-noi-dau}
+\input{frontmatter/phan-cong}
+
+\input{chapters/chuong1}
+\input{chapters/chuong2}
+
+\ifshowpending
+  \input{chapters/chuong3}
+  \input{chapters/chuong4}
+  \input{chapters/chuong5}
+  \input{chapters/chuong6}
+  \input{backmatter/ket-luan}
+\fi
+
+\input{backmatter/tai-lieu-tham-khao}
+\input{backmatter/phu-luc}
+
+\end{document}

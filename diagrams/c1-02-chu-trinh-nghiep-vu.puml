@@ -1,0 +1,24 @@
+@startuml c1-02-chu-trinh-nghiep-vu
+!include _style.iuml
+skinparam rectangle {
+  BackgroundColor #EAF1FB
+  FontStyle plain
+}
+
+rectangle "**1. Lập kế hoạch bữa ăn**\ntheo ngày, theo tuần" as P1
+rectangle "**2. Sinh danh sách mua sắm**\nphần nguyên liệu còn thiếu" as P2
+rectangle "**3. Phân công và mua sắm**\ntrong nhóm gia đình" as P3
+rectangle "**4. Nhập thực phẩm vào tủ lạnh**\nsố lượng, hạn dùng, vị trí" as P4
+rectangle "**5. Theo dõi hạn dùng**\nnhắc nhở trước 3 ngày" as P5
+rectangle "**6. Nấu ăn, ghi nhận tiêu thụ**\ntrừ kho theo hạn gần nhất" as P6
+rectangle "**7. Thống kê và điều chỉnh**\nmua sắm, tiêu thụ, lãng phí" as P7
+
+P1 -right-> P2
+P2 -right-> P3
+P3 -right-> P4
+P4 -down-> P5
+P5 -left-> P6
+P6 -left-> P7
+P7 -up-> P1 : điều chỉnh\nkế hoạch kỳ sau
+P5 .up.> P1 : thực phẩm sắp hết hạn\nđược ưu tiên khi gợi ý món
+@enduml

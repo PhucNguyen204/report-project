@@ -1,0 +1,76 @@
+% ---------------------------------------------------------------------
+%  2.2.2.9. Phân rã gói "Quản trị hệ thống"
+% ---------------------------------------------------------------------
+\subsubsection{Phân rã use case “Quản trị hệ thống”}\label{sssec:pr-quan-tri}
+
+Gói Quản trị hệ thống gồm sáu use case dành cho Quản trị viên, được phân rã tại Hình~\ref{fig:uc-quan-tri}. Use case \uc{UC48} quản lý tài khoản, \uc{UC53} cấu hình tham số và bốn use case còn lại quản lý dữ liệu danh mục dùng chung. \uc{UC49} Quản lý danh mục thực phẩm bao gồm \uc{UC50} và \uc{UC51}, vì mỗi thực phẩm phải thuộc một loại và có đơn vị mặc định. Các chức năng này nằm trong khu vực riêng của ứng dụng di động, chỉ tài khoản quản trị mới truy cập được.
+
+\diagram[0.82\textwidth]{c2-19-uc-quan-tri}{Biểu đồ use case phân rã gói Quản trị hệ thống}{fig:uc-quan-tri}
+
+\begin{ucspec}{UC49}{Quản lý danh mục thực phẩm}
+\ucfield{Tác nhân}{Quản trị viên}
+\ucfield{Mô tả}{Cho phép quản trị viên thêm, sửa, ngừng sử dụng các thực phẩm trong danh mục dùng chung, bao gồm hạn dùng gợi ý theo từng vị trí lưu trữ và mã vạch; đồng thời xem xét các thực phẩm riêng do người dùng đề xuất.}
+\ucfield{Điều kiện trước}{Quản trị viên đã đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Quản trị viên}{Mở khu vực Quản trị, chọn “Danh mục thực phẩm”.}
+\ucstep{2}{Hệ thống}{Hiển thị danh sách thực phẩm có phân trang, ô tìm kiếm, bộ lọc theo loại và trạng thái (Đang dùng, Ngừng sử dụng, Chờ duyệt).}
+\ucstep{3}{Quản trị viên}{Nhấn “Thêm thực phẩm”.}
+\ucstep{4}{Hệ thống}{Hiển thị biểu mẫu gồm tên, tên gọi khác, loại thực phẩm (\uc{UC50}), đơn vị mặc định (\uc{UC51}), mã vạch, ảnh, vị trí lưu trữ mặc định và hạn dùng gợi ý cho từng vị trí.}
+\ucstep{5}{Quản trị viên}{Nhập thông tin và nhấn “Lưu”.}
+\ucstep{6}{Hệ thống}{Kiểm tra trường bắt buộc, tên chưa tồn tại trong cùng loại (\br{BR22}), mã vạch chưa gán cho thực phẩm khác, hạn dùng gợi ý là số nguyên dương.}
+\ucstep{7}{Hệ thống}{Lưu thực phẩm ở trạng thái Đang dùng, ghi nhật ký quản trị, hiển thị \msg{MSG10}.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Quản trị viên}{Chọn một thực phẩm và nhấn “Sửa”: hệ thống hiển thị biểu mẫu với dữ liệu hiện có; tiếp tục từ bước 5.}
+\ucstep{3b}{Quản trị viên}{Chọn “Ngừng sử dụng”: hệ thống hiển thị \msg{MSG19}; khi được xác nhận, thực phẩm không còn xuất hiện trong gợi ý nhưng dữ liệu đã tham chiếu vẫn giữ nguyên (\br{BR22}).}
+\ucstep{3c}{Quản trị viên}{Mở bộ lọc “Chờ duyệt”: duyệt thực phẩm riêng do người dùng đề xuất bằng cách gộp vào một thực phẩm có sẵn hoặc chuẩn hóa thành thực phẩm mới.}
+\ucstep{6a}{Hệ thống}{Tên đã tồn tại trong cùng loại hoặc mã vạch đã được gán: hiển thị \msg{MSG02} kèm liên kết tới bản ghi trùng; quay lại bước 5.}
+\ucstep{6b}{Hệ thống}{Thiếu trường bắt buộc: hiển thị \msg{MSG01}; quay lại bước 5.}
+\ucfield{Điều kiện sau}{Danh mục thực phẩm được cập nhật và có hiệu lực ngay cho chức năng gợi ý tên, đề xuất hạn dùng và quét mã vạch của mọi người dùng.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR16}, \br{BR22}}
+\end{ucspec}
+
+Use case \uc{UC53} cho phép thay đổi tham số vận hành mà không cần phát hành phiên bản mới. Bảng~\ref{tab:tham-so-he-thong} liệt kê các tham số và miền giá trị hợp lệ; giá trị mặc định tuân theo đề bài và các quy tắc nghiệp vụ.
+
+{\small
+\begin{longtable}{|L{4.6cm}|C{2.2cm}|L{3.0cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-4.6cm-2.2cm-3.0cm\relax}|}
+\caption{Các tham số cấu hình hệ thống}\label{tab:tham-so-he-thong}\\
+\hline
+\hd{Tham số} & \hd{Mặc định} & \hd{Miền hợp lệ} & \hd{Ảnh hưởng tới}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Tham số} & \hd{Mặc định} & \hd{Miền hợp lệ} & \hd{Ảnh hưởng tới}\\ \hline
+\endhead
+Ngưỡng nhắc mặc định $N$ & 3 ngày & 1–7 ngày & Người dùng chưa tự thiết lập (\uc{UC08}, \uc{UC31})\\ \hline
+Khung giờ chạy nhắc nhở & 08:00 & 05:00–21:00 & Tác vụ \uc{UC31}\\ \hline
+Số thành viên tối đa mỗi nhóm & 10 & 2–30 & \uc{UC10}, \uc{UC11}\\ \hline
+Thời hạn mã mời & 48 giờ & 1–168 giờ & \uc{UC10}\\ \hline
+Thời hạn mã OTP & 5 phút & 2–15 phút & \uc{UC02}\\ \hline
+Ngưỡng đáp ứng tối thiểu $\theta$ & 0,6 & 0,3–1,0 & \uc{UC40}\\ \hline
+Trọng số $R$, $E$, $F$ & 0,6; 0,3; 0,1 & Mỗi trọng số 0–1, tổng bằng 1 & \uc{UC40}\\ \hline
+Số món gợi ý tối đa & 10 & 3–30 & \uc{UC40}\\ \hline
+Khoảng lập kế hoạch tối đa & 28 ngày & 7–60 ngày & \uc{UC37}\\ \hline
+Số lô tối đa trong một thông báo tổng hợp & 5 & 1–10 & \uc{UC31}\\ \hline
+\end{longtable}
+}
+
+\begin{ucspec}{UC53}{Cấu hình tham số hệ thống}
+\ucfield{Tác nhân}{Quản trị viên}
+\ucfield{Mô tả}{Cho phép quản trị viên xem và điều chỉnh các tham số vận hành của hệ thống trong Bảng~\ref{tab:tham-so-he-thong}.}
+\ucfield{Điều kiện trước}{Quản trị viên đã đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Quản trị viên}{Mở khu vực Quản trị, chọn “Cấu hình hệ thống”.}
+\ucstep{2}{Hệ thống}{Hiển thị các tham số theo nhóm Nhắc nhở, Nhóm gia đình, Bảo mật, Gợi ý món; mỗi tham số kèm giá trị hiện tại, giá trị mặc định và miền hợp lệ.}
+\ucstep{3}{Quản trị viên}{Thay đổi một hoặc nhiều tham số và nhấn “Lưu”.}
+\ucstep{4}{Hệ thống}{Kiểm tra từng giá trị nằm trong miền hợp lệ và các ràng buộc liên quan, chẳng hạn tổng ba trọng số bằng 1.}
+\ucstep{5}{Hệ thống}{Hiển thị bảng tóm tắt các thay đổi (giá trị cũ, giá trị mới) để xác nhận.}
+\ucstep{6}{Quản trị viên}{Nhấn “Xác nhận”.}
+\ucstep{7}{Hệ thống}{Lưu cấu hình, ghi nhật ký quản trị gồm người thay đổi, thời điểm, giá trị cũ và mới; áp dụng cho các lần xử lý kế tiếp; hiển thị \msg{MSG10}.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Quản trị viên}{Chọn “Khôi phục mặc định” cho một tham số: hệ thống điền giá trị mặc định; tiếp tục từ bước 4.}
+\ucstep{4a}{Hệ thống}{Có giá trị ngoài miền hợp lệ: hiển thị \msg{MSG27} tại tham số tương ứng; quay lại bước 3.}
+\ucstep{6a}{Quản trị viên}{Nhấn “Hủy”: không lưu thay đổi.}
+\ucfield{Điều kiện sau}{Bộ tham số mới có hiệu lực; lịch sử thay đổi được lưu để truy vết.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR05}, \br{BR06}, \br{BR12}, \br{BR13}, \br{BR18}, \br{BR19}}
+\end{ucspec}
+
+Các use case \uc{UC48}, \uc{UC50}, \uc{UC51} và \uc{UC52} được đặc tả tại Phụ lục~\ref{pl:dac-ta-bo-sung}.

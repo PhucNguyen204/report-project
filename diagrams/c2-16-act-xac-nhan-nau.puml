@@ -1,0 +1,34 @@
+@startuml c2-16-act-xac-nhan-nau
+!include _style.iuml
+
+|Người dùng|
+start
+:Mở bữa ăn trong lịch,
+chọn "Đã nấu";
+|Hệ thống|
+:Tính lượng nguyên liệu cần dùng
+theo số khẩu phần thực tế;
+repeat :Xét từng nguyên liệu;
+  :Lấy các lô thực phẩm cùng loại
+  sắp xếp theo ngày hết hạn tăng dần (FEFO);
+  :Trừ dần số lượng từ lô hết hạn sớm nhất;
+  if (Tồn kho không đủ?) then (có)
+    :Ghi nhận phần thiếu
+    để người dùng xác nhận;
+  else (không)
+  endif
+repeat while (Còn nguyên liệu?) is (có)
+-> không;
+:Hiển thị bảng xem trước
+lượng trừ cho từng lô;
+|Người dùng|
+:Điều chỉnh (nếu dùng ít/nhiều hơn)
+và xác nhận;
+|Hệ thống|
+:Cập nhật số lượng các lô,
+lô về 0 chuyển "Đã dùng hết";
+:Ghi nhật ký tiêu thụ
+gắn với bữa ăn;
+:Bữa ăn chuyển sang "Đã nấu";
+stop
+@enduml

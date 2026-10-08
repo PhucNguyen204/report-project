@@ -1,0 +1,27 @@
+@startuml c2-12-seq-nhac-nho
+!include _style.iuml
+autonumber "<b>0."
+
+participant "Bộ lập lịch" as CRON
+participant "Dịch vụ\nnhắc hạn dùng" as SVC
+database "Cơ sở dữ liệu" as DB
+participant "Dịch vụ\nthông báo đẩy" as PUSH
+participant "Ứng dụng\ndi động" as APP
+actor "Thành viên" as U
+
+CRON -> SVC : kích hoạt kiểm tra hạn dùng
+activate SVC
+SVC -> DB : cập nhật trạng thái hạn dùng\ncủa thực phẩm còn trong tủ
+SVC -> DB : truy vấn thực phẩm có\nsố ngày còn lại ≤ N theo từng thành viên
+DB --> SVC : danh sách thực phẩm sắp hết hạn
+SVC -> DB : lưu thông báo tổng hợp\n(chống trùng theo ngày)
+SVC -> PUSH : yêu cầu gửi thông báo\n(mã thiết bị, tiêu đề, nội dung)
+activate PUSH
+PUSH -> APP : thông báo đẩy
+deactivate PUSH
+deactivate SVC
+U -> APP : chạm vào thông báo
+APP -> SVC : lấy danh sách thực phẩm sắp hết hạn
+SVC --> APP : danh sách kèm món gợi ý
+APP --> U : màn hình "Sắp hết hạn"
+@enduml

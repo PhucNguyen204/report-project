@@ -1,0 +1,40 @@
+@startuml c2-06-act-tham-gia-nhom
+!include _style.iuml
+
+|Người dùng|
+start
+:Chọn "Tham gia nhóm";
+if (Cách nhập mã?) then (quét QR)
+  :Quét mã QR do trưởng nhóm chia sẻ;
+else (nhập tay)
+  :Nhập mã mời 8 ký tự;
+endif
+|Hệ thống|
+:Tra cứu mã mời;
+if (Mã tồn tại, còn hiệu lực\nvà chưa bị thu hồi?) then (không)
+  :Thông báo mã không hợp lệ (MSG07);
+  stop
+else (có)
+endif
+if (Người dùng đã thuộc\nmột nhóm gia đình khác?) then (có)
+  :Thông báo phải rời nhóm cũ (MSG08);
+  stop
+else (không)
+endif
+if (Nhóm đã đủ số thành viên tối đa?) then (có)
+  :Thông báo nhóm đã đầy (MSG09);
+  stop
+else (không)
+endif
+:Hiển thị tên nhóm, trưởng nhóm
+và số thành viên để xác nhận;
+|Người dùng|
+:Xác nhận tham gia;
+|Hệ thống|
+:Thêm thành viên với vai trò
+"Thành viên";
+:Chuyển không gian làm việc
+sang không gian của nhóm;
+:Gửi thông báo tới trưởng nhóm;
+stop
+@enduml

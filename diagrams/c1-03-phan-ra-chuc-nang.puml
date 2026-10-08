@@ -1,0 +1,78 @@
+@startwbs c1-03-phan-ra-chuc-nang
+!include _style.iuml
+<style>
+wbsDiagram {
+  Linecolor #2F5597
+  node {
+    BackgroundColor #EAF1FB
+    LineColor #2F5597
+    FontSize 13
+    RoundCorner 6
+    Padding 6
+    MaximumWidth 106
+  }
+  rootNode {
+    BackgroundColor #1F3864
+    FontColor #FFFFFF
+    FontSize 15
+    FontStyle bold
+    MaximumWidth 400
+  }
+  :depth(1) {
+    BackgroundColor #C9DAF0
+    FontStyle bold
+    FontSize 13
+    MaximumWidth 106
+  }
+  .ext {
+    BackgroundColor #FFE7C2
+    LineColor #C07A00
+  }
+}
+</style>
+* Ứng dụng “Đi chợ tiện lợi”
+** 1. Tài khoản và\nnhóm gia đình
+*** Đăng ký,\nxác thực OTP
+*** Đăng nhập, khôi phục mật khẩu
+*** Hồ sơ, thiết lập nhắc nhở <<ext>>
+*** Tạo nhóm, mời bằng mã/QR <<ext>>
+*** Phân vai trưởng nhóm, thành viên
+** 2. Danh sách\nmua sắm
+*** Danh sách\ntheo ngày
+*** Thêm, sửa, xóa mặt hàng
+*** Phân công\nngười mua
+*** Đánh dấu đã mua, ghi giá
+*** Chuyển hàng đã mua vào tủ lạnh <<ext>>
+*** Sinh danh sách\ntừ kế hoạch <<ext>>
+** 3. Thực phẩm\ntrong tủ lạnh
+*** Lưu số lượng, hạn dùng, vị trí
+*** Quét mã vạch <<ext>>
+*** Ghi nhận sử dụng, loại bỏ
+*** Nhắc nhở\ntrước 3 ngày
+** 4. Công thức\nnấu ăn
+*** Lưu công thức yêu thích
+*** Đối chiếu nguyên\nliệu với tủ lạnh
+*** Bổ sung nguyên liệu thiếu <<ext>>
+** 5. Kế hoạch\nbữa ăn
+*** Lịch bữa sáng, trưa, tối
+*** Gợi ý món từ\nthực phẩm sẵn có
+*** Ưu tiên thực phẩm sắp hết hạn <<ext>>
+*** Xác nhận đã nấu, trừ kho <<ext>>
+** 6. Tìm kiếm và\nphân loại
+*** Tìm thực phẩm, món ăn
+*** Lọc theo\ndanh mục
+** 7. Thống kê\nbáo cáo
+*** Báo cáo mua sắm, chi tiêu
+*** Báo cáo tiêu thụ
+*** Báo cáo lãng phí <<ext>>
+*** Xuất báo cáo PDF/CSV <<ext>>
+** 8. Quản trị\nhệ thống
+*** Quản lý tài khoản
+*** Danh mục thực\nphẩm, loại\nvà đơn vị
+*** Công thức mẫu
+*** Cấu hình\ntham số
+legend bottom right
+  <back:#EAF1FB>      </back> Chức năng theo đề bài
+  <back:#FFE7C2>      </back> Chức năng mở rộng đề xuất
+endlegend
+@endwbs

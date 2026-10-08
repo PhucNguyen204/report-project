@@ -1,0 +1,16 @@
+@startuml c1-05-ipo-tong-quat
+!include _style.iuml
+left to right direction
+skinparam rectangle {
+  FontStyle plain
+}
+
+rectangle "<b><size:15>ĐẦU VÀO</size></b>\n\n• Thông tin tài khoản, thành viên\n• Mặt hàng cần mua, ngày dự kiến mua\n• Thực phẩm đã mua: số lượng,\n   hạn dùng, vị trí bảo quản\n• Công thức và nguyên liệu\n• Lịch bữa ăn mong muốn\n• Dữ liệu danh mục do quản trị viên\n   cung cấp\n• Thời gian hệ thống (bộ lập lịch)" as IN #E3F4EF
+
+rectangle "<b><size:15>XỬ LÝ</size></b>\n\n• Xác thực, quản lý nhóm gia đình\n• Hợp nhất, chống trùng danh sách\n• Phân công và đồng bộ mua sắm\n• Theo dõi tồn kho và hạn dùng\n• Đối chiếu công thức với tủ lạnh\n• Chấm điểm và gợi ý món ăn\n• Trừ kho theo nguyên tắc FEFO\n• Tổng hợp số liệu thống kê" as PR #FFF1DC
+
+rectangle "<b><size:15>ĐẦU RA</size></b>\n\n• Danh sách mua sắm dùng chung,\n   có phân công\n• Tồn kho thực phẩm theo vị trí,\n   trạng thái hạn dùng\n• Thông báo nhắc nhở sắp hết hạn\n• Lịch bữa ăn theo ngày, tuần\n• Danh sách món ăn được gợi ý\n• Báo cáo mua sắm, tiêu thụ,\n   lãng phí\n• Danh mục dữ liệu chuẩn hóa" as OUT #FDE5E2
+
+IN --> PR
+PR --> OUT
+@enduml

@@ -1,0 +1,50 @@
+@startuml c2-08-act-danh-dau-da-mua
+!include _style.iuml
+
+|Thành viên|
+start
+:Mở danh sách mua sắm đang thực hiện;
+:Chọn mặt hàng, nhấn "Đã mua";
+|Hệ thống|
+if (Mặt hàng đang giao\ncho người khác?) then (có)
+  :Hỏi xác nhận mua thay (MSG12);
+  |Thành viên|
+  if (Đồng ý?) then (không)
+    stop
+  else (có)
+  endif
+  |Hệ thống|
+else (không)
+endif
+|Thành viên|
+:Nhập số lượng thực tế,
+đơn giá (không bắt buộc);
+|Hệ thống|
+:Cập nhật trạng thái "Đã mua",
+ghi người mua và thời điểm;
+:Đồng bộ trạng thái tới
+các thành viên trong nhóm;
+:Đề xuất chuyển vào tủ lạnh;
+|Thành viên|
+if (Chuyển vào tủ lạnh?) then (có)
+  |Hệ thống|
+  :Điền sẵn vị trí lưu trữ mặc định
+  và ngày hết hạn đề xuất bằng
+  ngày mua cộng hạn dùng gợi ý;
+  |Thành viên|
+  :Điều chỉnh hạn dùng, vị trí
+  (nếu cần) và xác nhận;
+  |Hệ thống|
+  :Tạo bản ghi thực phẩm trong tủ,
+  liên kết với mặt hàng;
+  :Mặt hàng chuyển sang
+  "Đã nhập tủ lạnh";
+else (để sau)
+endif
+|Hệ thống|
+if (Mọi mặt hàng đã xử lý?) then (có)
+  :Danh sách chuyển sang "Hoàn tất";
+else (chưa)
+endif
+stop
+@enduml

@@ -1,0 +1,79 @@
+% ---------------------------------------------------------------------
+%  2.2.2.6. Phân rã gói "Quản lý kế hoạch bữa ăn"
+% ---------------------------------------------------------------------
+\subsubsection{Phân rã use case “Quản lý kế hoạch bữa ăn”}\label{sssec:pr-ke-hoach}
+
+Gói Quản lý kế hoạch bữa ăn hiện thực chức năng tương ứng trong đề bài và được phân rã tại Hình~\ref{fig:uc-ke-hoach}. Hai điểm vào chính là \uc{UC37} Lên lịch bữa ăn và \uc{UC38} Xem lịch bữa ăn. Use case \uc{UC40} Gợi ý món ăn hoạt động độc lập, đồng thời mở rộng \uc{UC37} như một cách chọn món. Từ màn hình lịch, người dùng cũng có thể cập nhật lịch (\uc{UC39}), xác nhận đã nấu (\uc{UC41}) hoặc sinh danh sách mua sắm (\uc{UC22}). \uc{UC22} thuộc gói mua sắm nhưng được thể hiện tại đây để làm rõ mối liên hệ giữa hai gói.
+
+\diagram[0.82\textwidth]{c2-14-uc-ke-hoach}{Biểu đồ use case phân rã gói Quản lý kế hoạch bữa ăn}{fig:uc-ke-hoach}
+
+\begin{ucspec}{UC37}{Lên lịch bữa ăn}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng thêm một hoặc nhiều món vào bữa sáng, trưa hoặc tối của một ngày trong kế hoạch.}
+\ucfield{Điều kiện trước}{Người dùng đã đăng nhập; có ít nhất một công thức trong bộ sưu tập hoặc trong công thức mẫu.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Tại màn hình Kế hoạch, chọn một ngày và nhấn “+” tại bữa cần lên lịch.}
+\ucstep{2}{Hệ thống}{Hiển thị ba thẻ chọn món: “Gợi ý cho bạn”, “Yêu thích”, “Tất cả công thức”, mặc định mở thẻ gợi ý.}
+\ucstep{3}{Người dùng}{Chọn một hoặc nhiều món, nhập số khẩu phần cho mỗi món (mặc định bằng số thành viên của nhóm) và nhấn “Thêm”.}
+\ucstep{4}{Hệ thống}{Kiểm tra ngày nằm trong khoảng từ hôm nay đến 28 ngày tiếp theo và số khẩu phần từ 1 đến 20 (\br{BR18}).}
+\ucstep{5}{Hệ thống}{Thêm các món vào bữa ở trạng thái Dự kiến, đối chiếu nguyên liệu và hiển thị biểu tượng đủ hoặc thiếu nguyên liệu trên từng món.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Người dùng}{Ở thẻ “Gợi ý cho bạn”: thực hiện \uc{UC40} với bữa và số khẩu phần đang chọn.}
+\ucstep{3a}{Người dùng}{Nhập tên món tự do không có công thức (ví dụ “Ăn ngoài”): món được lưu nhưng không tham gia đối chiếu nguyên liệu.}
+\ucstep{4a}{Hệ thống}{Ngày đã qua hoặc vượt 28 ngày: hiển thị \msg{MSG28}; quay lại bước 1.}
+\ucstep{5a}{Hệ thống}{Món đã có trong cùng bữa: hỏi người dùng muốn tăng số khẩu phần của món hiện có hay thêm một dòng mới.}
+\ucfield{Điều kiện sau}{Bữa ăn của ngày được chọn chứa các món mới ở trạng thái Dự kiến, kèm thông tin đủ hoặc thiếu nguyên liệu.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR18}}
+\end{ucspec}
+
+Use case Gợi ý món ăn áp dụng cơ chế chấm điểm tại mục~\ref{ssec:nv05}, theo các công thức~\eqref{eq:diem-han-dung} và~\eqref{eq:diem-goi-y}. Đặc tả và luồng tính toán được trình bày lần lượt tại Bảng~\ref{tab:UC40} và Hình~\ref{fig:act-goi-y}.
+
+\begin{ucspec}{UC40}{Gợi ý món ăn từ thực phẩm sẵn có}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Hệ thống xếp hạng các công thức theo mức độ đáp ứng của tủ lạnh hiện tại, ưu tiên những món giúp sử dụng thực phẩm sắp hết hạn, và đề xuất tối đa 10 món.}
+\ucfield{Điều kiện trước}{Người dùng đã đăng nhập; người dùng mở chức năng gợi ý từ màn hình chính, từ màn hình thực phẩm sắp hết hạn hoặc từ \uc{UC37}.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Mở “Gợi ý món ăn”, tùy chọn bữa và số khẩu phần.}
+\ucstep{2}{Hệ thống}{Lấy tồn kho khả dụng gồm các lô Còn hạn và Sắp hết hạn của không gian hiện hành.}
+\ucstep{3}{Hệ thống}{Lấy tập công thức ứng viên gồm bộ sưu tập của người dùng và công thức mẫu, lọc theo bữa phù hợp nếu người dùng đã chọn bữa.}
+\ucstep{4}{Hệ thống}{Với mỗi công thức, tính tỷ lệ đáp ứng $R$, điểm ưu tiên hạn dùng $E$ và hệ số yêu thích $F$; loại các công thức có $R < \theta$ (\br{BR19}).}
+\ucstep{5}{Hệ thống}{Tính điểm $S = 0{,}6R + 0{,}3E + 0{,}1F$, sắp xếp giảm dần và lấy tối đa 10 món.}
+\ucstep{6}{Hệ thống}{Hiển thị mỗi món kèm nhãn “Đủ nguyên liệu” hoặc “Thiếu k nguyên liệu”, danh sách thực phẩm sắp hết hạn mà món sử dụng và thời gian nấu.}
+\ucstep{7}{Người dùng}{Chọn một món và chọn “Thêm vào lịch” hoặc “Xem công thức”.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Tủ lạnh trống: hiển thị các công thức mẫu phổ biến và lời nhắc thêm thực phẩm (\uc{UC25}).}
+\ucstep{4a}{Hệ thống}{Không công thức nào đạt ngưỡng: hiển thị \msg{MSG31} cùng ba món có $R$ cao nhất và gợi ý bổ sung nguyên liệu còn thiếu.}
+\ucstep{7a}{Người dùng}{Chọn “Thêm vào lịch”: thực hiện bước 3 của \uc{UC37} với món đã chọn.}
+\ucstep{7b}{Người dùng}{Chọn “Xem công thức”: thực hiện \uc{UC34}.}
+\ucfield{Điều kiện sau}{Không thay đổi dữ liệu; kết quả gợi ý được lưu đệm trong 10 phút hoặc đến khi tồn kho thay đổi.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR12}, \br{BR16}, \br{BR19}}
+\end{ucspec}
+
+\diagram[0.64\textwidth]{c2-15-act-goi-y-mon}{Biểu đồ hoạt động của use case Gợi ý món ăn từ thực phẩm sẵn có}{fig:act-goi-y}
+
+Xét ví dụ một gia đình có cá lóc còn 1 ngày, dứa còn 2 ngày, cà chua còn 5 ngày và trứng gà còn 10 ngày trước khi hết hạn; ngưỡng nhắc là $N = 3$. Tủ lạnh cũng có các gia vị cơ bản. Công thức canh chua cá lóc cần bốn nguyên liệu bắt buộc: cá lóc, cà chua, dứa và me. Do thiếu me, tỷ lệ đáp ứng là $R = 3/4 = 0{,}75$. Trọng số hạn dùng của cá lóc là $(3 + 1 - 1)/4 = 0{,}75$, của dứa là $(3 + 1 - 2)/4 = 0{,}5$, còn cà chua nằm ngoài ngưỡng nên có trọng số 0. Vì vậy, $E = \min(1;\ 0{,}75 + 0{,}5) = 1$. Nếu chưa được đánh dấu yêu thích, món này có $F = 0$ và $S = 0{,}6 \times 0{,}75 + 0{,}3 \times 1 = 0{,}75$. Món trứng xào cà chua có đủ nguyên liệu nhưng không dùng thực phẩm sắp hết hạn, nên $R = 1$, $E = 0$ và $S = 0{,}6$. Do đó, canh chua cá lóc được xếp hạng cao hơn và hệ thống xác định me là nguyên liệu cần mua.
+
+\begin{ucspec}{UC41}{Xác nhận đã nấu món ăn}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng xác nhận một món trong lịch đã được nấu; hệ thống trừ nguyên liệu tương ứng khỏi tủ lạnh theo nguyên tắc FEFO và ghi nhận tiêu thụ.}
+\ucfield{Điều kiện trước}{Món ở trạng thái Dự kiến, thuộc ngày hôm nay hoặc ngày đã qua, và gắn với một công thức.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Trên lịch bữa ăn, chọn món và nhấn “Đã nấu”.}
+\ucstep{2}{Hệ thống}{Tính lượng nguyên liệu cần dùng theo số khẩu phần thực tế (mặc định bằng số khẩu phần dự kiến).}
+\ucstep{3}{Hệ thống}{Với mỗi nguyên liệu, lấy các lô chưa hết hạn (Còn hạn và Sắp hết hạn) theo thứ tự ngày hết hạn tăng dần và phân bổ lượng trừ từ lô sớm nhất (\br{BR15}).}
+\ucstep{4}{Hệ thống}{Hiển thị bảng xem trước: nguyên liệu, lượng sẽ trừ ở từng lô, lượng thiếu nếu tồn kho không đủ.}
+\ucstep{5}{Người dùng}{Điều chỉnh lượng thực dùng (nếu dùng ít hoặc nhiều hơn công thức) và nhấn “Xác nhận”.}
+\ucstep{6}{Hệ thống}{Cập nhật lượng còn lại của các lô trong một giao dịch duy nhất; lô về 0 chuyển sang Đã dùng hết (\br{BR14}).}
+\ucstep{7}{Hệ thống}{Ghi nhật ký tiêu thụ gắn với món ăn, chuyển món sang trạng thái Đã nấu và thông báo \msg{MSG10}.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{4a}{Hệ thống}{Có nguyên liệu không đủ hoặc không có trong tủ: đánh dấu dòng thiếu; người dùng có thể bỏ qua (coi như đã dùng nguồn ngoài tủ) hoặc bổ sung tồn kho trước.}
+\ucstep{4b}{Hệ thống}{Chỉ còn lô Đã hết hạn cho một nguyên liệu: không tự động trừ, yêu cầu người dùng chọn rõ theo \br{BR15}.}
+\ucstep{5a}{Người dùng}{Chọn “Bỏ qua trừ kho”: món chuyển sang Đã nấu mà không thay đổi tồn kho.}
+\ucstep{6a}{Hệ thống}{Có thay đổi tồn kho đồng thời từ thành viên khác làm lượng còn lại không đủ: hủy giao dịch, tải lại số liệu và quay lại bước 4.}
+\ucfield{Điều kiện sau}{Món ở trạng thái Đã nấu và không thể sửa (\br{BR18}); tồn kho giảm đúng lượng đã xác nhận; nhật ký tiêu thụ được ghi nhận.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR14}, \br{BR15}, \br{BR16}, \br{BR18}}
+\end{ucspec}
+
+\diagram[0.6\textwidth]{c2-16-act-xac-nhan-nau}{Biểu đồ hoạt động của use case Xác nhận đã nấu món ăn}{fig:act-xac-nhan-nau}
+
+Bước 6 của \uc{UC41} chạy trong một giao dịch duy nhất: hệ thống cập nhật toàn bộ lô liên quan hoặc không cập nhật lô nào. Cách xử lý này bảo đảm tính nhất quán khi nhiều thành viên cùng thao tác trên một tủ lạnh. Các use case \uc{UC38} và \uc{UC39} được đặc tả tại Phụ lục~\ref{pl:dac-ta-bo-sung}.

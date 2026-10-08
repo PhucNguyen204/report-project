@@ -1,0 +1,25 @@
+@startuml c1-04-ngu-canh
+!include _style.iuml
+left to right direction
+
+actor "Khách" as G
+actor "Người dùng /\nThành viên gia đình" as U
+actor "Trưởng nhóm" as L
+actor "Quản trị viên" as A
+
+rectangle "Hệ thống\n“Đi chợ tiện lợi”\n(ứng dụng di động + máy chủ)" as SYS #EAF1FB
+
+cloud "Dịch vụ thông báo đẩy\n(FCM / APNs)" as PUSH
+cloud "Dịch vụ thư điện tử\n(SMTP)" as MAIL
+cloud "Cơ sở dữ liệu sản phẩm mở\n(tra cứu mã vạch)" as BAR
+node "Bộ lập lịch\n(tác vụ định kỳ)" as CRON
+
+G --> SYS : thông tin đăng ký,\nđăng nhập
+U --> SYS : danh sách mua sắm,\nthực phẩm, công thức,\nlịch bữa ăn
+L --> SYS : thành viên,\nphân công mua sắm
+A --> SYS : tài khoản, danh mục,\ncấu hình hệ thống
+SYS --> PUSH : yêu cầu gửi\nthông báo
+SYS --> MAIL : mã OTP,\nthư khôi phục
+SYS --> BAR : mã vạch cần tra cứu
+CRON --> SYS : kích hoạt kiểm tra\nhạn dùng hằng ngày
+@enduml

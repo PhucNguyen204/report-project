@@ -1,0 +1,43 @@
+@startuml c1-06-quy-trinh-mua-sam-nhom
+!include _style.iuml
+
+|Thành viên|
+start
+:Thêm mặt hàng cần mua
+vào danh sách chung;
+|Hệ thống|
+:Kiểm tra trùng thực phẩm và đơn vị;
+if (Đã có trong danh sách?) then (có)
+  :Gộp số lượng vào
+  mặt hàng sẵn có;
+else (không)
+  :Tạo mặt hàng mới
+  trạng thái "Cần mua";
+endif
+:Đồng bộ danh sách
+tới các thành viên;
+|Trưởng nhóm|
+:Xem danh sách,
+phân công người mua;
+|Hệ thống|
+:Gửi thông báo phân công
+tới người được giao;
+|Thành viên|
+:Nhận nhiệm vụ, đi mua;
+:Đánh dấu đã mua,
+nhập giá và số lượng thực tế;
+|Hệ thống|
+:Cập nhật trạng thái
+theo thời gian thực;
+if (Thành viên chọn\nchuyển vào tủ lạnh?) then (có)
+  :Tạo bản ghi thực phẩm
+  với hạn dùng đề xuất;
+else (không)
+endif
+if (Mọi mặt hàng đã xử lý?) then (có)
+  :Đóng danh sách,
+  lưu vào lịch sử mua sắm;
+else (chưa)
+endif
+stop
+@enduml

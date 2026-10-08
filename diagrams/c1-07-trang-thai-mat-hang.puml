@@ -1,0 +1,22 @@
+@startuml c1-07-trang-thai-mat-hang
+!include _style.iuml
+
+state "Cần mua" as CM
+state "Đã phân công" as PC
+state "Đã mua" as DM
+state "Đã nhập tủ lạnh" as NT
+state "Đã bỏ qua" as BQ
+
+[*] --> CM : thêm vào danh sách
+CM --> PC : trưởng nhóm phân công
+PC --> CM : hủy phân công
+CM --> DM : đánh dấu đã mua
+PC --> DM : người được giao\nđánh dấu đã mua
+DM --> CM : hoàn tác\n(trước khi nhập tủ)
+CM --> BQ : không mua nữa
+PC --> BQ : không mua nữa
+DM --> NT : chuyển vào tủ lạnh
+DM --> [*] : đóng danh sách
+NT --> [*]
+BQ --> [*]
+@enduml
