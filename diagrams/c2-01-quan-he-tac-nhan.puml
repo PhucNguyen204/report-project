@@ -1,0 +1,39 @@
+@startuml c2-01-quan-he-tac-nhan
+!include _style.iuml
+skinparam rectangle {
+  FontStyle bold
+  BorderColor #7F7F7F
+}
+
+rectangle "Tác nhân chính" as PRI {
+  actor "Khách" as G
+  actor "Người dùng" as U
+  actor "Thành viên nhóm" as M
+  actor "Quản trị viên" as A
+  actor "Trưởng nhóm" as L
+}
+
+rectangle "Tác nhân phụ" as SEC {
+  actor "Bộ lập lịch" as CRON <<hệ thống>>
+  actor "Dịch vụ\nthông báo đẩy" as PUSH <<hệ thống ngoài>>
+  actor "Dịch vụ\nthư điện tử" as MAIL <<hệ thống ngoài>>
+  actor "Cơ sở dữ liệu\nsản phẩm mở" as BAR <<hệ thống ngoài>>
+}
+
+G .right.> U : đăng ký,\nđăng nhập thành công
+M -up-|> U
+A -up-|> U
+L -up-|> M
+
+CRON -[hidden]right- PUSH
+PUSH -[hidden]down- MAIL
+CRON -[hidden]down- BAR
+PRI -[hidden]right- SEC
+
+note right of L
+  Kế thừa toàn bộ quyền
+  của Thành viên nhóm,
+  có thêm quyền điều phối
+  và phân công mua sắm
+end note
+@enduml

@@ -1,0 +1,48 @@
+@startuml c2-04-act-dang-ky
+!include _style.iuml
+
+|Khách|
+start
+:Mở màn hình đăng ký;
+repeat
+  |Khách|
+  :Nhập họ tên, email,
+  mật khẩu, xác nhận mật khẩu;
+  |Ứng dụng|
+  :Kiểm tra định dạng ngay tại thiết bị
+  (không cần kết nối mạng);
+backward :Hiển thị lỗi tại từng trường;
+repeat while (Dữ liệu hợp lệ?) is (không) not (có)
+|Máy chủ|
+:Kiểm tra email đã tồn tại;
+if (Email thuộc tài khoản\nđang hoạt động?) then (có)
+  |Ứng dụng|
+  :Thông báo email đã được sử dụng
+  (MSG03);
+  stop
+else (chưa)
+  |Máy chủ|
+  :Tạo tài khoản trạng thái
+  "Chờ xác thực";
+  :Sinh mã OTP 6 chữ số,
+  hiệu lực 5 phút, gửi qua email;
+endif
+repeat
+  |Khách|
+  :Nhập mã OTP;
+  |Máy chủ|
+  :Kiểm tra mã, thời hạn
+  và số lần nhập sai;
+  if (Mã hết hạn hoặc\nsai quá 5 lần?) then (có)
+    :Vô hiệu mã cũ, gửi mã mới
+    khi Khách yêu cầu gửi lại;
+  else (không)
+  endif
+repeat while (Mã OTP đúng?) is (không) not (có)
+:Kích hoạt tài khoản,
+tạo không gian cá nhân;
+|Ứng dụng|
+:Thông báo đăng ký thành công,
+chuyển tới màn hình chính;
+stop
+@enduml

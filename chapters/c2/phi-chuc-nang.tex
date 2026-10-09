@@ -1,0 +1,98 @@
+% ---------------------------------------------------------------------
+%  2.3. Các yêu cầu phi chức năng
+% ---------------------------------------------------------------------
+\section{Các yêu cầu phi chức năng}\label{sec:phi-chuc-nang}
+
+Yêu cầu phi chức năng quy định chất lượng hệ thống cần đáp ứng bên cạnh các chức năng đã đặc tả. Các yêu cầu được nhóm theo những đặc tính phù hợp của mô hình chất lượng ISO/IEC 25010~\cite{iso25010}: chức năng, tính dễ dùng, hiệu năng, độ tin cậy, an toàn bảo mật, khả năng bảo trì và khả chuyển; mục này cũng nêu các ràng buộc kỹ thuật. Mỗi yêu cầu có mã \nfr{NFR} và tiêu chí đo lường để kiểm chứng khi kiểm thử. Bảng tổng hợp được trình bày ở cuối mục.
+
+\subsection{Chức năng (Functionality)}\label{ssec:nfr-chuc-nang}
+
+Các yêu cầu trong mục này áp dụng chung cho nhiều use case. Bảng~\ref{tab:dinh-dang-hien-thi} quy định cách hiển thị dữ liệu: số căn phải, chữ căn trái; định dạng số và ngày tháng tuân theo quy ước Việt Nam (\nfr{NFR01}).
+
+{\small
+\begin{longtable}{|L{3.0cm}|L{5.0cm}|C{1.8cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-3.0cm-5.0cm-1.8cm\relax}|}
+\caption{Quy ước định dạng hiển thị chung}\label{tab:dinh-dang-hien-thi}\\
+\hline
+\hd{Kiểu dữ liệu} & \hd{Định dạng} & \hd{Căn lề} & \hd{Ví dụ}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Kiểu dữ liệu} & \hd{Định dạng} & \hd{Căn lề} & \hd{Ví dụ}\\ \hline
+\endhead
+Văn bản & Viết hoa chữ cái đầu câu, cắt bằng dấu ba chấm khi vượt độ rộng & Trái & Thịt ba chỉ\\ \hline
+Số lượng & Dấu phẩy thập phân, tối đa hai chữ số thập phân, bỏ số 0 thừa & Phải & 1,5 kg\\ \hline
+Tiền tệ & Dấu chấm phân tách hàng nghìn, ký hiệu đồng ở cuối & Phải & 125.000 ₫\\ \hline
+Ngày & dd/MM/yyyy; với ngày gần dùng cách nói tương đối & Phải & 14/12/2025; Hôm nay; Ngày mai\\ \hline
+Giờ & 24 giờ, HH:mm & Phải & 08:00\\ \hline
+Số ngày còn lại & “Còn n ngày”, “Hết hạn hôm nay”, “Quá hạn n ngày” & Phải & Còn 2 ngày\\ \hline
+Tuần & Bắt đầu từ thứ Hai & — & T2 08/12 – CN 14/12\\ \hline
+\end{longtable}
+}
+
+Mẫu báo cáo gợi ý dùng Arial cỡ 14, chữ đen trên nền trắng. Trên thiết bị di động, ứng dụng dùng phông mặc định của hệ điều hành (Roboto trên Android, San Francisco trên iOS), cỡ chữ nội dung tối thiểu 14 sp và tiêu đề từ 18 đến 22 sp. Giao diện chế độ sáng dùng chữ đen hoặc xám đậm trên nền trắng; chế độ tối và thiết lập cỡ chữ của hệ điều hành cũng được hỗ trợ (\nfr{NFR02}). Lỗi nhập liệu hiển thị ngay dưới trường tương ứng, nêu nguyên nhân và cách khắc phục theo danh mục ở Phụ lục~\ref{pl:thong-diep}; thao tác xóa cần xác nhận hoặc có thể hoàn tác trong vài giây (\nfr{NFR03}). Trạng thái hạn dùng được phân biệt bằng màu xanh lá, cam và đỏ, đồng thời luôn có nhãn chữ để người dùng khó phân biệt màu vẫn nhận biết được (\nfr{NFR04}).
+
+\subsection{Tính dễ dùng (Usability)}\label{ssec:nfr-de-dung}
+
+Ứng dụng có thể được sử dụng khi người dùng đang mua sắm hoặc nấu ăn, lúc thao tác không thuận tiện. Vì vậy, giao diện cần dễ thao tác và chỉ rõ vị trí, nguyên nhân, cách khắc phục lỗi nhập liệu. Ba thao tác cốt lõi — thêm mặt hàng, đánh dấu đã mua và thêm thực phẩm vào tủ — cần hoàn thành trong tối đa ba lần chạm từ màn hình chính. Người dùng mới cần tạo được danh sách đầu tiên trong vòng hai phút mà không cần đọc hướng dẫn (\nfr{NFR05}). Để hỗ trợ khả năng tiếp cận, phần tử tương tác có vùng chạm tối thiểu 48 × 48 dp, độ tương phản chữ-nền tối thiểu 4,5 : 1 theo mức AA của WCAG 2.1~\cite{wcag21}, và nhãn cho trình đọc màn hình TalkBack, VoiceOver (\nfr{NFR06}). Giao diện mặc định bằng tiếng Việt, có thể chuyển sang tiếng Anh; chuỗi hiển thị được tách khỏi mã nguồn để thuận tiện bổ sung ngôn ngữ (\nfr{NFR07}).
+
+\subsection{Hiệu năng (Performance)}\label{ssec:nfr-hieu-nang}
+
+Các thao tác chính cần phản hồi nhanh khi người dùng mua sắm. Trên thiết bị tầm trung, thời gian khởi động nguội không quá 3 giây, chuyển màn hình không quá 300 ms và cuộn danh sách 500 phần tử ở mức 60 khung hình mỗi giây (\nfr{NFR08}). Với mạng 4G, ít nhất 95\% yêu cầu API phải phản hồi trong 1 giây; gợi ý món trả kết quả trong 2 giây với 500 công thức và 200 lô thực phẩm; gợi ý tên khi nhập xuất hiện trong 500 ms (\nfr{NFR09}). Trong nhóm gia đình, thay đổi danh sách mua sắm phải đồng bộ tới thiết bị đang trực tuyến trong tối đa 3 giây (\nfr{NFR10}).
+
+\subsection{Độ tin cậy (Reliability)}\label{ssec:nfr-tin-cay}
+
+Do kết nối tại chợ truyền thống và tầng hầm siêu thị có thể không ổn định, ứng dụng cần hỗ trợ ngoại tuyến các chức năng xem, cập nhật danh sách mua sắm, đánh dấu đã mua, xem tủ lạnh và thêm thực phẩm. Thay đổi được lưu vào hàng đợi trên thiết bị và đồng bộ khi có mạng. Khi xảy ra xung đột, thao tác đánh dấu đã mua giữ bản ghi sớm hơn, còn thao tác sửa thuộc tính giữ bản ghi sau cùng; người dùng được thông báo khi thay đổi bị ghi đè (\nfr{NFR11}).
+
+Tác vụ nhắc hạn dùng phải có tính lũy đẳng để chạy lại không tạo thông báo trùng. Mỗi lần gửi thông báo đẩy thất bại được thử lại tối đa ba lần với khoảng chờ tăng dần; ít nhất 99\% thông báo phải được tạo trong vòng 15 phút kể từ khung giờ đã cấu hình (\nfr{NFR12}). Máy chủ cần sẵn sàng tối thiểu 99\% thời gian trong khung 06:00–23:00. Cơ sở dữ liệu được sao lưu hằng ngày, giữ bảy bản gần nhất; các thao tác nhiều bản ghi như \uc{UC21} và \uc{UC41} chạy trong giao dịch nguyên tử (\nfr{NFR13}).
+
+\subsection{An toàn bảo mật (Security)}\label{ssec:nfr-bao-mat}
+
+Ứng dụng lưu thông tin cá nhân và thói quen sinh hoạt của gia đình. Các yêu cầu bảo mật được xây dựng dựa trên OWASP MASVS~\cite{masvs}. Kết nối giữa ứng dụng và máy chủ sử dụng HTTPS với TLS 1.2 trở lên. Mật khẩu được băm bằng thuật toán có muối như bcrypt hoặc Argon2, không lưu trữ hay ghi nhật ký ở dạng rõ (\nfr{NFR14}). Mã truy cập và mã làm mới theo \br{BR03} được lưu trong kho khóa an toàn của hệ điều hành (Keystore trên Android, Keychain trên iOS) và bị thu hồi khi đăng xuất hoặc đổi mật khẩu (\nfr{NFR15}).
+
+Máy chủ kiểm tra quyền của mọi API theo không gian dữ liệu và vai trò người gọi; ẩn nút trên giao diện không được xem là biện pháp phân quyền (\nfr{NFR16}). API xác thực được giới hạn tần suất theo địa chỉ và tài khoản, kết hợp cơ chế khóa tạm tại \br{BR02} và \br{BR03} để hạn chế dò mật khẩu, mã OTP (\nfr{NFR17}). Ứng dụng chỉ xin quyền camera khi người dùng quét mã và chỉ xin quyền thông báo sau khi giải thích mục đích. Người dùng có thể xóa tài khoản cùng dữ liệu cá nhân; hệ thống tuân thủ các quy định hiện hành của Việt Nam về bảo vệ dữ liệu cá nhân (\nfr{NFR18}).
+
+\subsection{Tính dễ bảo trì và khả chuyển (Maintainability, Portability)}\label{ssec:nfr-bao-tri}
+
+Ứng dụng được phát triển bằng một mã nguồn Flutter~\cite{flutter}, hỗ trợ Android 8.0 (API 26) trở lên và iOS 13 trở lên. Giao diện thích ứng với màn hình từ 4,7 đến 6,9 inch và ưu tiên hướng dọc (\nfr{NFR19}). Mã nguồn được chia thành tầng trình bày, nghiệp vụ và dữ liệu. Các quy tắc có tham số được đọc từ cấu hình tại \uc{UC53}; độ bao phủ kiểm thử đơn vị của tầng nghiệp vụ tối thiểu 70\%. API máy chủ có đặc tả OpenAPI và nhật ký có cấu trúc để hỗ trợ truy vết lỗi (\nfr{NFR20}).
+
+\subsection{Các ràng buộc kỹ thuật}\label{ssec:nfr-rang-buoc}
+
+Các ràng buộc kỹ thuật xuất phát từ yêu cầu học phần và các quyết định kiến trúc ban đầu sẽ được cụ thể hóa trong giai đoạn thiết kế. Ứng dụng giao tiếp với máy chủ qua API REST, trao đổi dữ liệu ở định dạng JSON và dùng đường dẫn cơ sở theo quy ước của học phần: \texttt{https://<tên miền>/it4788/}. Các phản hồi dùng chung một bộ mã thống nhất (\nfr{NFR21}). Máy chủ sử dụng cơ sở dữ liệu quan hệ, dịch vụ lưu trữ tệp riêng cho ảnh, Firebase Cloud Messaging~\cite{fcm} để gửi thông báo đẩy trên Android và iOS, cùng bộ lập lịch cho tác vụ định kỳ (\nfr{NFR22}). Thiết bị dùng cơ sở dữ liệu nhúng để lưu đệm khi ngoại tuyến và lưu bản nháp biểu mẫu (\nfr{NFR23}).
+
+Bảng~\ref{tab:tong-hop-nfr} tổng hợp các yêu cầu phi chức năng và tiêu chí đo, làm cơ sở xây dựng ca kiểm thử.
+
+{\small
+\begin{longtable}{|C{1.35cm}|L{2.5cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-1.35cm-2.5cm-5.0cm\relax}|L{5.0cm}|}
+\caption{Tổng hợp các yêu cầu phi chức năng}\label{tab:tong-hop-nfr}\\
+\hline
+\hd{Mã} & \hd{Đặc tính} & \hd{Yêu cầu} & \hd{Tiêu chí đo}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Mã} & \hd{Đặc tính} & \hd{Yêu cầu} & \hd{Tiêu chí đo}\\ \hline
+\endhead
+NFR01 & Chức năng & Định dạng hiển thị thống nhất & Đúng 100\% quy ước của Bảng~\ref{tab:dinh-dang-hien-thi} trên các màn hình\\ \hline
+NFR02 & Chức năng & Phông chữ, cỡ chữ, màu nền & Cỡ chữ nội dung $\ge$ 14 sp; hỗ trợ chế độ tối và cỡ chữ hệ thống\\ \hline
+NFR03 & Chức năng & Thông báo lỗi tại chỗ, xác nhận khi xóa & Mọi lỗi nhập hiển thị dưới trường; mọi thao tác xóa có xác nhận hoặc hoàn tác\\ \hline
+NFR04 & Chức năng & Mã màu trạng thái hạn dùng & Ba màu thống nhất, luôn kèm nhãn chữ\\ \hline
+NFR05 & Dễ dùng & Thao tác cốt lõi nhanh & $\le$ 3 lần chạm; người mới tạo danh sách đầu tiên $\le$ 2 phút\\ \hline
+NFR06 & Dễ dùng & Khả năng tiếp cận & Vùng chạm $\ge$ 48 dp; tương phản $\ge$ 4,5 : 1; có nhãn cho trình đọc màn hình\\ \hline
+NFR07 & Dễ dùng & Đa ngôn ngữ & Tiếng Việt, tiếng Anh; không có chuỗi viết cứng trong mã\\ \hline
+NFR08 & Hiệu năng & Hiệu năng giao diện & Khởi động $\le$ 3 s; chuyển màn hình $\le$ 300 ms; cuộn 60 fps với 500 phần tử\\ \hline
+NFR09 & Hiệu năng & Thời gian phản hồi máy chủ & 95\% API $\le$ 1 s; gợi ý món $\le$ 2 s; gợi ý tên $\le$ 500 ms\\ \hline
+NFR10 & Hiệu năng & Đồng bộ thời gian thực & Thay đổi hiển thị trên thiết bị khác $\le$ 3 s\\ \hline
+NFR11 & Tin cậy & Hoạt động ngoại tuyến & Bốn nhóm thao tác chính dùng được khi mất mạng; đồng bộ tự động, không mất dữ liệu\\ \hline
+NFR12 & Tin cậy & Độ tin cậy của nhắc nhở & Không gửi trùng; thử lại 3 lần; $\ge$ 99\% thông báo tạo trong 15 phút\\ \hline
+NFR13 & Tin cậy & Sẵn sàng, sao lưu, giao dịch & Sẵn sàng $\ge$ 99\% (06:00–23:00); sao lưu hằng ngày, giữ 7 bản\\ \hline
+NFR14 & Bảo mật & Mã hóa đường truyền, băm mật khẩu & TLS $\ge$ 1.2; bcrypt hoặc Argon2; không có mật khẩu rõ trong CSDL, nhật ký\\ \hline
+NFR15 & Bảo mật & Quản lý phiên & Mã lưu trong Keystore, Keychain; bị thu hồi khi đăng xuất, đổi mật khẩu\\ \hline
+NFR16 & Bảo mật & Phân quyền phía máy chủ & 100\% API kiểm tra không gian và vai trò\\ \hline
+NFR17 & Bảo mật & Chống dò mật khẩu, OTP & Giới hạn tần suất; khóa tạm theo \br{BR02}, \br{BR03}\\ \hline
+NFR18 & Bảo mật & Quyền riêng tư & Xin quyền đúng lúc; hỗ trợ xóa tài khoản và dữ liệu\\ \hline
+NFR19 & Khả chuyển & Đa nền tảng & Một mã nguồn Flutter; Android $\ge$ 8.0, iOS $\ge$ 13\\ \hline
+NFR20 & Bảo trì & Kiến trúc và chất lượng mã & Phân tầng; tham số hóa quy tắc; bao phủ kiểm thử tầng nghiệp vụ $\ge$ 70\%; có tài liệu OpenAPI\\ \hline
+NFR21 & Ràng buộc & Giao tiếp API & REST, JSON, đường dẫn \texttt{/it4788/}, bộ mã phản hồi thống nhất\\ \hline
+NFR22 & Ràng buộc & Hạ tầng máy chủ & CSDL quan hệ; lưu trữ tệp riêng; FCM; bộ lập lịch phía máy chủ\\ \hline
+NFR23 & Ràng buộc & Lưu trữ cục bộ & CSDL nhúng trên thiết bị cho dữ liệu ngoại tuyến và bản nháp\\ \hline
+\end{longtable}
+}
+
+Chương~\ref{chap:dac-ta} xác định chín tác nhân và 53 use case trong chín gói chức năng. Chương trình bày biểu đồ use case tổng quan, chín biểu đồ phân rã, đặc tả 24 use case chính cùng các biểu đồ hoạt động và tuần tự cho những luồng phức tạp, và 23 yêu cầu phi chức năng có tiêu chí đo. Phụ lục~\ref{pl:dac-ta-bo-sung} bổ sung đặc tả 29 use case; Phụ lục~\ref{pl:truy-vet} cung cấp ma trận truy vết. Bộ đặc tả bao phủ bảy nhóm chức năng của đề bài và mười chức năng mở rộng, làm cơ sở cho thiết kế giao diện, backend và kiểm thử ở các chương tiếp theo.

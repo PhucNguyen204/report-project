@@ -1,0 +1,75 @@
+% ---------------------------------------------------------------------
+%  2.2.2.2. Phân rã gói "Quản lý nhóm gia đình"
+% ---------------------------------------------------------------------
+\subsubsection{Phân rã use case “Quản lý nhóm gia đình”}\label{sssec:pr-nhom}
+
+Gói Quản lý nhóm gia đình đáp ứng yêu cầu chia sẻ danh sách và phân vai trong gia đình. Hình~\ref{fig:uc-nhom} thể hiện các quyền theo vai trò: Người dùng chưa thuộc nhóm có thể tạo nhóm (\uc{UC09}) hoặc tham gia nhóm (\uc{UC11}); Thành viên nhóm có thể xem thông tin nhóm (\uc{UC12}) và rời nhóm (\uc{UC15}); Trưởng nhóm còn có quyền mời (\uc{UC10}), xóa thành viên (\uc{UC13}) và chuyển quyền (\uc{UC14}). Hai use case \uc{UC13} và \uc{UC14} mở rộng \uc{UC12} vì được thực hiện từ màn hình danh sách thành viên. Khi Trưởng nhóm rời nhóm còn thành viên khác, \uc{UC14} mở rộng \uc{UC15} để yêu cầu chọn người kế nhiệm, theo \br{BR05} và \br{BR07}.
+
+\diagram[0.85\textwidth]{c2-05-uc-nhom}{Biểu đồ use case phân rã gói Quản lý nhóm gia đình}{fig:uc-nhom}
+
+\begin{ucspec}{UC09}{Tạo nhóm gia đình}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng tạo một nhóm gia đình để chia sẻ danh sách mua sắm, tủ lạnh và kế hoạch bữa ăn với các thành viên khác; người tạo trở thành trưởng nhóm.}
+\ucfield{Điều kiện trước}{Người dùng đã đăng nhập và chưa là thành viên của nhóm gia đình nào (\br{BR04}).}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chọn “Tạo nhóm gia đình” tại màn hình Gia đình.}
+\ucstep{2}{Hệ thống}{Hiển thị biểu mẫu gồm tên nhóm, ảnh nhóm (tùy chọn) và lựa chọn sao chép dữ liệu từ không gian cá nhân sang nhóm.}
+\ucstep{3}{Người dùng}{Nhập tên nhóm, chọn ảnh, chọn có hoặc không sao chép dữ liệu, nhấn “Tạo nhóm”.}
+\ucstep{4}{Hệ thống}{Kiểm tra tên nhóm dài 3–50 ký tự (\br{BR05}).}
+\ucstep{5}{Hệ thống}{Tạo nhóm, ghi nhận người dùng là thành viên với vai trò trưởng nhóm.}
+\ucstep{6}{Hệ thống}{Nếu người dùng chọn sao chép, sao chép các lô thực phẩm còn trong tủ và các danh sách mua sắm chưa hoàn tất từ không gian cá nhân sang nhóm.}
+\ucstep{7}{Hệ thống}{Chuyển không gian làm việc sang nhóm mới, hiển thị \msg{MSG10} và gợi ý thực hiện \uc{UC10} để mời thành viên.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{4a}{Hệ thống}{Tên nhóm không hợp lệ: hiển thị \msg{MSG02}; quay lại bước 3.}
+\ucstep{5a}{Hệ thống}{Người dùng đã tham gia một nhóm gia đình khác trong lúc thao tác (ví dụ trên thiết bị khác): hiển thị \msg{MSG08}; kết thúc use case.}
+\ucfield{Điều kiện sau}{Một nhóm gia đình mới tồn tại với đúng một thành viên là trưởng nhóm; không gian hiện hành của người dùng là nhóm này.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR04}, \br{BR05}}
+\end{ucspec}
+
+Thay vì yêu cầu nhập email từng thành viên, hệ thống dùng mã mời có thời hạn. Trưởng nhóm có thể gửi mã qua tin nhắn hoặc để thành viên quét mã QR trực tiếp trên màn hình. Mã hết hạn sau 48 giờ và có thể bị thu hồi nếu bị lộ. Đặc tả use case mời và tham gia nhóm lần lượt nằm ở Bảng~\ref{tab:UC10} và Bảng~\ref{tab:UC11}.
+
+\begin{ucspec}{UC10}{Mời thành viên vào nhóm}
+\ucfield{Tác nhân}{Trưởng nhóm}
+\ucfield{Mô tả}{Cho phép trưởng nhóm tạo mã mời gồm chữ và số cùng mã QR có thời hạn để chia sẻ cho người cần mời; trưởng nhóm cũng có thể thu hồi mã đang hiệu lực.}
+\ucfield{Điều kiện trước}{Trưởng nhóm đã đăng nhập, không gian hiện hành là nhóm do mình làm trưởng nhóm.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Trưởng nhóm}{Chọn “Mời thành viên” tại màn hình thông tin nhóm.}
+\ucstep{2}{Hệ thống}{Kiểm tra nhóm đã có mã mời còn hiệu lực hay chưa; nếu chưa, sinh mã mới gồm 8 ký tự theo \br{BR06} với thời hạn 48 giờ.}
+\ucstep{3}{Hệ thống}{Hiển thị mã mời, mã QR tương ứng, thời điểm hết hạn và các nút “Sao chép”, “Chia sẻ”, “Tạo mã mới”, “Thu hồi”.}
+\ucstep{4}{Trưởng nhóm}{Chọn “Chia sẻ”.}
+\ucstep{5}{Hệ thống}{Mở bảng chia sẻ của hệ điều hành với nội dung lời mời chứa mã và liên kết mở ứng dụng.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{1a}{Hệ thống}{Nhóm đã đủ số thành viên tối đa: hiển thị \msg{MSG09}; kết thúc use case.}
+\ucstep{4a}{Trưởng nhóm}{Chọn “Tạo mã mới”: hệ thống thu hồi mã cũ, sinh mã mới và quay lại bước 3.}
+\ucstep{4b}{Trưởng nhóm}{Chọn “Thu hồi”: hệ thống hiển thị \msg{MSG19} để xác nhận; khi được xác nhận, mã chuyển trạng thái Đã thu hồi và không thể dùng để tham gia nhóm.}
+\ucfield{Điều kiện sau}{Nhóm có đúng một mã mời còn hiệu lực, hoặc không có mã nào nếu trưởng nhóm đã thu hồi.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR05}, \br{BR06}}
+\end{ucspec}
+
+\begin{ucspec}{UC11}{Tham gia nhóm gia đình}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng gia nhập một nhóm gia đình bằng mã mời nhập tay hoặc bằng cách quét mã QR.}
+\ucfield{Điều kiện trước}{Người dùng đã đăng nhập và đã nhận được mã mời từ trưởng nhóm.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chọn “Tham gia nhóm” tại màn hình Gia đình.}
+\ucstep{2}{Hệ thống}{Hiển thị ô nhập mã mời và nút “Quét mã QR”.}
+\ucstep{3}{Người dùng}{Nhập mã mời gồm 8 ký tự và nhấn “Tiếp tục”.}
+\ucstep{4}{Hệ thống}{Tra cứu mã mời, kiểm tra mã tồn tại, còn hiệu lực và chưa bị thu hồi (\br{BR06}).}
+\ucstep{5}{Hệ thống}{Kiểm tra người dùng chưa thuộc nhóm gia đình nào và nhóm chưa đủ số thành viên tối đa (\br{BR04}, \br{BR05}).}
+\ucstep{6}{Hệ thống}{Hiển thị tên nhóm, tên trưởng nhóm, số thành viên hiện tại để người dùng xác nhận.}
+\ucstep{7}{Người dùng}{Nhấn “Tham gia”.}
+\ucstep{8}{Hệ thống}{Thêm người dùng vào nhóm với vai trò thành viên, chuyển không gian làm việc sang nhóm, gửi thông báo tới trưởng nhóm và hiển thị \msg{MSG10}.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Người dùng}{Chọn “Quét mã QR”: hệ thống xin quyền truy cập camera, đọc mã từ QR và chuyển sang bước 4.}
+\ucstep{3b}{Người dùng}{Mở liên kết mời từ tin nhắn: hệ điều hành mở ứng dụng với mã đã điền sẵn và chuyển sang bước 4.}
+\ucstep{4a}{Hệ thống}{Mã không tồn tại, hết hạn hoặc đã bị thu hồi: hiển thị \msg{MSG07}; quay lại bước 3.}
+\ucstep{5a}{Hệ thống}{Người dùng đang thuộc một nhóm gia đình khác: hiển thị \msg{MSG08}; kết thúc use case.}
+\ucstep{5b}{Hệ thống}{Nhóm đã đủ số thành viên: hiển thị \msg{MSG09}; kết thúc use case.}
+\ucstep{7a}{Người dùng}{Nhấn “Hủy”: kết thúc use case, không có thay đổi.}
+\ucfield{Điều kiện sau}{Người dùng là thành viên của nhóm, có quyền đọc và ghi dữ liệu chung của nhóm; dữ liệu trong không gian cá nhân được giữ nguyên.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR04}, \br{BR05}, \br{BR06}, \br{BR23}}
+\end{ucspec}
+
+\diagram[0.7\textwidth]{c2-06-act-tham-gia-nhom}{Biểu đồ hoạt động của use case Tham gia nhóm gia đình}{fig:act-tham-gia-nhom}
+
+Biểu đồ hoạt động ở Hình~\ref{fig:act-tham-gia-nhom} thể hiện thứ tự kiểm tra ba điều kiện: mã còn hiệu lực, người dùng chưa là thành viên của nhóm khác và nhóm còn chỗ. Hệ thống kiểm tra các điều kiện này trước khi hiển thị bước xác nhận, tránh yêu cầu người dùng tiếp tục khi thao tác sẽ bị từ chối. Các use case \uc{UC12} đến \uc{UC15} được đặc tả tại Phụ lục~\ref{pl:dac-ta-bo-sung}.

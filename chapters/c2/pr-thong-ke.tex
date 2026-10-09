@@ -1,0 +1,52 @@
+% ---------------------------------------------------------------------
+%  2.2.2.8. Phân rã gói "Thống kê báo cáo"
+% ---------------------------------------------------------------------
+\subsubsection{Phân rã use case “Thống kê báo cáo”}\label{sssec:pr-thong-ke}
+
+Gói Thống kê báo cáo gồm ba loại báo cáo và chức năng xuất dữ liệu, được phân rã tại Hình~\ref{fig:uc-thong-ke}. Ba use case \uc{UC44}, \uc{UC45} và \uc{UC46} dùng chung bộ chọn thời gian, các thẻ chỉ số và biểu đồ chi tiết, nhưng khai thác các nguồn dữ liệu khác nhau (Bảng~\ref{tab:chi-so-bao-cao}). Use case \uc{UC47} cho phép xuất từng báo cáo. Số liệu được tính theo không gian hiện hành; trong không gian gia đình, báo cáo phản ánh hoạt động chung của các thành viên.
+
+\diagram[0.62\textwidth]{c2-18-uc-thong-ke}{Biểu đồ use case phân rã gói Thống kê báo cáo}{fig:uc-thong-ke}
+
+\begin{ucspec}{UC44}{Xem báo cáo mua sắm và chi tiêu}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng xem tổng chi tiêu, cơ cấu chi tiêu theo loại thực phẩm, xu hướng theo thời gian và các mặt hàng mua nhiều nhất trong một khoảng thời gian.}
+\ucfield{Điều kiện trước}{Người dùng đã đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Mở màn hình Thống kê, chọn thẻ “Mua sắm”.}
+\ucstep{2}{Hệ thống}{Hiển thị bộ chọn khoảng thời gian với các lựa chọn nhanh: tuần này, tháng này, 3 tháng gần nhất, tùy chọn; mặc định là tháng này.}
+\ucstep{3}{Người dùng}{Chọn khoảng thời gian và cách nhóm theo ngày, tuần hoặc tháng.}
+\ucstep{4}{Hệ thống}{Kiểm tra khoảng thời gian hợp lệ, không quá 12 tháng (\br{BR21}).}
+\ucstep{5}{Hệ thống}{Tổng hợp từ các mặt hàng đã mua, kể cả mặt hàng đã chuyển sang Đã nhập tủ lạnh, trong khoảng: tổng chi tiêu, số lần đi chợ, chi tiêu trung bình mỗi lần, so sánh với kỳ liền trước.}
+\ucstep{6}{Hệ thống}{Hiển thị các thẻ chỉ số, biểu đồ cột chi tiêu theo thời gian, biểu đồ tròn cơ cấu theo loại và bảng mười mặt hàng mua nhiều nhất.}
+\ucstep{7}{Người dùng}{Chạm vào một cột hoặc một phần của biểu đồ để xem chi tiết các mặt hàng tương ứng.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{4a}{Hệ thống}{Khoảng thời gian không hợp lệ: hiển thị \msg{MSG25}; quay lại bước 3.}
+\ucstep{5a}{Hệ thống}{Không có dữ liệu trong khoảng: hiển thị \msg{MSG26} cùng hướng dẫn ghi đơn giá khi đánh dấu đã mua.}
+\ucstep{5b}{Hệ thống}{Có mặt hàng không ghi đơn giá: tính vào số lượng nhưng không tính vào chi tiêu, hiển thị ghi chú “k mặt hàng chưa có giá”.}
+\ucstep{7a}{Người dùng}{Chọn “Xuất báo cáo”: thực hiện \uc{UC47}.}
+\ucfield{Điều kiện sau}{Không thay đổi dữ liệu.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR21}, \br{BR23}}
+\end{ucspec}
+
+Báo cáo lãng phí tổng hợp giá trị thực phẩm bị loại bỏ và các mặt hàng thường bị bỏ đi. Người dùng có thể dựa vào số liệu này để điều chỉnh lượng mua.
+
+\begin{ucspec}{UC46}{Xem báo cáo lãng phí thực phẩm}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng xem số lượng, giá trị ước tính và tỷ lệ thực phẩm bị loại bỏ do hỏng hoặc hết hạn, cùng danh sách thực phẩm hay bị lãng phí.}
+\ucfield{Điều kiện trước}{Người dùng đã đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Mở màn hình Thống kê, chọn thẻ “Lãng phí”.}
+\ucstep{2}{Hệ thống}{Hiển thị bộ chọn khoảng thời gian như bước 2 của \uc{UC44}.}
+\ucstep{3}{Người dùng}{Chọn khoảng thời gian.}
+\ucstep{4}{Hệ thống}{Kiểm tra khoảng thời gian không quá 12 tháng (\br{BR21}).}
+\ucstep{5}{Hệ thống}{Tổng hợp nhật ký loại bỏ: số lô bị loại bỏ, giá trị lãng phí theo đơn giá của mặt hàng nguồn, tỷ lệ lãng phí theo Bảng~\ref{tab:chi-so-bao-cao}, phân bổ theo lý do (hết hạn, hỏng, khác).}
+\ucstep{6}{Hệ thống}{Hiển thị các thẻ chỉ số kèm mức thay đổi so với kỳ trước, biểu đồ xu hướng theo tuần và danh sách năm thực phẩm bị loại bỏ nhiều nhất cùng gợi ý giảm lượng mua.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{4a}{Hệ thống}{Khoảng thời gian không hợp lệ: hiển thị \msg{MSG25}; quay lại bước 3.}
+\ucstep{5a}{Hệ thống}{Không có thực phẩm nào bị loại bỏ: hiển thị thông điệp khích lệ thay cho biểu đồ.}
+\ucstep{6a}{Người dùng}{Chọn “Xuất báo cáo”: thực hiện \uc{UC47}.}
+\ucfield{Điều kiện sau}{Không thay đổi dữ liệu.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR21}, \br{BR23}}
+\end{ucspec}
+
+Các use case \uc{UC45} và \uc{UC47} được đặc tả tại Phụ lục~\ref{pl:dac-ta-bo-sung}.

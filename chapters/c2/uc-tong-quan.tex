@@ -1,0 +1,18 @@
+% ---------------------------------------------------------------------
+%  2.2. Biểu đồ use case — 2.2.1 tổng quan, mở đầu 2.2.2
+% ---------------------------------------------------------------------
+\section{Biểu đồ use case}\label{sec:bieu-do-uc}
+
+\subsection{Biểu đồ use case tổng quan}\label{ssec:uc-tong-quan}
+
+Hình~\ref{fig:uc-tong-quan} thể hiện các chức năng của hệ thống và tác nhân tương ứng. Để biểu đồ dễ đọc, mỗi gói được biểu diễn bằng một use case tổng hợp, kèm mã các use case thành phần sẽ được phân rã tại mục~\ref{ssec:uc-phan-ra}. Quan hệ tổng quát hóa giữa các tác nhân đã trình bày ở Hình~\ref{fig:quan-he-tac-nhan} nên không lặp lại. Thành viên nhóm và Trưởng nhóm được đặt bên phải, gần các gói có liên kết riêng, để hạn chế giao cắt đường nối.
+
+\diagram[0.82\textwidth]{c2-02-uc-tong-quan}{Biểu đồ use case tổng quan của hệ thống}{fig:uc-tong-quan}
+
+Người dùng là tác nhân trung tâm, tham gia tám trong chín gói chức năng; ngoại lệ là gói Quản trị hệ thống. Thành viên nhóm và Trưởng nhóm kế thừa các liên kết của Người dùng, đồng thời có liên kết riêng với gói Quản lý nhóm gia đình. Trưởng nhóm còn tham gia gói Quản lý danh sách mua sắm để phân công công việc. Khách chỉ truy cập gói Xác thực và quản lý tài khoản, còn Quản trị viên sử dụng gói Quản trị hệ thống. Trong số các tác nhân phụ, Dịch vụ thư điện tử hỗ trợ các chức năng tài khoản; Dịch vụ thông báo đẩy gửi thông báo phân công, hoạt động nhóm và nhắc hạn dùng; Cơ sở dữ liệu sản phẩm mở phục vụ tra cứu mã vạch. Bộ lập lịch khởi chạy tác vụ nhắc hạn dùng hằng ngày mà không cần người dùng thao tác.
+
+Ngoài các liên kết trên biểu đồ, các gói còn phụ thuộc nhau về dữ liệu. Gói danh sách mua sắm, tủ lạnh và kế hoạch bữa ăn cùng sử dụng dữ liệu của không gian hiện hành; gói công thức và tìm kiếm cung cấp dữ liệu tham chiếu cho các gói này. Gói thống kê chỉ đọc dữ liệu do các gói khác tạo ra, không làm thay đổi trạng thái hệ thống.
+
+\subsection{Biểu đồ use case phân rã mức 2}\label{ssec:uc-phan-ra}
+
+Mục này phân rã chín gói chức năng trong biểu đồ tổng quan. Mỗi gói gồm biểu đồ use case, phần giải thích các quan hệ và đặc tả các use case chính hoặc phức tạp theo mẫu của học phần. Những use case có nhiều nhánh xử lý hoặc thuật toán được bổ sung biểu đồ hoạt động; các use case phối hợp với hệ thống bên ngoài có thêm biểu đồ tuần tự. Với biểu mẫu nhập liệu, bảng dữ liệu đầu vào nêu rõ ràng buộc của từng trường.

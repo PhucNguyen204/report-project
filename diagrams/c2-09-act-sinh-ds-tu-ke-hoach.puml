@@ -1,0 +1,41 @@
+@startuml c2-09-act-sinh-ds-tu-ke-hoach
+!include _style.iuml
+
+|Người dùng|
+start
+:Chọn khoảng ngày trong lịch bữa ăn
+và chọn "Tạo danh sách mua sắm";
+|Hệ thống|
+:Lấy các bữa ăn dự kiến
+chưa nấu trong khoảng ngày;
+:Tổng hợp nhu cầu nguyên liệu,
+quy đổi theo số khẩu phần;
+:Quy đổi về đơn vị cơ sở
+cùng nhóm đại lượng;
+repeat :Xét từng nguyên liệu;
+  :Lượng có sẵn = tồn kho còn hạn
+  đến ngày nấu sớm nhất;
+  :Lượng đang chờ mua = số lượng trong
+  các danh sách chưa hoàn tất;
+  :Thiếu = max(0, Nhu cầu − Có sẵn − Đang chờ mua);
+  if (Thiếu > 0?) then (có)
+    :Thêm vào danh sách đề xuất;
+  else (không)
+  endif
+repeat while (Còn nguyên liệu?) is (có)
+-> không;
+if (Danh sách đề xuất rỗng?) then (có)
+  :Thông báo đã đủ nguyên liệu (MSG15);
+  stop
+else (không)
+endif
+:Hiển thị danh sách đề xuất,
+ngày mua đề xuất là ngày trước bữa sớm nhất;
+|Người dùng|
+:Bỏ chọn hoặc chỉnh số lượng;
+:Xác nhận tạo danh sách;
+|Hệ thống|
+:Tạo danh sách mua sắm mới
+hoặc gộp vào danh sách cùng ngày;
+stop
+@enduml

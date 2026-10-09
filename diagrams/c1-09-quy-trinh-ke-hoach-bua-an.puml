@@ -1,0 +1,36 @@
+@startuml c1-09-quy-trinh-ke-hoach-bua-an
+!include _style.iuml
+
+|Người dùng|
+start
+:Chọn ngày hoặc tuần
+cần lập kế hoạch;
+|Hệ thống|
+:Tính điểm các món ăn
+theo nguyên liệu sẵn có,
+ưu tiên thực phẩm sắp hết hạn;
+:Hiển thị danh sách món gợi ý;
+|Người dùng|
+:Chọn món cho từng bữa
+sáng, trưa, tối và số khẩu phần;
+|Hệ thống|
+:Đối chiếu tổng nhu cầu nguyên liệu
+với tồn kho tại ngày nấu;
+if (Thiếu nguyên liệu?) then (có)
+  :Đề xuất danh sách mua sắm
+  cho phần còn thiếu;
+  |Người dùng|
+  :Xác nhận, thực hiện
+  quy trình mua sắm;
+  |Hệ thống|
+else (không)
+endif
+|Người dùng|
+:Đến bữa, xác nhận đã nấu;
+|Hệ thống|
+:Trừ nguyên liệu khỏi tủ lạnh
+theo nguyên tắc FEFO;
+:Ghi nhận tiêu thụ
+phục vụ thống kê;
+stop
+@enduml

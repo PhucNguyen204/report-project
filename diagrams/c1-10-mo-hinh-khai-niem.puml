@@ -1,0 +1,108 @@
+@startuml c1-10-mo-hinh-khai-niem
+!include _style.iuml
+hide circle
+hide methods
+skinparam nodesep 45
+skinparam ranksep 55
+
+class "Người dùng" as ND {
+  email
+  họ tên
+  vai trò hệ thống
+  trạng thái
+}
+class "Thành viên nhóm" as TV {
+  {field} vai trò (trưởng nhóm / thành viên)
+  ngày tham gia
+}
+class "Nhóm" as NH {
+  tên nhóm
+  {field} loại (cá nhân / gia đình)
+  ngày tạo
+}
+class "Mã mời" as MM {
+  mã
+  hạn hiệu lực
+  trạng thái
+}
+class "Thông báo" as TB {
+  loại
+  nội dung
+  thời điểm gửi
+  đã đọc
+}
+class "Công thức" as CT {
+  tên món
+  số khẩu phần
+  thời gian nấu
+  các bước thực hiện
+}
+class "Bữa ăn dự kiến" as BA {
+  ngày
+  {field} bữa (sáng / trưa / tối)
+  số khẩu phần
+  trạng thái
+}
+class "Danh sách mua sắm" as DS {
+  tên
+  ngày dự kiến mua
+  trạng thái
+}
+class "Thực phẩm trong tủ" as TT {
+  số lượng còn lại
+  ngày mua
+  ngày hết hạn
+  vị trí lưu trữ
+  trạng thái
+}
+class "Nhật ký sử dụng" as NK {
+  {field} loại (tiêu thụ / loại bỏ)
+  số lượng
+  thời điểm
+  lý do
+}
+class "Nguyên liệu công thức" as NL {
+  số lượng
+  bắt buộc / tùy chọn
+}
+class "Mặt hàng mua sắm" as MH {
+  số lượng
+  đơn giá thực tế
+  trạng thái
+}
+class "Thực phẩm (danh mục)" as TP {
+  tên
+  mã vạch
+  {field} hạn dùng gợi ý (ngày)
+}
+class "Loại thực phẩm" as LT {
+  tên loại
+}
+class "Đơn vị đo" as DV {
+  ký hiệu
+  nhóm đại lượng
+  hệ số quy đổi
+}
+
+ND "1" -right- "1..*" TV
+TV "1..*" -right- "1" NH
+NH "1" -right- "0..*" MM : phát hành >
+ND "1" -down- "0..*" TB : nhận >
+ND "1" -down- "0..*" CT : tạo / yêu thích >
+NH "1" -down- "0..*" BA : lập kế hoạch >
+NH "1" -down- "0..*" DS : sở hữu >
+NH "1" -down- "0..*" TT : sở hữu >
+CT "1" -right- "0..*" BA
+TB -[hidden]right- CT
+BA -[hidden]right- DS
+CT "1" *-down- "1..*" NL
+DS "1" *-down- "0..*" MH
+MH "0..*" -up- "0..1" TV : được giao cho >
+MH "0..1" -right- "0..1" TT : tạo ra >
+TT "1" *-right- "0..*" NK
+NL "0..*" -down- "1" TP
+MH "0..*" -down- "1" TP
+TT "0..*" -down- "1" TP
+TP "0..*" -down- "1" LT
+TP "0..*" -down- "1" DV : đơn vị mặc định >
+@enduml

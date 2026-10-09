@@ -1,0 +1,154 @@
+% ---------------------------------------------------------------------
+%  2.2.2.3. Phân rã gói "Quản lý danh sách mua sắm"
+% ---------------------------------------------------------------------
+\subsubsection{Phân rã use case “Quản lý danh sách mua sắm”}\label{sssec:pr-mua-sam}
+
+Gói Quản lý danh sách mua sắm gồm tám use case, được phân rã tại Hình~\ref{fig:uc-mua-sam}. Người dùng có thể tạo danh sách, cập nhật mặt hàng, đánh dấu đã mua, sinh danh sách từ kế hoạch bữa ăn và xem lịch sử. Riêng \uc{UC19} Phân công người mua chỉ dành cho Trưởng nhóm và gửi thông báo qua Dịch vụ thông báo đẩy. Use case \uc{UC18} mở rộng cả \uc{UC16} và \uc{UC23}, cho phép sao chép danh sách từ hai điểm vào. Use case \uc{UC21} mở rộng \uc{UC20}, liên kết trực tiếp gói mua sắm với gói tủ lạnh.
+
+\diagram[0.85\textwidth]{c2-07-uc-mua-sam}{Biểu đồ use case phân rã gói Quản lý danh sách mua sắm}{fig:uc-mua-sam}
+
+\begin{ucspec}{UC16}{Tạo danh sách mua sắm}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng tạo một danh sách mua sắm gắn với ngày dự kiến đi chợ trong không gian hiện hành.}
+\ucfield{Điều kiện trước}{Người dùng đã đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Tại màn hình Mua sắm, nhấn “Tạo danh sách”.}
+\ucstep{2}{Hệ thống}{Hiển thị biểu mẫu với tên danh sách gợi ý theo ngày (ví dụ “Đi chợ thứ Bảy 13/12”), ngày dự kiến mua mặc định là hôm nay và ô ghi chú.}
+\ucstep{3}{Người dùng}{Điều chỉnh tên, ngày dự kiến mua, ghi chú và nhấn “Tạo”.}
+\ucstep{4}{Hệ thống}{Kiểm tra tên dài 1–100 ký tự và ngày dự kiến mua không ở quá khứ (\br{BR08}).}
+\ucstep{5}{Hệ thống}{Tạo danh sách ở trạng thái Đang lập trong không gian hiện hành, đồng bộ tới các thành viên khác của nhóm.}
+\ucstep{6}{Hệ thống}{Mở màn hình chi tiết danh sách để người dùng thêm mặt hàng (\uc{UC17}).}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{1a}{Người dùng}{Chọn “Tạo từ danh sách cũ”: thực hiện \uc{UC18}.}
+\ucstep{4a}{Hệ thống}{Ngày dự kiến mua ở quá khứ: hiển thị \msg{MSG02}; quay lại bước 3.}
+\ucstep{5a}{Hệ thống}{Mất kết nối mạng: lưu danh sách trên thiết bị, hiển thị \msg{MSG20} và đồng bộ khi có mạng trở lại (\nfr{NFR11}).}
+\ucfield{Điều kiện sau}{Một danh sách mua sắm mới ở trạng thái Đang lập thuộc không gian hiện hành.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR04}, \br{BR08}}
+\end{ucspec}
+
+\uc{UC17} xử lý việc gộp mặt hàng trùng. Khi người dùng thêm thực phẩm đã có trong danh sách, hệ thống quy đổi số lượng mới về đơn vị của mặt hàng hiện tại rồi cộng dồn. Chẳng hạn, “Thịt ba chỉ 3 lạng” và “Thịt ba chỉ 0,5 kg” được gộp thành một dòng “Thịt ba chỉ 8 lạng”. Đặc tả use case nằm ở Bảng~\ref{tab:UC17}; các trường dữ liệu của mặt hàng được liệt kê tại Bảng~\ref{tab:in-mat-hang}.
+
+\begin{ucspec}{UC17}{Cập nhật mặt hàng trong danh sách}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng thêm, sửa hoặc xóa mặt hàng trong một danh sách mua sắm chưa hoàn tất; hệ thống tự động gộp các mặt hàng trùng.}
+\ucfield{Điều kiện trước}{Người dùng đang xem một danh sách mua sắm ở trạng thái Đang lập hoặc Đang mua.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Gõ tên thực phẩm vào ô “Thêm mặt hàng”.}
+\ucstep{2}{Hệ thống}{Gợi ý tức thì các thực phẩm trong danh mục khớp với từ khóa, chấp nhận gõ không dấu, kèm đơn vị mặc định.}
+\ucstep{3}{Người dùng}{Chọn thực phẩm, nhập số lượng, chọn đơn vị, ghi chú (nếu có) và nhấn “Thêm”.}
+\ucstep{4}{Hệ thống}{Kiểm tra số lượng là số dương với tối đa hai chữ số thập phân (\br{BR14}).}
+\ucstep{5}{Hệ thống}{Kiểm tra danh sách đã có mặt hàng cùng thực phẩm và cùng nhóm đại lượng đơn vị hay chưa (\br{BR09}).}
+\ucstep{6}{Hệ thống}{Nếu chưa có, tạo mặt hàng mới ở trạng thái Cần mua; hiển thị mặt hàng trong danh sách, nhóm theo loại thực phẩm.}
+\ucstep{7}{Hệ thống}{Đồng bộ thay đổi tới các thành viên khác đang mở danh sách.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{1a}{Người dùng}{Vuốt sang trái trên một mặt hàng để sửa hoặc xóa; với thao tác xóa, hệ thống cho phép hoàn tác trong 5 giây thay vì hỏi xác nhận.}
+\ucstep{1b}{Hệ thống}{Mặt hàng đã ở trạng thái Đã nhập tủ lạnh: không cho phép sửa hoặc xóa, hiển thị \msg{MSG32}.}
+\ucstep{3a}{Người dùng}{Thực phẩm không có trong danh mục: chọn “Thêm ‘<tên đã gõ>’” để tạo mặt hàng với tên tự do; mặt hàng này vẫn được lưu nhưng không tham gia đối chiếu tồn kho.}
+\ucstep{4a}{Hệ thống}{Số lượng không hợp lệ: hiển thị \msg{MSG16}; quay lại bước 3.}
+\ucstep{6a}{Hệ thống}{Đã có mặt hàng trùng: quy đổi và cộng dồn số lượng vào mặt hàng hiện có (\br{BR16}), hiển thị \msg{MSG11}.}
+\ucstep{6b}{Hệ thống}{Mặt hàng trùng nhưng khác nhóm đại lượng đơn vị (ví dụ “2 bó” và “300 g”): tạo dòng riêng và đánh dấu biểu tượng cảnh báo trùng tên.}
+\ucfield{Điều kiện sau}{Danh sách phản ánh đúng các mặt hàng cần mua, không có hai dòng trùng thực phẩm cùng nhóm đại lượng; mọi thành viên thấy cùng một trạng thái.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR09}, \br{BR14}, \br{BR16}}
+\end{ucspec}
+
+\begin{fieldtable}{Dữ liệu đầu vào của một mặt hàng mua sắm}{tab:in-mat-hang}
+\frow{Thực phẩm}{Tham chiếu tới danh mục thực phẩm, hoặc tên tự do}{Có}{Chọn từ gợi ý hoặc nhập tên dài 1–100 ký tự}{Cà chua}
+\frow{Số lượng}{Lượng cần mua}{Có}{Số dương, tối đa hai chữ số thập phân}{1,5}
+\frow{Đơn vị}{Đơn vị đo của số lượng}{Có}{Thuộc danh mục đơn vị; mặc định là đơn vị của thực phẩm}{kg}
+\frow{Ghi chú}{Yêu cầu cụ thể khi mua}{Không}{Tối đa 200 ký tự}{Chọn quả chín vừa}
+\frow{Người được giao}{Thành viên phụ trách mua}{Không}{Do trưởng nhóm chỉ định (\uc{UC19})}{Đinh Đức}
+\frow{Đơn giá}{Giá thực tế khi mua, nhập ở \uc{UC20}}{Không}{Số không âm, đơn vị đồng}{25.000}
+\end{fieldtable}
+
+Phân công người mua là một trong ba use case phức tạp của gói vì liên quan đến quyền hạn, trạng thái mặt hàng và dịch vụ bên ngoài. Trưởng nhóm có thể giao từng mặt hàng hoặc chọn nhiều mặt hàng cho cùng một thành viên, chẳng hạn giao rau củ cho người đi chợ gần nhà và đồ khô cho người đi siêu thị.
+
+\begin{ucspec}{UC19}{Phân công người mua}
+\ucfield{Tác nhân}{Trưởng nhóm (chính); Dịch vụ thông báo đẩy (phụ)}
+\ucfield{Mô tả}{Cho phép trưởng nhóm giao một hoặc nhiều mặt hàng cho một thành viên phụ trách mua; người được giao nhận thông báo đẩy.}
+\ucfield{Điều kiện trước}{Trưởng nhóm đang xem một danh sách chưa hoàn tất của nhóm; người được giao có thể là một thành viên khác hoặc chính trưởng nhóm.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Trưởng nhóm}{Nhấn giữ một mặt hàng để vào chế độ chọn nhiều, chọn thêm các mặt hàng khác, nhấn “Phân công”.}
+\ucstep{2}{Hệ thống}{Hiển thị danh sách thành viên kèm số mặt hàng mỗi người đang được giao trong danh sách này.}
+\ucstep{3}{Trưởng nhóm}{Chọn một thành viên và nhấn “Giao việc”.}
+\ucstep{4}{Hệ thống}{Kiểm tra quyền trưởng nhóm và kiểm tra các mặt hàng được chọn đều ở trạng thái Cần mua hoặc Đã phân công (\br{BR10}).}
+\ucstep{5}{Hệ thống}{Ghi nhận người được giao, chuyển các mặt hàng sang Đã phân công, đồng bộ tới các thành viên.}
+\ucstep{6}{Hệ thống}{Tạo thông báo “Bạn được giao mua k mặt hàng trong danh sách <tên>” và yêu cầu Dịch vụ thông báo đẩy gửi tới thiết bị của người được giao.}
+\ucstep{7}{Hệ thống}{Hiển thị \msg{MSG10}; mỗi mặt hàng hiển thị ảnh đại diện của người được giao.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Trưởng nhóm}{Chọn “Bỏ phân công”: hệ thống chuyển các mặt hàng về Cần mua và thông báo cho người được giao trước đó.}
+\ucstep{4a}{Hệ thống}{Người thực hiện không còn là trưởng nhóm (do vừa chuyển quyền trên thiết bị khác): hiển thị \msg{MSG13}; kết thúc use case.}
+\ucstep{4b}{Hệ thống}{Có mặt hàng đã ở trạng thái Đã mua hoặc Đã bỏ qua: bỏ qua các mặt hàng đó, chỉ phân công các mặt hàng hợp lệ và thông báo số mặt hàng bị bỏ qua.}
+\ucstep{6a}{Hệ thống}{Gửi thông báo đẩy thất bại: thông báo vẫn được lưu trong hộp thư trong ứng dụng, hệ thống thử gửi lại tối đa 3 lần (\nfr{NFR12}).}
+\ucfield{Điều kiện sau}{Các mặt hàng được chọn có đúng một người được giao; người được giao nhận được thông báo trong hộp thư và trên thiết bị.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR07}, \br{BR10}}
+\end{ucspec}
+
+\uc{UC20} và \uc{UC21} thường được sử dụng ngay tại điểm mua sắm. Thao tác chính được rút gọn thành một lần chạm vào ô đánh dấu; các thông tin bổ sung như số lượng thực tế, đơn giá và việc chuyển thực phẩm vào tủ lạnh là tùy chọn, với giá trị mặc định được điền sẵn. Luồng phối hợp giữa hai use case được thể hiện ở Hình~\ref{fig:act-danh-dau-da-mua}.
+
+\begin{ucspec}{UC20}{Đánh dấu mặt hàng đã mua}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng ghi nhận một mặt hàng đã được mua, kèm số lượng thực tế và đơn giá, để các thành viên khác không mua trùng.}
+\ucfield{Điều kiện trước}{Danh sách mua sắm chưa hoàn tất; mặt hàng ở trạng thái Cần mua hoặc Đã phân công.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chạm vào ô đánh dấu bên cạnh mặt hàng.}
+\ucstep{2}{Hệ thống}{Kiểm tra mặt hàng có đang được giao cho người khác hay không (\br{BR10}).}
+\ucstep{3}{Hệ thống}{Chuyển mặt hàng sang Đã mua, ghi người mua và thời điểm mua, gạch ngang mặt hàng và đưa xuống cuối danh sách.}
+\ucstep{4}{Hệ thống}{Hiển thị thanh nhập nhanh cho phép sửa số lượng thực tế và nhập đơn giá, cùng lựa chọn “Cho vào tủ lạnh”.}
+\ucstep{5}{Người dùng}{Nhập đơn giá (nếu muốn) và đóng thanh nhập nhanh.}
+\ucstep{6}{Hệ thống}{Lưu dữ liệu, cập nhật trạng thái danh sách sang Đang mua hoặc Hoàn tất theo \br{BR08}, đồng bộ tới các thành viên.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Mặt hàng đang được giao cho thành viên khác: hiển thị \msg{MSG12}; nếu người dùng không đồng ý thì kết thúc use case, nếu đồng ý thì tiếp tục bước 3 và gửi thông báo cho người được giao.}
+\ucstep{5a}{Người dùng}{Chọn “Cho vào tủ lạnh”: thực hiện \uc{UC21}.}
+\ucstep{5b}{Người dùng}{Chạm lại vào ô đánh dấu trước khi mặt hàng được nhập tủ: hoàn tác, mặt hàng trở về trạng thái Cần mua.}
+\ucstep{6a}{Hệ thống}{Mất kết nối mạng: lưu thay đổi trên thiết bị, hiển thị biểu tượng chờ đồng bộ; khi có mạng, nếu mặt hàng đã được người khác đánh dấu trước thì giữ bản ghi sớm hơn và thông báo cho người dùng (\nfr{NFR11}).}
+\ucfield{Điều kiện sau}{Mặt hàng ở trạng thái Đã mua với người mua, thời điểm, số lượng thực tế và đơn giá (nếu có); trạng thái danh sách được cập nhật.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR08}, \br{BR10}, \br{BR14}}
+\end{ucspec}
+
+\begin{ucspec}{UC21}{Chuyển mặt hàng đã mua vào tủ lạnh}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng chuyển một hoặc nhiều mặt hàng đã mua thành các lô thực phẩm trong tủ lạnh mà không phải nhập lại thông tin.}
+\ucfield{Điều kiện trước}{Có ít nhất một mặt hàng ở trạng thái Đã mua tham chiếu tới thực phẩm trong danh mục.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chọn “Cho vào tủ lạnh” trên một mặt hàng, hoặc chọn “Cất tất cả vào tủ” sau khi đi chợ về.}
+\ucstep{2}{Hệ thống}{Với mỗi mặt hàng, điền sẵn tên, số lượng thực tế, đơn vị, ngày mua bằng ngày đánh dấu đã mua, vị trí lưu trữ mặc định theo loại thực phẩm và ngày hết hạn đề xuất bằng ngày mua cộng hạn dùng gợi ý tại vị trí đó (\br{BR11}).}
+\ucstep{3}{Người dùng}{Rà soát, điều chỉnh vị trí hoặc ngày hết hạn theo bao bì (nếu cần) và nhấn “Xác nhận”.}
+\ucstep{4}{Hệ thống}{Kiểm tra ngày hết hạn không trước ngày mua (\br{BR11}).}
+\ucstep{5}{Hệ thống}{Tạo các lô thực phẩm trong tủ của không gian hiện hành, liên kết mỗi lô với mặt hàng nguồn để lưu đơn giá; tính trạng thái hạn dùng ban đầu (\br{BR12}).}
+\ucstep{6}{Hệ thống}{Chuyển các mặt hàng sang Đã nhập tủ lạnh, hiển thị \msg{MSG10} kèm lối tắt tới màn hình Tủ lạnh.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Mặt hàng có tên tự do không thuộc danh mục: yêu cầu người dùng chọn thực phẩm tương ứng hoặc bỏ qua mặt hàng đó.}
+\ucstep{3a}{Người dùng}{Thay đổi vị trí lưu trữ: hệ thống tính lại ngày hết hạn đề xuất theo vị trí mới, trừ khi người dùng đã sửa tay ngày hết hạn.}
+\ucstep{4a}{Hệ thống}{Ngày hết hạn trước ngày mua: hiển thị \msg{MSG14} tại dòng tương ứng; quay lại bước 3.}
+\ucstep{5a}{Hệ thống}{Ngày hết hạn đã nằm trong ngưỡng nhắc: lô được tạo với trạng thái Sắp hết hạn và được hiển thị nổi bật trên màn hình kết quả.}
+\ucfield{Điều kiện sau}{Mỗi mặt hàng được chọn sinh ra đúng một lô thực phẩm trong tủ; mặt hàng ở trạng thái Đã nhập tủ lạnh và không thể hoàn tác.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR11}, \br{BR12}}
+\end{ucspec}
+
+\diagram[0.66\textwidth]{c2-08-act-danh-dau-da-mua}{Biểu đồ hoạt động của use case Đánh dấu đã mua và Chuyển vào tủ lạnh}{fig:act-danh-dau-da-mua}
+
+\uc{UC22} liên kết kế hoạch bữa ăn với danh sách mua sắm. Thuật toán ở Hình~\ref{fig:act-sinh-ds} tính lượng cần mua bằng cách lấy tổng nhu cầu trừ lượng tồn kho còn hạn đến ngày nấu và lượng đã có trong các danh sách chưa hoàn tất. Cách tính này tránh đưa trùng nguyên liệu vào danh sách khi các khoảng ngày được lập kế hoạch chồng lấn.
+
+\begin{ucspec}{UC22}{Sinh danh sách mua sắm từ kế hoạch bữa ăn}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng tạo danh sách mua sắm chứa đúng phần nguyên liệu còn thiếu cho các bữa ăn đã lên lịch trong một khoảng ngày.}
+\ucfield{Điều kiện trước}{Lịch bữa ăn trong khoảng ngày được chọn có ít nhất một món chưa nấu gắn với công thức.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Tại màn hình lịch bữa ăn, chọn khoảng ngày (mặc định là tuần đang xem) và nhấn “Tạo danh sách mua sắm”.}
+\ucstep{2}{Hệ thống}{Lấy các món chưa nấu trong khoảng ngày, nhân định lượng nguyên liệu theo tỷ lệ số khẩu phần dự kiến trên số khẩu phần chuẩn của công thức.}
+\ucstep{3}{Hệ thống}{Gộp nhu cầu theo thực phẩm sau khi quy đổi về đơn vị cơ sở của cùng nhóm đại lượng (\br{BR16}).}
+\ucstep{4}{Hệ thống}{Với mỗi nguyên liệu, tính lượng thiếu theo \br{BR20}.}
+\ucstep{5}{Hệ thống}{Hiển thị danh sách đề xuất gồm các nguyên liệu có lượng thiếu dương, mỗi dòng ghi rõ món ăn sử dụng và ngày cần dùng sớm nhất; ngày dự kiến mua đề xuất là ngày liền trước bữa sớm nhất nhưng không sớm hơn hôm nay (\br{BR08}).}
+\ucstep{6}{Người dùng}{Bỏ chọn các nguyên liệu không muốn mua, chỉnh số lượng và nhấn “Tạo danh sách”.}
+\ucstep{7}{Hệ thống}{Tạo danh sách mới ở trạng thái Đang lập với các mặt hàng đã chọn, hiển thị \msg{MSG10}.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Có món không gắn công thức (món nhập tên tự do): bỏ qua món đó và ghi chú trong danh sách đề xuất.}
+\ucstep{5a}{Hệ thống}{Không có nguyên liệu nào thiếu: hiển thị \msg{MSG15}; kết thúc use case.}
+\ucstep{6a}{Người dùng}{Chọn “Gộp vào danh sách có sẵn”: hệ thống liệt kê các danh sách chưa hoàn tất có ngày dự kiến mua trong khoảng, người dùng chọn một danh sách; hệ thống gộp mặt hàng theo \br{BR09}.}
+\ucfield{Điều kiện sau}{Một danh sách mua sắm chứa phần nguyên liệu còn thiếu được tạo mới hoặc được gộp vào danh sách có sẵn.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR09}, \br{BR16}, \br{BR20}}
+\end{ucspec}
+
+\diagram[0.64\textwidth]{c2-09-act-sinh-ds-tu-ke-hoach}{Biểu đồ hoạt động của use case Sinh danh sách mua sắm từ kế hoạch bữa ăn}{fig:act-sinh-ds}
+
+Các use case \uc{UC18} Sao chép danh sách mua sắm đã có và \uc{UC23} Xem lịch sử mua sắm được đặc tả tại Phụ lục~\ref{pl:dac-ta-bo-sung}.

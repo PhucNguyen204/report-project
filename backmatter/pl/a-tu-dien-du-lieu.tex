@@ -1,0 +1,175 @@
+% ---------------------------------------------------------------------
+%  PHỤ LỤC A. TỪ ĐIỂN DỮ LIỆU NGHIỆP VỤ
+% ---------------------------------------------------------------------
+\section{Từ điển dữ liệu nghiệp vụ}\label{pl:tu-dien}
+
+Phụ lục này mô tả thuộc tính của các khái niệm trong Hình~\ref{fig:mo-hinh-khai-niem}. Kiểu dữ liệu được nêu ở mức nghiệp vụ, chưa gắn với hệ quản trị cơ sở dữ liệu cụ thể; lược đồ vật lý sẽ được xác định trong giai đoạn thiết kế. Mỗi khái niệm còn có hai thuộc tính kỹ thuật — thời điểm tạo và thời điểm cập nhật gần nhất — không lặp lại trong các bảng. Phụ lục cũng bổ sung các khái niệm hỗ trợ phát sinh từ đặc tả use case: thiết lập nhắc nhở, thiết bị nhận thông báo, mã OTP, công thức yêu thích, cấu hình hệ thống và nhật ký quản trị. Ký hiệu “Liệt kê” cho biết thuộc tính chỉ nhận các giá trị cố định được nêu ở cột mô tả.
+
+\begin{ddtable}{Từ điển dữ liệu nhóm khái niệm tài khoản và nhóm gia đình}{tab:dd-tai-khoan}
+\ddentity{Người dùng}
+\dd{Mã người dùng}{Mã định danh}{Có}{Duy nhất, do hệ thống sinh}
+\dd{Email}{Chuỗi, tối đa 100}{Có}{Duy nhất, đúng định dạng email (\br{BR01})}
+\dd{Mật khẩu đã băm}{Chuỗi}{Có}{Kết quả băm có muối, không lưu mật khẩu rõ (\nfr{NFR14})}
+\dd{Họ tên}{Chuỗi, 2–50}{Có}{Tên hiển thị trong nhóm}
+\dd{Ảnh đại diện}{Tệp ảnh}{Không}{JPEG hoặc PNG, tối đa 5 MB}
+\dd{Vai trò hệ thống}{Liệt kê}{Có}{Người dùng, Quản trị viên}
+\dd{Trạng thái}{Liệt kê}{Có}{Chờ xác thực, Hoạt động, Khóa tạm, Bị khóa}
+\dd{Số lần đăng nhập sai}{Số nguyên}{Có}{Đặt lại khi đăng nhập thành công (\br{BR03})}
+\dd{Khóa đến}{Ngày giờ}{Không}{Thời điểm hết khóa tạm}
+\dd{Ngôn ngữ}{Liệt kê}{Có}{Tiếng Việt (mặc định), Tiếng Anh}
+\dd{Không gian gần nhất}{Tham chiếu Nhóm}{Không}{Không gian được mở khi đăng nhập}
+\ddentity{Thiết lập nhắc nhở (thuộc Người dùng)}
+\dd{Ngưỡng nhắc N}{Số nguyên, 1–7}{Có}{Mặc định lấy từ cấu hình hệ thống (\br{BR12})}
+\dd{Bật nhắc hạn dùng}{Logic}{Có}{Mặc định bật}
+\dd{Bật thông báo phân công}{Logic}{Có}{Mặc định bật}
+\dd{Bật thông báo hoạt động nhóm}{Logic}{Có}{Thành viên mới, rời nhóm; mặc định bật}
+\ddentity{Thiết bị nhận thông báo}
+\dd{Mã thiết bị}{Chuỗi}{Có}{Mã do FCM cấp, duy nhất}
+\dd{Người dùng}{Tham chiếu Người dùng}{Có}{Chủ sở hữu thiết bị}
+\dd{Nền tảng}{Liệt kê}{Có}{Android, iOS}
+\ddentity{Mã OTP}
+\dd{Email}{Chuỗi}{Có}{Email nhận mã}
+\dd{Mục đích}{Liệt kê}{Có}{Đăng ký, Khôi phục mật khẩu}
+\dd{Mã đã băm}{Chuỗi}{Có}{Không lưu mã rõ}
+\dd{Hết hạn lúc}{Ngày giờ}{Có}{Thời điểm tạo cộng thời hạn OTP (\br{BR02})}
+\dd{Số lần nhập sai}{Số nguyên, 0–5}{Có}{Đạt 5 thì mã bị vô hiệu}
+\ddentity{Nhóm}
+\dd{Mã nhóm}{Mã định danh}{Có}{Duy nhất}
+\dd{Tên nhóm}{Chuỗi, 3–50}{Có}{Với không gian cá nhân, mặc định là “Cá nhân” (\br{BR05})}
+\dd{Loại}{Liệt kê}{Có}{Cá nhân, Gia đình (\br{BR04})}
+\dd{Ảnh nhóm}{Tệp ảnh}{Không}{JPEG hoặc PNG}
+\ddentity{Thành viên nhóm}
+\dd{Nhóm}{Tham chiếu Nhóm}{Có}{Cặp (Nhóm, Người dùng) là duy nhất}
+\dd{Người dùng}{Tham chiếu Người dùng}{Có}{Mỗi người thuộc tối đa một nhóm loại Gia đình (\br{BR04})}
+\dd{Vai trò}{Liệt kê}{Có}{Trưởng nhóm, Thành viên; mỗi nhóm đúng một trưởng nhóm (\br{BR05})}
+\dd{Ngày tham gia}{Ngày giờ}{Có}{}
+\ddentity{Mã mời}
+\dd{Mã}{Chuỗi, 8}{Có}{Chữ in hoa và chữ số, bỏ 0, O, 1, I (\br{BR06})}
+\dd{Nhóm}{Tham chiếu Nhóm}{Có}{Nhóm loại Gia đình}
+\dd{Người tạo}{Tham chiếu Người dùng}{Có}{Trưởng nhóm tại thời điểm tạo}
+\dd{Hết hạn lúc}{Ngày giờ}{Có}{Mặc định sau 48 giờ}
+\dd{Trạng thái}{Liệt kê}{Có}{Hiệu lực, Đã thu hồi, Hết hạn}
+\end{ddtable}
+
+\begin{ddtable}{Từ điển dữ liệu nhóm khái niệm mua sắm}{tab:dd-mua-sam}
+\ddentity{Danh sách mua sắm}
+\dd{Mã danh sách}{Mã định danh}{Có}{Duy nhất}
+\dd{Nhóm}{Tham chiếu Nhóm}{Có}{Không gian sở hữu danh sách}
+\dd{Tên}{Chuỗi, 1–100}{Có}{Gợi ý theo ngày dự kiến mua}
+\dd{Ngày dự kiến mua}{Ngày}{Có}{Không ở quá khứ khi tạo (\br{BR08})}
+\dd{Ghi chú}{Chuỗi, tối đa 500}{Không}{}
+\dd{Trạng thái}{Liệt kê}{Có}{Đang lập, Đang mua, Hoàn tất; suy ra từ mặt hàng (\br{BR08})}
+\dd{Người tạo}{Tham chiếu Người dùng}{Có}{}
+\dd{Nguồn gốc}{Liệt kê}{Có}{Tạo mới, Sao chép, Sinh từ kế hoạch}
+\ddentity{Mặt hàng mua sắm}
+\dd{Mã mặt hàng}{Mã định danh}{Có}{Duy nhất}
+\dd{Danh sách}{Tham chiếu Danh sách mua sắm}{Có}{Quan hệ hợp thành}
+\dd{Thực phẩm}{Tham chiếu Thực phẩm}{Không}{Bỏ trống khi dùng tên tự do}
+\dd{Tên tự do}{Chuỗi, 1–100}{Không}{Bắt buộc khi không tham chiếu thực phẩm}
+\dd{Số lượng cần mua}{Số thực dương}{Có}{Tối đa hai chữ số thập phân (\br{BR14})}
+\dd{Đơn vị}{Tham chiếu Đơn vị đo}{Có}{}
+\dd{Ghi chú}{Chuỗi, tối đa 200}{Không}{}
+\dd{Trạng thái}{Liệt kê}{Có}{Cần mua, Đã phân công, Đã mua, Đã nhập tủ lạnh, Đã bỏ qua (Hình~\ref{fig:trang-thai-mat-hang})}
+\dd{Người được giao}{Tham chiếu Thành viên nhóm}{Không}{Tối đa một người (\br{BR10})}
+\dd{Người mua}{Tham chiếu Người dùng}{Không}{Ghi khi đánh dấu đã mua}
+\dd{Thời điểm mua}{Ngày giờ}{Không}{}
+\dd{Số lượng thực tế}{Số thực dương}{Không}{Mặc định bằng số lượng cần mua}
+\dd{Đơn giá}{Số nguyên không âm}{Không}{Đơn vị đồng, dùng cho báo cáo (\br{BR21})}
+\end{ddtable}
+
+\begin{ddtable}{Từ điển dữ liệu nhóm khái niệm danh mục và tủ lạnh}{tab:dd-tu-lanh}
+\ddentity{Loại thực phẩm}
+\dd{Mã loại}{Mã định danh}{Có}{Duy nhất}
+\dd{Tên loại}{Chuỗi, 2–50}{Có}{Duy nhất, không phân biệt hoa thường (\br{BR22})}
+\dd{Biểu tượng}{Tệp ảnh}{Không}{Dùng trong danh sách và bộ lọc}
+\dd{Vị trí lưu trữ mặc định}{Liệt kê}{Có}{Một trong năm vị trí của Bảng~\ref{tab:vi-tri-luu-tru}}
+\dd{Trạng thái}{Liệt kê}{Có}{Đang dùng, Ngừng sử dụng}
+\ddentity{Đơn vị đo}
+\dd{Ký hiệu}{Chuỗi, 1–20}{Có}{Duy nhất, ví dụ g, kg, lạng, ml, quả, bó}
+\dd{Tên đầy đủ}{Chuỗi, 1–50}{Có}{}
+\dd{Nhóm đại lượng}{Liệt kê}{Có}{Khối lượng, Thể tích, Số đếm (\br{BR16})}
+\dd{Hệ số quy đổi}{Số thực dương}{Có}{So với đơn vị cơ sở của nhóm; ví dụ lạng = 100}
+\dd{Trạng thái}{Liệt kê}{Có}{Đang dùng, Ngừng sử dụng}
+\ddentity{Thực phẩm (danh mục)}
+\dd{Mã thực phẩm}{Mã định danh}{Có}{Duy nhất}
+\dd{Tên}{Chuỗi, 1–100}{Có}{Duy nhất trong cùng loại (\br{BR22})}
+\dd{Tên gọi khác}{Danh sách chuỗi}{Không}{Hỗ trợ tìm kiếm, ví dụ “thịt heo” cho “thịt lợn”}
+\dd{Loại}{Tham chiếu Loại thực phẩm}{Có}{}
+\dd{Đơn vị mặc định}{Tham chiếu Đơn vị đo}{Có}{}
+\dd{Mã vạch}{Chuỗi, 8–14 chữ số}{Không}{Chuẩn EAN-8, EAN-13, UPC; duy nhất}
+\dd{Hạn dùng gợi ý}{Số nguyên theo từng vị trí}{Không}{Số ngày bảo quản tại mỗi vị trí (Bảng~\ref{tab:vi-tri-luu-tru})}
+\dd{Phạm vi}{Liệt kê}{Có}{Dùng chung, Riêng của một nhóm (do người dùng tạo)}
+\dd{Trạng thái}{Liệt kê}{Có}{Đang dùng, Chờ duyệt, Ngừng sử dụng}
+\ddentity{Thực phẩm trong tủ (lô)}
+\dd{Mã lô}{Mã định danh}{Có}{Duy nhất}
+\dd{Nhóm}{Tham chiếu Nhóm}{Có}{Không gian sở hữu}
+\dd{Thực phẩm}{Tham chiếu Thực phẩm}{Có}{}
+\dd{Số lượng ban đầu}{Số thực dương}{Có}{}
+\dd{Số lượng còn lại}{Số thực không âm}{Có}{Không vượt số lượng ban đầu (\br{BR14})}
+\dd{Đơn vị}{Tham chiếu Đơn vị đo}{Có}{}
+\dd{Vị trí lưu trữ}{Liệt kê}{Có}{Ngăn mát, Ngăn đông, Ngăn rau củ, Cánh tủ, Kệ bếp}
+\dd{Ngày mua}{Ngày}{Có}{Không sau ngày hiện tại}
+\dd{Ngày hết hạn}{Ngày}{Có}{Không trước ngày mua (\br{BR11})}
+\dd{Trạng thái}{Liệt kê}{Có}{Còn hạn, Sắp hết hạn, Đã hết hạn, Đã dùng hết, Đã loại bỏ (\br{BR12})}
+\dd{Mặt hàng nguồn}{Tham chiếu Mặt hàng mua sắm}{Không}{Lưu vết nguồn gốc và đơn giá}
+\dd{Ghi chú}{Chuỗi, tối đa 200}{Không}{}
+\ddentity{Nhật ký sử dụng}
+\dd{Lô}{Tham chiếu Thực phẩm trong tủ}{Có}{Quan hệ hợp thành}
+\dd{Loại}{Liệt kê}{Có}{Tiêu thụ, Loại bỏ}
+\dd{Số lượng}{Số thực dương}{Có}{Theo đơn vị của lô}
+\dd{Lý do}{Liệt kê}{Không}{Hết hạn, Hỏng, Khác; bắt buộc khi loại là Loại bỏ}
+\dd{Bữa ăn liên quan}{Tham chiếu Bữa ăn dự kiến}{Không}{Ghi khi tiêu thụ qua \uc{UC41}}
+\dd{Người thực hiện}{Tham chiếu Người dùng}{Có}{}
+\dd{Thời điểm}{Ngày giờ}{Có}{}
+\end{ddtable}
+
+\begin{ddtable}{Từ điển dữ liệu nhóm khái niệm công thức, kế hoạch và hệ thống}{tab:dd-cong-thuc}
+\ddentity{Công thức}
+\dd{Mã công thức}{Mã định danh}{Có}{Duy nhất}
+\dd{Tên món}{Chuỗi, 2–100}{Có}{(\br{BR17})}
+\dd{Ảnh}{Tệp ảnh}{Không}{Tối đa 5 MB, nén tự động}
+\dd{Số khẩu phần chuẩn}{Số nguyên, 1–20}{Có}{}
+\dd{Thời gian chuẩn bị, nấu}{Số nguyên phút}{Không}{0–600}
+\dd{Bữa phù hợp}{Tập liệt kê}{Không}{Sáng, Trưa, Tối}
+\dd{Các bước thực hiện}{Danh sách văn bản}{Không}{Có thứ tự; mỗi bước tối đa 500 ký tự}
+\dd{Loại công thức}{Liệt kê}{Có}{Cá nhân, Mẫu (do quản trị viên quản lý)}
+\dd{Người tạo}{Tham chiếu Người dùng}{Có}{}
+\dd{Công thức gốc}{Tham chiếu Công thức}{Không}{Khi được sao chép từ công thức mẫu}
+\ddentity{Nguyên liệu công thức}
+\dd{Công thức}{Tham chiếu Công thức}{Có}{Quan hệ hợp thành}
+\dd{Thực phẩm}{Tham chiếu Thực phẩm}{Có}{Mỗi thực phẩm xuất hiện một lần trong công thức}
+\dd{Số lượng}{Số thực dương}{Có}{Ứng với số khẩu phần chuẩn}
+\dd{Đơn vị}{Tham chiếu Đơn vị đo}{Có}{}
+\dd{Bắt buộc}{Logic}{Có}{Chỉ nguyên liệu bắt buộc được tính vào $R$ (\br{BR19})}
+\ddentity{Công thức yêu thích}
+\dd{Người dùng}{Tham chiếu Người dùng}{Có}{Cặp (Người dùng, Công thức) là duy nhất}
+\dd{Công thức}{Tham chiếu Công thức}{Có}{}
+\ddentity{Bữa ăn dự kiến}
+\dd{Mã}{Mã định danh}{Có}{Duy nhất}
+\dd{Nhóm}{Tham chiếu Nhóm}{Có}{Không gian sở hữu}
+\dd{Ngày}{Ngày}{Có}{Từ hôm nay đến 28 ngày tiếp theo khi tạo (\br{BR18})}
+\dd{Bữa}{Liệt kê}{Có}{Sáng, Trưa, Tối}
+\dd{Công thức}{Tham chiếu Công thức}{Không}{Bỏ trống khi là món tự do}
+\dd{Tên món tự do}{Chuỗi, 1–100}{Không}{Bắt buộc khi không có công thức}
+\dd{Số khẩu phần}{Số nguyên, 1–20}{Có}{}
+\dd{Trạng thái}{Liệt kê}{Có}{Dự kiến, Đã nấu}
+\dd{Thứ tự}{Số nguyên}{Có}{Thứ tự hiển thị trong bữa}
+\ddentity{Thông báo}
+\dd{Mã thông báo}{Mã định danh}{Có}{Duy nhất}
+\dd{Người nhận}{Tham chiếu Người dùng}{Có}{}
+\dd{Loại}{Liệt kê}{Có}{Nhắc hạn dùng, Phân công, Hoạt động nhóm, Hệ thống}
+\dd{Tiêu đề, nội dung}{Chuỗi}{Có}{Nội dung tóm tắt, không chứa dữ liệu nhạy cảm}
+\dd{Đối tượng liên quan}{Tham chiếu}{Không}{Danh sách, lô hoặc nhóm để mở đúng màn hình}
+\dd{Khóa chống trùng}{Chuỗi}{Không}{Ví dụ người nhận + lô + ngày (\br{BR13})}
+\dd{Đã đọc}{Logic}{Có}{Mặc định chưa đọc}
+\dd{Thời điểm gửi}{Ngày giờ}{Có}{}
+\ddentity{Cấu hình hệ thống}
+\dd{Khóa tham số}{Chuỗi}{Có}{Duy nhất, ví dụ \texttt{reminder.defaultDays}}
+\dd{Giá trị}{Chuỗi theo kiểu của tham số}{Có}{Trong miền hợp lệ của Bảng~\ref{tab:tham-so-he-thong}}
+\dd{Người cập nhật}{Tham chiếu Người dùng}{Có}{Quản trị viên}
+\ddentity{Nhật ký quản trị}
+\dd{Người thực hiện}{Tham chiếu Người dùng}{Có}{Quản trị viên}
+\dd{Hành động}{Chuỗi}{Có}{Ví dụ khóa tài khoản, sửa danh mục, đổi cấu hình}
+\dd{Giá trị cũ, giá trị mới}{Văn bản}{Không}{Phục vụ truy vết}
+\dd{Thời điểm}{Ngày giờ}{Có}{}
+\end{ddtable}

@@ -1,0 +1,45 @@
+@startuml c2-15-act-goi-y-mon
+!include _style.iuml
+
+|Người dùng|
+start
+:Mở "Gợi ý món ăn"
+(tùy chọn: bữa, số khẩu phần);
+|Hệ thống|
+:Lấy tồn kho khả dụng
+(trạng thái Còn hạn, Sắp hết hạn);
+if (Tủ lạnh trống?) then (có)
+  :Gợi ý món phổ biến
+  và đề nghị bổ sung thực phẩm;
+  stop
+else (không)
+endif
+:Lấy tập công thức ứng viên gồm
+công thức của người dùng và công thức mẫu;
+repeat :Xét từng công thức;
+  :Tỷ lệ đáp ứng R = số nguyên liệu bắt buộc
+  có đủ / tổng nguyên liệu bắt buộc;
+  if (R ≥ ngưỡng tối thiểu\n(mặc định 60%)?) then (có)
+    :Điểm ưu tiên hạn dùng
+    E = min(1, tổng trọng số w của các
+    nguyên liệu sắp hết hạn được dùng);
+    :Điểm = 0,6·R + 0,3·E + 0,1·F
+    (F = 1 nếu là món yêu thích);
+    :Đưa vào danh sách kết quả;
+  else (không)
+  endif
+repeat while (Còn công thức?) is (có)
+-> không;
+:Sắp xếp giảm dần theo điểm,
+lấy tối đa 10 món;
+:Hiển thị món kèm nhãn
+"Đủ nguyên liệu" / "Thiếu k nguyên liệu"
+và các thực phẩm sắp hết hạn được dùng;
+|Người dùng|
+if (Chọn món?) then (thêm vào lịch)
+  :Chọn ngày, bữa → UC37;
+else (xem công thức)
+  :Mở chi tiết → UC34;
+endif
+stop
+@enduml

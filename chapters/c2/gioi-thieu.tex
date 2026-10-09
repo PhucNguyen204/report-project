@@ -1,0 +1,150 @@
+% ---------------------------------------------------------------------
+%  2.1. Giới thiệu chung — tác nhân, use case, quan hệ
+% ---------------------------------------------------------------------
+\section{Giới thiệu chung}\label{sec:gioi-thieu-chung}
+
+\subsection{Xác định các tác nhân của hệ thống}\label{ssec:tac-nhan}
+
+Trong UML, tác nhân là vai trò do con người hoặc hệ thống bên ngoài đảm nhận khi tương tác với hệ thống đang xét~\cite{cockburn}. Từ sơ đồ ngữ cảnh ở Hình~\ref{fig:ngu-canh}, nhóm xác định chín tác nhân thuộc hai loại. Năm tác nhân chính chủ động khởi tạo use case để đạt mục tiêu: Khách, Người dùng, Thành viên nhóm, Trưởng nhóm và Quản trị viên. Bốn tác nhân phụ tham gia theo yêu cầu hoặc kích hoạt hệ thống theo lịch: Bộ lập lịch, Dịch vụ thông báo đẩy, Dịch vụ thư điện tử và Cơ sở dữ liệu sản phẩm mở. Bộ lập lịch được mô hình hóa riêng để thể hiện tác vụ tự động gửi thông báo khi thực phẩm sắp hết hạn. Mô tả các tác nhân được trình bày trong Bảng~\ref{tab:tac-nhan}.
+
+{\small
+\begin{longtable}{|C{0.9cm}|L{3.3cm}|L{\dimexpr\textwidth-6\tabcolsep-4\arrayrulewidth-0.9cm-3.3cm\relax}|}
+\caption{Danh sách các tác nhân của hệ thống}\label{tab:tac-nhan}\\
+\hline
+\hd{STT} & \hd{Tên tác nhân} & \hd{Mô tả tác nhân}\\ \hline
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{STT} & \hd{Tên tác nhân} & \hd{Mô tả tác nhân}\\ \hline
+\endhead
+1 & Khách & Người chưa có tài khoản hoặc chưa đăng nhập. Khách chỉ được đăng ký tài khoản, xác thực tài khoản, đăng nhập và khôi phục mật khẩu.\\ \hline
+2 & Người dùng & Người đã đăng nhập thành công. Người dùng làm việc trong không gian hiện hành (không gian cá nhân hoặc nhóm gia đình) với đầy đủ chức năng quản lý danh sách mua sắm, tủ lạnh, công thức, kế hoạch bữa ăn, tìm kiếm và thống kê; có thể tạo nhóm gia đình mới hoặc tham gia nhóm có sẵn.\\ \hline
+3 & Thành viên nhóm & Người dùng đã tham gia một nhóm gia đình. Ngoài các quyền của Người dùng, thành viên được xem thông tin nhóm, đóng góp vào dữ liệu chung, nhận nhiệm vụ mua sắm được phân công và có thể rời nhóm.\\ \hline
+4 & Trưởng nhóm & Thành viên giữ quyền điều phối của nhóm, là người tạo nhóm hoặc người được chuyển quyền. Trưởng nhóm mời và xóa thành viên, chuyển quyền trưởng nhóm và phân công việc mua sắm, bảo đảm không bỏ sót hay mua trùng mặt hàng.\\ \hline
+5 & Quản trị viên & Người dùng mang vai trò quản trị của hệ thống. Quản trị viên quản lý tài khoản người dùng, danh mục thực phẩm, loại mặt hàng, đơn vị đo lường, công thức mẫu và các tham số cấu hình, nhưng không truy cập nội dung dữ liệu của các nhóm (\br{BR23}).\\ \hline
+6 & Bộ lập lịch & Tác nhân thời gian thuộc hệ thống, kích hoạt các tác vụ định kỳ như cập nhật trạng thái hạn dùng và gửi nhắc nhở thực phẩm sắp hết hạn vào khung giờ đã cấu hình.\\ \hline
+7 & Dịch vụ thông báo đẩy & Hệ thống bên ngoài (Firebase Cloud Messaging cho Android, Apple Push Notification service cho iOS~\cite{fcm}) nhận yêu cầu từ máy chủ và chuyển thông báo tới thiết bị di động của người dùng.\\ \hline
+8 & Dịch vụ thư điện tử & Hệ thống bên ngoài gửi thư chứa mã OTP khi đăng ký, khi khôi phục mật khẩu và các thư thông báo liên quan đến tài khoản.\\ \hline
+9 & Cơ sở dữ liệu sản phẩm mở & Hệ thống bên ngoài cung cấp thông tin sản phẩm đóng gói theo mã vạch~\cite{openfoodfacts}, được tra cứu khi mã vạch chưa có trong danh mục nội bộ.\\ \hline
+\end{longtable}
+}
+
+\subsection{Quan hệ giữa các tác nhân}\label{ssec:quan-he-tac-nhan}
+
+Hình~\ref{fig:quan-he-tac-nhan} thể hiện hai nhóm tác nhân chính và phụ. Trong nhóm tác nhân chính, Thành viên nhóm là trường hợp chuyên biệt của Người dùng, còn Trưởng nhóm là trường hợp chuyên biệt của Thành viên nhóm. Theo quan hệ tổng quát hóa trong UML, tác nhân con kế thừa các use case của tác nhân cha; vì vậy, Trưởng nhóm kế thừa các use case của cả Thành viên nhóm lẫn Người dùng mà không cần lặp lại liên kết trên biểu đồ. Quản trị viên cũng kế thừa từ Người dùng để sử dụng các use case tài khoản như đăng xuất, đổi mật khẩu và cập nhật hồ sơ.
+
+\diagram[0.95\textwidth]{c2-01-quan-he-tac-nhan}{Biểu đồ quan hệ giữa các tác nhân}{fig:quan-he-tac-nhan}
+
+Khách và Người dùng không có quan hệ kế thừa; đây là hai vai trò mà một người có thể lần lượt đảm nhận sau khi đăng ký, xác thực hoặc đăng nhập. Tương tự, vai trò Thành viên nhóm và Trưởng nhóm phụ thuộc vào trạng thái tham gia nhóm: khi trưởng nhóm chuyển quyền, người nhận trở thành Trưởng nhóm và người chuyển quyền trở lại vai trò Thành viên nhóm. Các tác nhân phụ hoạt động độc lập, không có quan hệ tổng quát hóa với nhau hoặc với tác nhân chính.
+
+\subsection{Xác định các ca sử dụng}\label{ssec:danh-sach-uc}
+
+Từ các nghiệp vụ con ở mục~\ref{sec:thong-tin-nghiep-vu}, nhóm xác định 53 use case và tổ chức thành chín gói chức năng dựa trên tám phân hệ ở Hình~\ref{fig:phan-ra-chuc-nang}; phân hệ tài khoản và nhóm gia đình được tách thành hai gói. Mỗi use case có mã định danh để tham chiếu trong báo cáo. Độ phức tạp được chia thành ba mức, căn cứ vào số bước tương tác, số nhánh và mức độ phụ thuộc dữ liệu: \emph{Đơn giản} khi chủ yếu đọc hoặc ghi một thực thể với ít ràng buộc; \emph{Trung bình} khi có nhiều điều kiện kiểm tra hoặc tương tác với một phân hệ khác; \emph{Phức tạp} khi có thuật toán, giao dịch trên nhiều thực thể hoặc tương tác với hệ thống bên ngoài. Bảng~\ref{tab:danh-sach-uc} liệt kê các use case; ký hiệu (*) đánh dấu chức năng mở rộng.
+
+{\small
+\setlength{\LTleft}{0pt}
+\begin{longtable}{|C{0.8cm}|C{1.25cm}|L{3.2cm}|L{\dimexpr\textwidth-12\tabcolsep-7\arrayrulewidth-0.8cm-1.25cm-3.2cm-2.6cm-1.85cm\relax}|L{2.6cm}|C{1.85cm}|}
+\caption{Danh sách các use case của hệ thống}\label{tab:danh-sach-uc}\\
+\hline
+\hd{STT} & \hd{Mã} & \hd{Tên use case} & \hd{Mô tả} & \hd{Tác nhân} & \hd{Độ phức tạp}\\ \hline
+\endfirsthead
+\multicolumn{6}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{STT} & \hd{Mã} & \hd{Tên use case} & \hd{Mô tả} & \hd{Tác nhân} & \hd{Độ phức tạp}\\ \hline
+\endhead
+\multicolumn{6}{|l|}{\hs{Gói 1. Xác thực và quản lý tài khoản}}\\ \hline
+1 & UC01 & Đăng ký tài khoản & Tạo tài khoản mới bằng họ tên, email và mật khẩu & Khách & Trung bình\\ \hline
+2 & UC02 & Xác thực mã OTP & Xác minh quyền sở hữu email bằng mã gửi qua thư & Khách, Dịch vụ thư điện tử & Trung bình\\ \hline
+3 & UC03 & Đăng nhập & Đăng nhập bằng email và mật khẩu để bắt đầu phiên làm việc & Khách & Đơn giản\\ \hline
+4 & UC04 & Khôi phục mật khẩu & Đặt lại mật khẩu khi quên, thông qua mã OTP & Khách & Trung bình\\ \hline
+5 & UC05 & Đăng xuất & Kết thúc phiên, thu hồi mã làm mới của thiết bị & Người dùng & Đơn giản\\ \hline
+6 & UC06 & Cập nhật hồ sơ cá nhân & Sửa họ tên, ảnh đại diện, ngôn ngữ hiển thị & Người dùng & Đơn giản\\ \hline
+7 & UC07 & Đổi mật khẩu & Đổi mật khẩu khi đã đăng nhập, thu hồi các phiên khác & Người dùng & Đơn giản\\ \hline
+8 & UC08 & Thiết lập thông báo nhắc nhở (*) & Chọn ngưỡng nhắc 1–7 ngày, bật tắt từng loại thông báo & Người dùng & Đơn giản\\ \hline
+\multicolumn{6}{|l|}{\hs{Gói 2. Quản lý nhóm gia đình}}\\ \hline
+9 & UC09 & Tạo nhóm gia đình & Tạo nhóm mới, người tạo trở thành trưởng nhóm & Người dùng & Trung bình\\ \hline
+10 & UC10 & Mời thành viên vào nhóm (*) & Sinh mã mời, mã QR có thời hạn để chia sẻ; thu hồi mã & Trưởng nhóm & Trung bình\\ \hline
+11 & UC11 & Tham gia nhóm gia đình (*) & Gia nhập nhóm bằng mã mời hoặc quét mã QR & Người dùng & Trung bình\\ \hline
+12 & UC12 & Xem thông tin nhóm và thành viên & Xem tên nhóm, danh sách thành viên và vai trò & Thành viên nhóm & Đơn giản\\ \hline
+13 & UC13 & Xóa thành viên khỏi nhóm & Loại một thành viên ra khỏi nhóm & Trưởng nhóm & Đơn giản\\ \hline
+14 & UC14 & Chuyển quyền trưởng nhóm & Trao vai trò trưởng nhóm cho một thành viên khác & Trưởng nhóm & Trung bình\\ \hline
+15 & UC15 & Rời nhóm gia đình & Rời nhóm, trở về không gian cá nhân & Thành viên nhóm & Trung bình\\ \hline
+\multicolumn{6}{|l|}{\hs{Gói 3. Quản lý danh sách mua sắm}}\\ \hline
+16 & UC16 & Tạo danh sách mua sắm & Tạo danh sách gắn với ngày dự kiến mua & Người dùng & Trung bình\\ \hline
+17 & UC17 & Cập nhật mặt hàng trong danh sách & Thêm, sửa, xóa mặt hàng; gộp mặt hàng trùng & Người dùng & Trung bình\\ \hline
+18 & UC18 & Sao chép danh sách mua sắm đã có & Tạo danh sách mới từ một danh sách cũ để tái sử dụng & Người dùng & Đơn giản\\ \hline
+19 & UC19 & Phân công người mua & Giao từng mặt hàng cho một thành viên, gửi thông báo & Trưởng nhóm, Dịch vụ thông báo đẩy & Phức tạp\\ \hline
+20 & UC20 & Đánh dấu mặt hàng đã mua & Ghi nhận đã mua, số lượng thực tế, đơn giá & Người dùng & Trung bình\\ \hline
+21 & UC21 & Chuyển mặt hàng đã mua vào tủ lạnh (*) & Tạo lô thực phẩm từ mặt hàng đã mua với hạn dùng đề xuất & Người dùng & Phức tạp\\ \hline
+22 & UC22 & Sinh danh sách mua sắm từ kế hoạch bữa ăn (*) & Tính nguyên liệu còn thiếu cho các bữa đã lên lịch & Người dùng & Phức tạp\\ \hline
+23 & UC23 & Xem lịch sử mua sắm & Xem các danh sách đã hoàn tất theo thời gian & Người dùng & Đơn giản\\ \hline
+\multicolumn{6}{|l|}{\hs{Gói 4. Quản lý thực phẩm trong tủ lạnh}}\\ \hline
+24 & UC24 & Xem danh sách thực phẩm trong tủ lạnh & Xem tồn kho theo vị trí, trạng thái hạn dùng & Người dùng & Đơn giản\\ \hline
+25 & UC25 & Thêm thực phẩm vào tủ lạnh & Nhập lô thực phẩm với số lượng, hạn dùng, vị trí & Người dùng & Trung bình\\ \hline
+26 & UC26 & Quét mã vạch sản phẩm (*) & Nhận diện thực phẩm đóng gói bằng camera & Người dùng, Cơ sở dữ liệu sản phẩm mở & Trung bình\\ \hline
+27 & UC27 & Cập nhật thông tin thực phẩm & Sửa số lượng, hạn dùng, vị trí của lô & Người dùng & Đơn giản\\ \hline
+28 & UC28 & Ghi nhận sử dụng thực phẩm & Trừ lượng đã dùng theo nguyên tắc FEFO & Người dùng & Trung bình\\ \hline
+29 & UC29 & Loại bỏ thực phẩm & Ghi nhận thực phẩm hỏng hoặc hết hạn bị bỏ đi & Người dùng & Đơn giản\\ \hline
+30 & UC30 & Xem thực phẩm sắp hết hạn & Xem các lô Sắp hết hạn, Đã hết hạn kèm món gợi ý & Người dùng & Đơn giản\\ \hline
+31 & UC31 & Gửi nhắc nhở thực phẩm sắp hết hạn & Tác vụ hằng ngày gửi thông báo trước N ngày & Bộ lập lịch, Dịch vụ thông báo đẩy & Phức tạp\\ \hline
+\multicolumn{6}{|l|}{\hs{Gói 5. Quản lý công thức nấu ăn}}\\ \hline
+32 & UC32 & Thêm công thức nấu ăn & Tạo công thức với nguyên liệu có định lượng & Người dùng & Trung bình\\ \hline
+33 & UC33 & Cập nhật, xóa công thức & Sửa hoặc xóa công thức trong bộ sưu tập & Người dùng & Đơn giản\\ \hline
+34 & UC34 & Xem chi tiết công thức và đối chiếu nguyên liệu & Xem công thức, so sánh nguyên liệu với tủ lạnh & Người dùng & Trung bình\\ \hline
+35 & UC35 & Đánh dấu công thức yêu thích & Thêm công thức vào hoặc bỏ khỏi danh sách yêu thích & Người dùng & Đơn giản\\ \hline
+36 & UC36 & Bổ sung nguyên liệu còn thiếu vào danh sách mua sắm (*) & Đưa nguyên liệu thiếu của công thức vào danh sách & Người dùng & Trung bình\\ \hline
+\multicolumn{6}{|l|}{\hs{Gói 6. Quản lý kế hoạch bữa ăn}}\\ \hline
+37 & UC37 & Lên lịch bữa ăn & Thêm món vào bữa sáng, trưa, tối của một ngày & Người dùng & Trung bình\\ \hline
+38 & UC38 & Xem lịch bữa ăn theo ngày, tuần & Xem kế hoạch, tình trạng nguyên liệu của từng món & Người dùng & Đơn giản\\ \hline
+39 & UC39 & Cập nhật lịch bữa ăn & Đổi món, đổi khẩu phần, xóa món, di chuyển món & Người dùng & Đơn giản\\ \hline
+40 & UC40 & Gợi ý món ăn từ thực phẩm sẵn có (*) & Xếp hạng món theo tồn kho, ưu tiên thực phẩm sắp hết hạn & Người dùng & Phức tạp\\ \hline
+41 & UC41 & Xác nhận đã nấu món ăn (*) & Đánh dấu bữa đã nấu, trừ nguyên liệu theo FEFO & Người dùng & Phức tạp\\ \hline
+\multicolumn{6}{|l|}{\hs{Gói 7. Tìm kiếm và phân loại thực phẩm}}\\ \hline
+42 & UC42 & Tìm kiếm thực phẩm, món ăn & Tìm theo từ khóa, chấp nhận gõ không dấu & Người dùng & Trung bình\\ \hline
+43 & UC43 & Lọc thực phẩm theo danh mục & Lọc theo loại, vị trí, trạng thái hạn dùng & Người dùng & Đơn giản\\ \hline
+\multicolumn{6}{|l|}{\hs{Gói 8. Thống kê báo cáo}}\\ \hline
+44 & UC44 & Xem báo cáo mua sắm và chi tiêu (*) & Thống kê chi tiêu, cơ cấu và mặt hàng mua nhiều & Người dùng & Trung bình\\ \hline
+45 & UC45 & Xem báo cáo tiêu thụ thực phẩm & Thống kê lượng tiêu thụ theo thực phẩm, loại & Người dùng & Trung bình\\ \hline
+46 & UC46 & Xem báo cáo lãng phí thực phẩm (*) & Thống kê giá trị, tỷ lệ thực phẩm bị bỏ & Người dùng & Trung bình\\ \hline
+47 & UC47 & Xuất báo cáo (*) & Kết xuất báo cáo đang xem ra tệp PDF hoặc CSV & Người dùng & Đơn giản\\ \hline
+\multicolumn{6}{|l|}{\hs{Gói 9. Quản trị hệ thống}}\\ \hline
+48 & UC48 & Quản lý tài khoản người dùng & Tra cứu, khóa, mở khóa tài khoản & Quản trị viên & Trung bình\\ \hline
+49 & UC49 & Quản lý danh mục thực phẩm & Thêm, sửa, ngừng sử dụng thực phẩm trong danh mục & Quản trị viên & Trung bình\\ \hline
+50 & UC50 & Quản lý loại mặt hàng & Quản lý các loại thực phẩm dùng để phân loại & Quản trị viên & Đơn giản\\ \hline
+51 & UC51 & Quản lý đơn vị đo lường & Quản lý đơn vị, nhóm đại lượng, hệ số quy đổi & Quản trị viên & Đơn giản\\ \hline
+52 & UC52 & Quản lý công thức mẫu & Biên soạn công thức dùng chung cho mọi người dùng & Quản trị viên & Trung bình\\ \hline
+53 & UC53 & Cấu hình tham số hệ thống & Điều chỉnh ngưỡng nhắc mặc định, giờ chạy, trọng số gợi ý & Quản trị viên & Trung bình\\ \hline
+\end{longtable}
+}
+
+\subsection{Xác định các quan hệ}\label{ssec:quan-he-uc}
+
+Mô hình sử dụng bốn loại quan hệ UML. Quan hệ \emph{kết hợp} (association) nối tác nhân với use case mà tác nhân tham gia; trên biểu đồ, tác nhân chính đặt bên trái ranh giới hệ thống và tác nhân phụ đặt bên phải. Quan hệ \emph{tổng quát hóa} giữa các tác nhân được trình bày tại mục~\ref{ssec:quan-he-tac-nhan}. Quan hệ \emph{bao gồm} (include) biểu thị hành vi luôn được thực hiện như một bước bắt buộc, chẳng hạn đăng ký tài khoản bao gồm xác thực OTP. Quan hệ \emph{mở rộng} (extend) biểu thị hành vi chỉ phát sinh trong một số điều kiện, chẳng hạn người dùng có thể chuyển mặt hàng vào tủ lạnh ngay sau khi đánh dấu đã mua. Bảng~\ref{tab:quan-he-uc} liệt kê các quan hệ include và extend trong mô hình.
+
+{\small
+\begin{longtable}{|L{3.6cm}|C{1.9cm}|L{3.4cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-3.6cm-1.9cm-3.4cm\relax}|}
+\caption{Các quan hệ bao gồm và mở rộng giữa các use case}\label{tab:quan-he-uc}\\
+\hline
+\hd{Use case nguồn} & \hd{Quan hệ} & \hd{Use case đích} & \hd{Ý nghĩa, điều kiện}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Use case nguồn} & \hd{Quan hệ} & \hd{Use case đích} & \hd{Ý nghĩa, điều kiện}\\ \hline
+\endhead
+\uc{UC01} Đăng ký tài khoản & include & \uc{UC02} Xác thực mã OTP & Tài khoản chỉ được kích hoạt sau khi xác thực email\\ \hline
+\uc{UC04} Khôi phục mật khẩu & include & \uc{UC02} Xác thực mã OTP & Mật khẩu chỉ được đặt lại sau khi xác thực email\\ \hline
+\uc{UC13} Xóa thành viên & extend & \uc{UC12} Xem thông tin nhóm & Chỉ hiện với trưởng nhóm, tại dòng của từng thành viên\\ \hline
+\uc{UC14} Chuyển quyền trưởng nhóm & extend & \uc{UC12} Xem thông tin nhóm & Chỉ hiện với trưởng nhóm khi nhóm có từ hai thành viên\\ \hline
+\uc{UC14} Chuyển quyền trưởng nhóm & extend & \uc{UC15} Rời nhóm & Bắt buộc khi trưởng nhóm muốn rời nhóm còn thành viên khác (\br{BR07})\\ \hline
+\uc{UC18} Sao chép danh sách & extend & \uc{UC16} Tạo danh sách & Người dùng chọn tạo danh sách từ một danh sách có sẵn\\ \hline
+\uc{UC18} Sao chép danh sách & extend & \uc{UC23} Xem lịch sử mua sắm & Người dùng chọn “Mua lại” trên một danh sách đã hoàn tất\\ \hline
+\uc{UC21} Chuyển vào tủ lạnh & extend & \uc{UC20} Đánh dấu đã mua & Người dùng đồng ý chuyển mặt hàng vừa mua vào tủ\\ \hline
+\uc{UC22} Sinh danh sách từ kế hoạch & extend & \uc{UC38} Xem lịch bữa ăn & Người dùng chọn khoảng ngày và yêu cầu tạo danh sách\\ \hline
+\uc{UC26} Quét mã vạch & extend & \uc{UC25} Thêm thực phẩm & Người dùng chọn nhập bằng camera thay vì gõ tên\\ \hline
+\uc{UC27}, \uc{UC28}, \uc{UC29} & extend & \uc{UC24} Xem danh sách thực phẩm & Thao tác trên một lô được chọn trong tủ lạnh\\ \hline
+\uc{UC33}, \uc{UC35}, \uc{UC36} & extend & \uc{UC34} Xem chi tiết công thức & Thao tác trên công thức đang xem; \uc{UC36} chỉ hiện khi có nguyên liệu thiếu\\ \hline
+\uc{UC39}, \uc{UC41} & extend & \uc{UC38} Xem lịch bữa ăn & Thao tác trên một món trong lịch; \uc{UC41} chỉ áp dụng cho món chưa nấu\\ \hline
+\uc{UC40} Gợi ý món ăn & extend & \uc{UC37} Lên lịch bữa ăn & Người dùng chọn món từ danh sách gợi ý thay vì tự tìm\\ \hline
+\uc{UC43} Lọc theo danh mục & extend & \uc{UC42} Tìm kiếm & Người dùng áp bộ lọc lên kết quả tìm kiếm\\ \hline
+\uc{UC34}, \uc{UC25} & extend & \uc{UC42} Tìm kiếm & Người dùng chọn một kết quả là món ăn hoặc thực phẩm\\ \hline
+\uc{UC47} Xuất báo cáo & extend & \uc{UC44}, \uc{UC45}, \uc{UC46} & Người dùng chọn xuất báo cáo đang xem ra tệp\\ \hline
+\uc{UC49} Quản lý danh mục thực phẩm & include & \uc{UC50}, \uc{UC51} & Mỗi thực phẩm phải thuộc một loại và có đơn vị mặc định\\ \hline
+\end{longtable}
+}

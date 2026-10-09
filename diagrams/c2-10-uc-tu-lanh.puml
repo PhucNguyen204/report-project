@@ -1,0 +1,31 @@
+@startuml c2-10-uc-tu-lanh
+!include _style.iuml
+left to right direction
+
+actor "Người dùng" as U
+actor "Bộ lập lịch" as CRON <<hệ thống>>
+actor "Dịch vụ\nthông báo đẩy" as PUSH <<hệ thống ngoài>>
+actor "Cơ sở dữ liệu\nsản phẩm mở" as BAR <<hệ thống ngoài>>
+
+rectangle "Quản lý thực phẩm trong tủ lạnh" as B {
+  usecase "UC24\nXem danh sách thực phẩm\ntrong tủ lạnh" as UC24
+  usecase "UC25\nThêm thực phẩm\nvào tủ lạnh" as UC25
+  usecase "UC30\nXem thực phẩm\nsắp hết hạn" as UC30
+  usecase "UC31\nGửi nhắc nhở thực phẩm\nsắp hết hạn" as UC31
+  usecase "UC27\nCập nhật thông tin\nthực phẩm" as UC27
+  usecase "UC28\nGhi nhận sử dụng\nthực phẩm" as UC28
+  usecase "UC29\nLoại bỏ thực phẩm" as UC29
+  usecase "UC26\nQuét mã vạch sản phẩm" as UC26
+}
+
+U -- UC24
+U -- UC25
+U -- UC30
+CRON -- UC31
+UC24 <.. UC27 : <<extend>>
+UC24 <.. UC28 : <<extend>>
+UC24 <.. UC29 : <<extend>>
+UC25 <.. UC26 : <<extend>>
+UC26 -- BAR
+UC31 -- PUSH
+@enduml

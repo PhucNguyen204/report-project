@@ -1,0 +1,82 @@
+' =====================================================================
+'  _style.iuml — Kiểu dáng dùng chung cho mọi sơ đồ PlantUML của báo cáo
+' =====================================================================
+skinparam dpi 170
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #3B4A5A
+skinparam ArrowFontSize 11
+skinparam ArrowFontColor #2B2B2B
+skinparam roundCorner 12
+skinparam wrapWidth 260
+
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #2F5597
+  FontStyle bold
+}
+skinparam usecase {
+  BackgroundColor #EAF1FB
+  BorderColor #2F5597
+  BorderThickness 1.2
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #2F5597
+  FontStyle bold
+}
+skinparam card {
+  BackgroundColor #EAF1FB
+  BorderColor #2F5597
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #2F5597
+}
+skinparam activity {
+  BackgroundColor #EAF1FB
+  BorderColor #2F5597
+  DiamondBackgroundColor #FFF4D6
+  DiamondBorderColor #B58500
+}
+skinparam partition {
+  BorderColor #7F7F7F
+}
+skinparam swimlane {
+  BorderColor #7F7F7F
+  TitleFontStyle bold
+  TitleFontColor #1F3864
+}
+skinparam state {
+  BackgroundColor #EAF1FB
+  BorderColor #2F5597
+  StartColor #1F3864
+  EndColor #1F3864
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  HeaderBackgroundColor #EAF1FB
+  BorderColor #2F5597
+  AttributeFontSize 12
+}
+skinparam note {
+  BackgroundColor #FFFBE6
+  BorderColor #B5A642
+  FontSize 12
+}
+skinparam sequence {
+  LifeLineBorderColor #7F7F7F
+  ParticipantBackgroundColor #EAF1FB
+  ParticipantBorderColor #2F5597
+  ActorBorderColor #2F5597
+  GroupBorderColor #7F7F7F
+}
+skinparam legend {
+  BackgroundColor #FFFFFF
+  BorderColor #7F7F7F
+  FontSize 12
+}
+skinparam nodesep 22
+skinparam ranksep 70

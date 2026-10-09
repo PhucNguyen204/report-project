@@ -1,93 +1,155 @@
-# 172915-Nhom7-DiChoThongMinh
+# Báo cáo LaTeX – Ứng dụng “Đi chợ tiện lợi” (IT4788)
 
+Báo cáo bài tập lớn môn Phát triển ứng dụng đa nền tảng của **Nhóm 10**, mục lục bám theo mẫu `dsds.docx`.
+Hiện đã hoàn thiện **Chương 1** (Khảo sát bài toán), **Chương 2** (Đặc tả yêu cầu bài toán) và các phụ lục liên quan; Chương 3–6 và phần Kết luận vẫn đang ở dạng khung, được ẩn mặc định khỏi bản biên dịch.
 
+## Chạy nhanh trên macOS
 
-## Getting started
+Cần có Git và [Homebrew](https://brew.sh). Nếu máy chưa có Git, chạy
+`xcode-select --install` và hoàn tất cài đặt Command Line Tools trước.
+Repo public nên không cần đăng nhập GitHub để tải mã nguồn.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-* [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.nqtuan0192.me/baotg235019/172915-nhom7-dichothongminh.git
-git branch -M main
-git push -uf origin main
+```bash
+git clone https://github.com/PhucNguyen204/report-project.git
+cd report-project
+./setup.sh
+./run.sh --open
 ```
 
-## Integrate with your tools
+`setup.sh` cài Tectonic nếu chưa có bộ biên dịch, cùng GNU FreeFont để cung cấp
+FreeMono. `run.sh` biên dịch báo cáo và `--open` mở PDF sau khi thành công.
+Lần chạy Tectonic đầu tiên cần Internet để tải các gói LaTeX và có thể mất vài phút;
+những lần sau dùng lại bộ nhớ đệm.
 
-* [Set up project integrations](https://gitlab.nqtuan0192.me/baotg235019/172915-nhom7-dichothongminh/-/settings/integrations)
+**PDF đầu ra:** `output/pdf/bao-cao.pdf`. Tệp trung gian và log nằm trong `build/`.
+PDF và các tệp trung gian không được lưu trên GitHub; mỗi người chạy lệnh trên
+để tạo bản PDF tại máy mình. PDF đầu ra chỉ được cập nhật khi biên dịch thành công.
 
-## Collaborate with your team
+## Chạy lại sau khi sửa báo cáo
 
-* [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+Sửa các tệp `.tex`, lưu lại rồi chạy:
 
-## Test and Deploy
+```bash
+./run.sh          # tạo PDF
+./run.sh --open   # tạo PDF và mở để xem
+```
 
-Use the built-in continuous integration in GitLab.
+Không cần chạy lại `setup.sh` mỗi lần. Khi cần lấy thay đổi mới từ GitHub,
+commit hoặc cất các thay đổi đang làm trước, rồi chạy `git pull --ff-only`.
+Script cũng chạy được khi gọi bằng đường dẫn tuyệt đối từ thư mục khác.
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+### Chọn bộ biên dịch
 
-***
+```bash
+./run.sh --tectonic   # chọn Tectonic
+./run.sh --xelatex    # chọn XeLaTeX, cần cả xelatex và latexmk trên PATH
+```
 
-# Editing this README
+Mặc định script ưu tiên Tectonic; nếu không có thì dùng XeLaTeX qua `latexmk`.
+`make` hoặc `make pdf` tương đương `./run.sh`; `make setup` tương đương `./setup.sh`.
+Các lệnh `make watch`, `make clean`, `make distclean` cần cài riêng `latexmk`;
+`make watch` cập nhật `build/main.pdf`, còn bản trong `output/pdf/` được cập nhật
+bởi `./run.sh`.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### Linux, Windows và Overleaf
 
-## Suggestions for a good README
+- **Linux:** cài TeX Live có XeLaTeX, các gói LaTeX của báo cáo, `latexmk` và font
+  cần thiết; sau đó chạy `bash run.sh --xelatex`.
+- **Windows:** dùng WSL và làm theo hướng dẫn Linux. Mở `output/pdf/bao-cao.pdf`
+  thủ công nếu WSL không có ứng dụng xem PDF.
+- **Overleaf:** tải mã nguồn từ GitHub bằng **Code → Download ZIP**, tạo dự án từ
+  ZIP, chọn compiler **XeLaTeX** và tệp chính `main.tex`. PDF do Overleaf tạo có
+  tên `main.pdf`.
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+`setup.sh` tự cài công cụ qua Homebrew; không tự cài gói bằng apt hay trình quản lý
+gói của Windows. Hướng dẫn macOS đã được chạy kiểm tra trên máy của nhóm;
+các môi trường còn lại cần tự chuẩn bị bộ biên dịch và font tương ứng.
 
-## Name
-Choose a self-explaining name for your project.
+## Font chữ
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Thân bài ưu tiên **Times New Roman**, tiêu đề ưu tiên **Arial**. Để giữ đúng hai
+font này, cần cài chúng vào hệ điều hành trước khi biên dịch; `setup.sh` không tải
+Times New Roman hay Arial. Trên máy Mac đã kiểm tra, cả hai font đều có sẵn.
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+Nếu thiếu, cấu hình sẽ thử TeX Gyre Termes / TeX Gyre Heros. Font mã nguồn được
+chọn lần lượt: JetBrains Mono, TeX Gyre Cursor, FreeMono. Font toán được chọn lần
+lượt: TeX Gyre Termes Math, STIX Two Math, Cambria Math, Latin Modern Math.
+Các font được chọn phải có trên máy hoặc trong bản phân phối TeX.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+Kiểm tra các font thực tế được nhúng trong PDF:
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+```bash
+./setup.sh --with-preview
+pdffonts output/pdf/bao-cao.pdf
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## Lỗi thường gặp
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+| Lỗi | Cách xử lý |
+| --- | --- |
+| `brew: command not found` | Cài Homebrew, làm theo hướng dẫn thêm vào PATH rồi mở Terminal mới. |
+| `Permission denied` khi chạy script | Chạy `chmod +x setup.sh run.sh`, hoặc dùng `bash setup.sh` và `bash run.sh`. |
+| `No LaTeX compiler found` | Chạy `./setup.sh`; nếu dùng XeLaTeX, kiểm tra cả `xelatex` và `latexmk` trên PATH. |
+| `fontspec Error: The font ... cannot be found` | Cài đúng font được báo thiếu rồi biên dịch lại; FreeMono được cài qua `./setup.sh` trên macOS. |
+| Tectonic tải gói thất bại | Kiểm tra kết nối Internet rồi chạy lại `./run.sh`. |
+| Biên dịch thất bại sau khi sửa `.tex` | Xem lỗi trong Terminal và `build/main.log`. PDF cũ có thể vẫn còn, cần build thành công để cập nhật. |
+| Không thấy logo HUST | Thêm ảnh tại `figures/logo-hust.png`; khi thiếu ảnh, trang bìa hiện khung giữ chỗ. |
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+## Cấu trúc thư mục
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+```
+main.tex                  tệp chính
+setup.sh                  cài công cụ biên dịch (macOS/Homebrew)
+run.sh                    biên dịch và xuất PDF
+output/pdf/bao-cao.pdf     báo cáo sau khi biên dịch
+build/                    tệp trung gian và log
+config/preamble.tex       bố cục trang, phông, tiêu đề, mục lục, đầu/chân trang
+config/ucspec.tex         môi trường bảng: ucspec, fieldtable, nvtable, ddtable
+frontmatter/              trang bìa, thuật ngữ, lời nói đầu, phân công
+chapters/chuong1.tex      Chương 1
+chapters/chuong2.tex      Chương 2 (nội dung chia trong chapters/c2/*.tex)
+chapters/chuong3..6.tex   khung các chương sau
+backmatter/               kết luận, tài liệu tham khảo, phụ lục (backmatter/pl/*.tex)
+diagrams/*.puml           mã nguồn PlantUML của mọi sơ đồ (_style.iuml là kiểu dáng chung)
+figures/diagrams/*.png    ảnh sơ đồ đã kết xuất (được \includegraphics)
+figures/logo-hust.png     (tùy chọn) logo trên trang bìa – chưa có thì hiện khung giữ chỗ
+```
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+## Sơ đồ PlantUML
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+Sau khi sửa tệp `.puml`, kết xuất lại:
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+```bash
+./setup.sh --with-diagrams  # macOS: cài PlantUML và Graphviz
+make diagrams              # kết xuất lại ảnh từ diagrams/*.puml
+./run.sh                   # cập nhật PDF với ảnh mới
+```
 
-## License
-For open source projects, say how it is licensed.
+Nếu máy không có Graphviz, thêm dòng `!pragma layout smetana` vào đầu `diagrams/_style.iuml`
+(bố cục sẽ kém gọn hơn một chút). Ảnh PNG đã được kết xuất sẵn nên không bắt buộc chạy bước này để biên dịch PDF.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+## Quy ước khi viết tiếp
+
+- Mã tham chiếu: `\uc{UC01}` use case, `\br{BR01}` quy tắc nghiệp vụ, `\msg{MSG01}` thông điệp, `\nfr{NFR01}` yêu cầu phi chức năng.
+- Chèn sơ đồ: `\diagram[độ rộng]{tên-tệp-png}{Chú thích}{fig:nhan}`.
+- Đặc tả use case theo mẫu học phần:
+
+  ```latex
+  \begin{ucspec}{UC01}{Đăng ký tài khoản}
+  \ucfield{Tác nhân}{Khách}
+  \ucflow{Luồng thực thi chính}
+  \ucstep{1}{Khách}{Chọn chức năng “Đăng ký”.}
+  \ucflow{Luồng thực thi mở rộng}
+  \ucstep{3a}{Hệ thống}{...}
+  \ucfield{Điều kiện sau}{...}
+  \end{ucspec}
+  ```
+- Hiện các chương đang là khung để tiếp tục biên tập: đổi `\showpendingfalse` thành `\showpendingtrue` trong `main.tex`.
+- Cột “Điện thoại”, “Tổng hợp công việc”, “Đánh giá” trong `frontmatter/phan-cong.tex` để nhóm tự điền.
+
+## Đóng góp
+
+Mọi người có thể fork repo, sửa nội dung và gửi pull request vào nhánh `main`.
+Thành viên đã được chủ repo thêm làm collaborator và chấp nhận lời mời có thể
+push nhánh và merge pull request. Repo public không tự cấp quyền merge cho mọi
+tài khoản; gửi username GitHub cho chủ repo nếu cần quyền cộng tác.

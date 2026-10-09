@@ -1,0 +1,27 @@
+@startuml c1-08-trang-thai-thuc-pham
+!include _style.iuml
+
+state "Còn hạn" as CH
+state "Sắp hết hạn" as SH
+state "Đã hết hạn" as HH
+state "Đã dùng hết" as DH
+state "Đã loại bỏ" as LB
+
+CH : số ngày còn lại > N
+SH : 0 ≤ số ngày còn lại ≤ N\n(N mặc định = 3)
+HH : quá ngày hết hạn
+
+[*] --> CH : nhập vào tủ lạnh
+CH --> CH : sử dụng một phần
+CH --> SH : bộ lập lịch kiểm tra\nhằng ngày
+SH --> SH : sử dụng một phần
+SH --> CH : cập nhật hạn dùng\n(ví dụ chuyển ngăn đông)
+SH --> HH : qua ngày hết hạn
+CH --> DH : sử dụng hết
+SH --> DH : sử dụng hết
+CH --> LB : loại bỏ (hỏng)
+SH --> LB : loại bỏ
+HH --> LB : loại bỏ
+DH --> [*]
+LB --> [*]
+@enduml

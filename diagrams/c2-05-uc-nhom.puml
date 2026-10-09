@@ -1,0 +1,27 @@
+@startuml c2-05-uc-nhom
+!include _style.iuml
+left to right direction
+
+actor "Người dùng" as U
+actor "Thành viên nhóm" as M
+actor "Trưởng nhóm" as L
+
+rectangle "Quản lý nhóm gia đình" as B {
+  usecase "UC09\nTạo nhóm gia đình" as UC09
+  usecase "UC11\nTham gia nhóm gia đình" as UC11
+  usecase "UC12\nXem thông tin nhóm\nvà thành viên" as UC12
+  usecase "UC15\nRời nhóm gia đình" as UC15
+  usecase "UC10\nMời thành viên vào nhóm" as UC10
+  usecase "UC13\nXóa thành viên khỏi nhóm" as UC13
+  usecase "UC14\nChuyển quyền trưởng nhóm" as UC14
+}
+
+U -- UC09
+U -- UC11
+M -- UC12
+M -- UC15
+L -- UC10
+UC12 <.. UC13 : <<extend>>
+UC12 <.. UC14 : <<extend>>
+UC15 <.. UC14 : <<extend>>
+@enduml

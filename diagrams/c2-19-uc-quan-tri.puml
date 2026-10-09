@@ -1,0 +1,24 @@
+@startuml c2-19-uc-quan-tri
+!include _style.iuml
+left to right direction
+
+actor "Quản trị viên" as A
+
+rectangle "Quản trị hệ thống" as B {
+  usecase "UC48\nQuản lý tài khoản\nngười dùng" as UC48
+  usecase "UC50\nQuản lý loại mặt hàng" as UC50
+  usecase "UC49\nQuản lý danh mục\nthực phẩm" as UC49
+  usecase "UC51\nQuản lý đơn vị đo lường" as UC51
+  usecase "UC52\nQuản lý công thức mẫu" as UC52
+  usecase "UC53\nCấu hình tham số\nhệ thống" as UC53
+}
+
+A -- UC48
+A -- UC50
+A -- UC49
+A -- UC51
+A -- UC52
+A -- UC53
+UC49 .[norank].> UC50 : <<include>>
+UC49 .[norank].> UC51 : <<include>>
+@enduml

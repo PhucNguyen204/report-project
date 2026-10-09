@@ -1,0 +1,30 @@
+% ---------------------------------------------------------------------
+%  2.2.2.7. Phân rã gói "Tìm kiếm và phân loại thực phẩm"
+% ---------------------------------------------------------------------
+\subsubsection{Phân rã use case “Tìm kiếm và phân loại thực phẩm”}\label{sssec:pr-tim-kiem}
+
+Gói Tìm kiếm và phân loại thực phẩm gồm hai use case: \uc{UC42} và \uc{UC43}. Hình~\ref{fig:uc-tim-kiem} còn thể hiện ba use case thuộc các gói khác để cho thấy các bước có thể thực hiện từ kết quả tìm kiếm. Người dùng có thể mở chi tiết công thức (\uc{UC34}) hoặc thêm thực phẩm vào tủ (\uc{UC25}). Use case \uc{UC40} cũng xuất hiện ở đây theo cách phân nhóm của đề bài, dù cơ chế gợi ý món được dùng chung với gói kế hoạch bữa ăn.
+
+\diagram[0.82\textwidth]{c2-17-uc-tim-kiem}{Biểu đồ use case phân rã gói Tìm kiếm và phân loại thực phẩm}{fig:uc-tim-kiem}
+
+\begin{ucspec}{UC42}{Tìm kiếm thực phẩm, món ăn}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng tìm thực phẩm, món ăn trong danh mục hệ thống, trong tủ lạnh của không gian hiện hành hoặc trong bộ sưu tập công thức bằng từ khóa có dấu hoặc không dấu.}
+\ucfield{Điều kiện trước}{Người dùng đã đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chạm vào thanh tìm kiếm ở đầu màn hình chính.}
+\ucstep{2}{Hệ thống}{Hiển thị các từ khóa tìm gần đây và các loại thực phẩm phổ biến.}
+\ucstep{3}{Người dùng}{Gõ từ khóa, ví dụ “ca rot”.}
+\ucstep{4}{Hệ thống}{Sau 300 ms kể từ lần gõ cuối, chuẩn hóa từ khóa về chữ thường không dấu và tìm đồng thời trong ba nguồn: tủ lạnh, công thức, danh mục thực phẩm.}
+\ucstep{5}{Hệ thống}{Hiển thị kết quả theo ba nhóm “Trong tủ lạnh”, “Món ăn”, “Thực phẩm”, xếp hạng theo mức khớp: trùng khớp hoàn toàn, khớp tiền tố, khớp một phần; mỗi nhóm hiển thị tối đa 5 kết quả kèm nút “Xem thêm”.}
+\ucstep{6}{Người dùng}{Chọn một kết quả.}
+\ucstep{7}{Hệ thống}{Mở màn hình tương ứng: chi tiết lô trong tủ (\uc{UC24}), chi tiết công thức (\uc{UC34}) hoặc biểu mẫu thêm thực phẩm đã điền sẵn (\uc{UC25}).}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{4a}{Hệ thống}{Mất kết nối mạng: chỉ tìm trong dữ liệu tủ lạnh và công thức đã lưu đệm trên thiết bị, ghi chú kết quả có thể chưa đầy đủ.}
+\ucstep{5a}{Hệ thống}{Không có kết quả: hiển thị \msg{MSG18} và gợi ý “Thêm ‘<từ khóa>’ vào danh sách mua sắm”.}
+\ucstep{5b}{Người dùng}{Chạm biểu tượng bộ lọc: thực hiện \uc{UC43} trên tập kết quả hiện tại.}
+\ucfield{Điều kiện sau}{Không thay đổi dữ liệu; từ khóa được lưu vào lịch sử tìm kiếm trên thiết bị.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR23}}
+\end{ucspec}
+
+Use case \uc{UC43} Lọc thực phẩm theo danh mục được đặc tả tại Phụ lục~\ref{pl:dac-ta-bo-sung}.

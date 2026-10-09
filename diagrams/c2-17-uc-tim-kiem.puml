@@ -1,0 +1,20 @@
+@startuml c2-17-uc-tim-kiem
+!include _style.iuml
+left to right direction
+
+actor "Người dùng" as U
+
+rectangle "Tìm kiếm và phân loại thực phẩm" as B {
+  usecase "UC42\nTìm kiếm thực phẩm,\nmón ăn" as UC42
+  usecase "UC40\nGợi ý món ăn từ\nthực phẩm sẵn có" as UC40
+  usecase "UC43\nLọc thực phẩm\ntheo danh mục" as UC43
+  usecase "UC34\nXem chi tiết công thức" as UC34
+  usecase "UC25\nThêm thực phẩm\nvào tủ lạnh" as UC25
+}
+
+U -- UC42
+U -- UC40
+UC42 <.. UC43 : <<extend>>
+UC42 <.. UC34 : <<extend>>\n(chọn kết quả món ăn)
+UC42 <.. UC25 : <<extend>>\n(chọn kết quả thực phẩm)
+@enduml

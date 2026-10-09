@@ -1,0 +1,496 @@
+% ---------------------------------------------------------------------
+%  PHỤ LỤC B. ĐẶC TẢ CÁC USE CASE BỔ SUNG
+% ---------------------------------------------------------------------
+\section{Đặc tả các use case bổ sung}\label{pl:dac-ta-bo-sung}
+
+Phụ lục này đặc tả 29 use case chưa được trình bày chi tiết ở Chương~\ref{chap:dac-ta}, theo cùng mẫu bảng đặc tả và cùng hệ thống mã tham chiếu. Các use case được nhóm theo gói chức năng.
+
+% =====================================================================
+\subsection{Gói Xác thực và quản lý tài khoản}
+
+\begin{ucspec}{UC02}{Xác thực mã OTP}
+\ucfield{Tác nhân}{Khách (chính); Dịch vụ thư điện tử (phụ)}
+\ucfield{Mô tả}{Xác minh quyền sở hữu email bằng mã dùng một lần gửi qua thư; được bao gồm bởi \uc{UC01} và \uc{UC04}.}
+\ucfield{Điều kiện trước}{Một mã OTP còn hiệu lực đã được sinh cho email của Khách.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Hệ thống}{Hiển thị màn hình nhập mã gồm 6 ô số, đồng hồ đếm ngược thời hạn mã và nút “Gửi lại mã” bị vô hiệu trong 60 giây đầu.}
+\ucstep{2}{Khách}{Nhập 6 chữ số; ứng dụng tự gửi khi nhập đủ hoặc tự điền khi hệ điều hành đọc được mã từ thư.}
+\ucstep{3}{Hệ thống}{So khớp mã, kiểm tra thời hạn và số lần nhập sai (\br{BR02}).}
+\ucstep{4}{Hệ thống}{Đánh dấu mã đã dùng và trả kết quả thành công cho use case gọi.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Khách}{Nhấn “Gửi lại mã” sau 60 giây: hệ thống kiểm tra giới hạn 5 lần mỗi giờ, sinh mã mới, vô hiệu mã cũ và gửi thư; nếu chưa đủ thời gian chờ, hiển thị \msg{MSG30}.}
+\ucstep{3a}{Hệ thống}{Mã sai: tăng số lần nhập sai, hiển thị \msg{MSG04}; quay lại bước 2.}
+\ucstep{3b}{Hệ thống}{Mã hết hạn hoặc đã nhập sai đủ 5 lần: vô hiệu mã, hiển thị \msg{MSG04} và yêu cầu gửi lại mã.}
+\ucfield{Điều kiện sau}{Thành công: mã được đánh dấu đã dùng, use case gọi được tiếp tục. Thất bại: không có thay đổi trạng thái tài khoản.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR02}}
+\end{ucspec}
+
+\begin{ucspec}{UC04}{Khôi phục mật khẩu}
+\ucfield{Tác nhân}{Khách (chính); Dịch vụ thư điện tử (phụ, thông qua \uc{UC02})}
+\ucfield{Mô tả}{Cho phép người quên mật khẩu đặt lại mật khẩu mới sau khi xác thực email bằng mã OTP.}
+\ucfield{Điều kiện trước}{Khách chưa đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Khách}{Chọn “Quên mật khẩu” tại màn hình đăng nhập và nhập email.}
+\ucstep{2}{Hệ thống}{Nếu email thuộc một tài khoản hoạt động, sinh mã OTP mục đích Khôi phục và gửi thư; luôn hiển thị cùng một thông điệp “Nếu email tồn tại, mã đã được gửi” để không tiết lộ email nào đã đăng ký.}
+\ucstep{3}{Hệ thống}{Thực hiện \uc{UC02}.}
+\ucstep{4}{Khách}{Nhập mật khẩu mới và xác nhận mật khẩu.}
+\ucstep{5}{Hệ thống}{Kiểm tra độ mạnh mật khẩu (\br{BR01}) và sự trùng khớp.}
+\ucstep{6}{Hệ thống}{Cập nhật mật khẩu, thu hồi mọi phiên đăng nhập hiện có (\br{BR03}), đặt lại bộ đếm đăng nhập sai và chuyển về màn hình đăng nhập với \msg{MSG10}.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{1a}{Hệ thống}{Email sai định dạng: hiển thị \msg{MSG02}.}
+\ucstep{5a}{Hệ thống}{Mật khẩu không đủ mạnh hoặc không khớp: hiển thị \msg{MSG02} hoặc \msg{MSG29}; quay lại bước 4.}
+\ucfield{Điều kiện sau}{Mật khẩu của tài khoản được thay mới; các phiên cũ không còn hiệu lực.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR01}, \br{BR02}, \br{BR03}}
+\end{ucspec}
+
+\begin{ucspec}{UC05}{Đăng xuất}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Kết thúc phiên làm việc trên thiết bị hiện tại.}
+\ucfield{Điều kiện trước}{Người dùng đang đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Mở màn hình Tài khoản, chọn “Đăng xuất”.}
+\ucstep{2}{Hệ thống}{Hiển thị hộp thoại xác nhận; nếu còn thay đổi ngoại tuyến chưa đồng bộ, cảnh báo số thay đổi sẽ bị mất.}
+\ucstep{3}{Người dùng}{Xác nhận đăng xuất.}
+\ucstep{4}{Hệ thống}{Thu hồi mã làm mới trên máy chủ, hủy đăng ký mã thiết bị nhận thông báo, xóa mã và dữ liệu lưu đệm trên thiết bị, chuyển về màn hình chào.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Có thay đổi chưa đồng bộ và thiết bị có mạng: thử đồng bộ trước khi đăng xuất.}
+\ucstep{4a}{Hệ thống}{Không kết nối được máy chủ: vẫn xóa dữ liệu trên thiết bị; mã làm mới sẽ tự hết hạn theo \br{BR03}.}
+\ucfield{Điều kiện sau}{Thiết bị không còn lưu thông tin phiên và không nhận thông báo của tài khoản.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR03}}
+\end{ucspec}
+
+\begin{ucspec}{UC06}{Cập nhật hồ sơ cá nhân}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng sửa họ tên, ảnh đại diện và ngôn ngữ hiển thị.}
+\ucfield{Điều kiện trước}{Người dùng đang đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Mở màn hình Tài khoản, chọn “Hồ sơ”.}
+\ucstep{2}{Hệ thống}{Hiển thị họ tên, email (chỉ đọc), ảnh đại diện và ngôn ngữ.}
+\ucstep{3}{Người dùng}{Sửa thông tin, chọn ảnh từ thư viện hoặc chụp mới, nhấn “Lưu”.}
+\ucstep{4}{Hệ thống}{Kiểm tra họ tên theo \br{BR01}, ảnh đúng định dạng và dung lượng; nén ảnh; lưu thông tin; hiển thị \msg{MSG10}.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{4a}{Hệ thống}{Dữ liệu không hợp lệ: hiển thị \msg{MSG02}; quay lại bước 3.}
+\ucstep{4b}{Hệ thống}{Đổi ngôn ngữ: áp dụng ngay cho toàn bộ giao diện mà không cần khởi động lại (\nfr{NFR07}).}
+\ucfield{Điều kiện sau}{Hồ sơ được cập nhật và hiển thị mới với các thành viên cùng nhóm.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR01}}
+\end{ucspec}
+
+\begin{ucspec}{UC07}{Đổi mật khẩu}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng đổi mật khẩu khi đang đăng nhập.}
+\ucfield{Điều kiện trước}{Người dùng đang đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chọn “Đổi mật khẩu”, nhập mật khẩu hiện tại, mật khẩu mới và xác nhận mật khẩu mới.}
+\ucstep{2}{Hệ thống}{Kiểm tra mật khẩu hiện tại đúng, mật khẩu mới đạt \br{BR01}, khác mật khẩu hiện tại và trùng khớp với xác nhận.}
+\ucstep{3}{Hệ thống}{Cập nhật mật khẩu, thu hồi các phiên trên thiết bị khác, cấp phiên mới cho thiết bị hiện tại, hiển thị \msg{MSG10}.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Mật khẩu hiện tại sai: hiển thị \msg{MSG02} và tăng bộ đếm sai theo \br{BR03}.}
+\ucstep{2b}{Hệ thống}{Mật khẩu mới không hợp lệ hoặc không khớp: hiển thị \msg{MSG02} hoặc \msg{MSG29}.}
+\ucfield{Điều kiện sau}{Mật khẩu được thay mới; chỉ thiết bị hiện tại còn phiên hợp lệ.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR01}, \br{BR03}}
+\end{ucspec}
+
+\begin{ucspec}{UC08}{Thiết lập thông báo nhắc nhở}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng điều chỉnh ngưỡng nhắc hạn dùng và bật, tắt từng loại thông báo.}
+\ucfield{Điều kiện trước}{Người dùng đang đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Mở “Cài đặt thông báo”.}
+\ucstep{2}{Hệ thống}{Hiển thị thanh trượt ngưỡng nhắc N từ 1 đến 7 ngày (mặc định 3), công tắc cho ba loại thông báo: nhắc hạn dùng, phân công mua sắm, hoạt động nhóm, và khung giờ nhắc hằng ngày của hệ thống (chỉ đọc).}
+\ucstep{3}{Người dùng}{Thay đổi thiết lập.}
+\ucstep{4}{Hệ thống}{Lưu thiết lập ngay khi thay đổi và hiển thị ví dụ “Bạn sẽ được nhắc từ ngày 07/12 cho thực phẩm hết hạn ngày 10/12”.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Quyền thông báo của hệ điều hành đang tắt: hiển thị hướng dẫn và nút mở trang cài đặt của hệ điều hành.}
+\ucfield{Điều kiện sau}{Thiết lập mới được áp dụng từ lần chạy kế tiếp của \uc{UC31}; trạng thái hạn dùng hiển thị cho người dùng được tính theo N mới.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR12}, \br{BR13}}
+\end{ucspec}
+
+% =====================================================================
+\subsection{Gói Quản lý nhóm gia đình}
+
+\begin{ucspec}{UC12}{Xem thông tin nhóm và thành viên}
+\ucfield{Tác nhân}{Thành viên nhóm}
+\ucfield{Mô tả}{Cho phép thành viên xem tên nhóm, ảnh nhóm, danh sách thành viên và vai trò của từng người.}
+\ucfield{Điều kiện trước}{Người dùng đã đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Thành viên nhóm}{Mở màn hình Gia đình.}
+\ucstep{2}{Hệ thống}{Hiển thị tên, ảnh nhóm, số thành viên và danh sách thành viên kèm ảnh đại diện, vai trò, ngày tham gia; trưởng nhóm được đặt đầu danh sách.}
+\ucstep{3}{Hệ thống}{Hiển thị tóm tắt hoạt động gần đây của nhóm như thành viên mới, danh sách vừa hoàn tất.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Người xem là trưởng nhóm: hiển thị thêm nút “Mời thành viên” (\uc{UC10}) và trình đơn trên từng thành viên gồm “Xóa khỏi nhóm” (\uc{UC13}), “Chuyển quyền trưởng nhóm” (\uc{UC14}).}
+\ucstep{2b}{Hệ thống}{Người dùng chưa thuộc nhóm gia đình nào: hiển thị hai lựa chọn “Tạo nhóm” (\uc{UC09}) và “Tham gia nhóm” (\uc{UC11}).}
+\ucfield{Điều kiện sau}{Không thay đổi dữ liệu.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR05}, \br{BR23}}
+\end{ucspec}
+
+\begin{ucspec}{UC13}{Xóa thành viên khỏi nhóm}
+\ucfield{Tác nhân}{Trưởng nhóm}
+\ucfield{Mô tả}{Cho phép trưởng nhóm loại một thành viên ra khỏi nhóm.}
+\ucfield{Điều kiện trước}{Người thực hiện là trưởng nhóm; thành viên bị xóa không phải chính trưởng nhóm.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Trưởng nhóm}{Tại \uc{UC12}, mở trình đơn của một thành viên và chọn “Xóa khỏi nhóm”.}
+\ucstep{2}{Hệ thống}{Hiển thị \msg{MSG19}, nêu số mặt hàng đang giao cho thành viên này sẽ được trả về trạng thái Cần mua.}
+\ucstep{3}{Trưởng nhóm}{Xác nhận.}
+\ucstep{4}{Hệ thống}{Xóa tư cách thành viên, trả các mặt hàng đang giao về Cần mua (\br{BR07}), thông báo cho người bị xóa và chuyển không gian của họ về không gian cá nhân.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Trưởng nhóm}{Hủy: không có thay đổi.}
+\ucstep{4a}{Hệ thống}{Người thực hiện không còn là trưởng nhóm: hiển thị \msg{MSG13}.}
+\ucfield{Điều kiện sau}{Người bị xóa không còn truy cập được dữ liệu của nhóm; dữ liệu họ đã đóng góp vẫn thuộc về nhóm.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR07}, \br{BR10}, \br{BR23}}
+\end{ucspec}
+
+\begin{ucspec}{UC14}{Chuyển quyền trưởng nhóm}
+\ucfield{Tác nhân}{Trưởng nhóm}
+\ucfield{Mô tả}{Cho phép trưởng nhóm trao vai trò trưởng nhóm cho một thành viên khác.}
+\ucfield{Điều kiện trước}{Người thực hiện là trưởng nhóm; nhóm có ít nhất hai thành viên.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Trưởng nhóm}{Chọn “Chuyển quyền trưởng nhóm” trên một thành viên, hoặc được chuyển tới đây từ \uc{UC15}.}
+\ucstep{2}{Hệ thống}{Hiển thị hộp thoại xác nhận nêu rõ sau khi chuyển, người thực hiện sẽ mất quyền phân công và quản lý thành viên.}
+\ucstep{3}{Trưởng nhóm}{Xác nhận.}
+\ucstep{4}{Hệ thống}{Trong một giao dịch, đổi vai trò người nhận thành Trưởng nhóm và người chuyển thành Thành viên (\br{BR05}); thu hồi mã mời đang hiệu lực; thông báo cho cả nhóm.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Trưởng nhóm}{Hủy: không có thay đổi.}
+\ucstep{4a}{Hệ thống}{Người nhận vừa rời nhóm: hiển thị lỗi và yêu cầu chọn người khác.}
+\ucfield{Điều kiện sau}{Nhóm vẫn có đúng một trưởng nhóm là người nhận quyền.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR05}, \br{BR06}, \br{BR07}}
+\end{ucspec}
+
+\begin{ucspec}{UC15}{Rời nhóm gia đình}
+\ucfield{Tác nhân}{Thành viên nhóm}
+\ucfield{Mô tả}{Cho phép thành viên rời khỏi nhóm gia đình và trở về không gian cá nhân.}
+\ucfield{Điều kiện trước}{Người dùng là thành viên của một nhóm gia đình.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Thành viên nhóm}{Tại màn hình Gia đình, chọn “Rời nhóm”.}
+\ucstep{2}{Hệ thống}{Kiểm tra vai trò và số thành viên của nhóm (\br{BR07}).}
+\ucstep{3}{Hệ thống}{Hiển thị \msg{MSG19} xác nhận rời nhóm.}
+\ucstep{4}{Thành viên nhóm}{Xác nhận.}
+\ucstep{5}{Hệ thống}{Xóa tư cách thành viên, trả các mặt hàng đang giao về Cần mua, chuyển không gian về cá nhân, thông báo cho trưởng nhóm.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Người rời là trưởng nhóm và nhóm còn thành viên khác: hiển thị \msg{MSG24} và chuyển sang \uc{UC14}; sau khi chuyển quyền thành công, tiếp tục bước 3.}
+\ucstep{2b}{Hệ thống}{Người rời là thành viên duy nhất: cảnh báo nhóm sẽ bị giải tán cùng toàn bộ dữ liệu chung; nếu xác nhận, giải tán nhóm.}
+\ucfield{Điều kiện sau}{Người dùng không còn thuộc nhóm; nhóm vẫn có đúng một trưởng nhóm hoặc đã bị giải tán.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR05}, \br{BR07}}
+\end{ucspec}
+
+% =====================================================================
+\subsection{Gói Quản lý danh sách mua sắm}
+
+\begin{ucspec}{UC18}{Sao chép danh sách mua sắm đã có}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép tạo danh sách mới từ một danh sách cũ, phục vụ các lần mua sắm lặp lại.}
+\ucfield{Điều kiện trước}{Không gian hiện hành có ít nhất một danh sách mua sắm.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chọn “Tạo từ danh sách cũ” tại \uc{UC16}, hoặc “Mua lại” trên một danh sách tại \uc{UC23}.}
+\ucstep{2}{Hệ thống}{Hiển thị các mặt hàng của danh sách nguồn, mặc định chọn tất cả, kèm ô ngày dự kiến mua mới.}
+\ucstep{3}{Người dùng}{Bỏ chọn mặt hàng không cần, chỉnh số lượng, chọn ngày và nhấn “Tạo”.}
+\ucstep{4}{Hệ thống}{Tạo danh sách mới với nguồn gốc Sao chép; các mặt hàng ở trạng thái Cần mua, không giữ phân công, đơn giá và người mua cũ.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Hệ thống}{Ngày dự kiến mua ở quá khứ: hiển thị \msg{MSG02}.}
+\ucfield{Điều kiện sau}{Danh sách mới ở trạng thái Đang lập; danh sách nguồn không thay đổi.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR08}, \br{BR09}}
+\end{ucspec}
+
+\begin{ucspec}{UC23}{Xem lịch sử mua sắm}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng xem lại các danh sách đã hoàn tất theo thời gian.}
+\ucfield{Điều kiện trước}{Người dùng đang đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Tại màn hình Mua sắm, chọn thẻ “Lịch sử”.}
+\ucstep{2}{Hệ thống}{Hiển thị các danh sách Hoàn tất của không gian hiện hành, nhóm theo tháng, mỗi danh sách gồm ngày mua, số mặt hàng, tổng chi tiêu (nếu có đơn giá) và những người đã mua.}
+\ucstep{3}{Người dùng}{Chọn một danh sách.}
+\ucstep{4}{Hệ thống}{Hiển thị chi tiết ở chế độ chỉ đọc kèm nút “Mua lại”.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Chưa có danh sách nào hoàn tất: hiển thị trạng thái rỗng với hướng dẫn.}
+\ucstep{4a}{Người dùng}{Nhấn “Mua lại”: thực hiện \uc{UC18}.}
+\ucfield{Điều kiện sau}{Không thay đổi dữ liệu.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR08}}
+\end{ucspec}
+
+% =====================================================================
+\subsection{Gói Quản lý thực phẩm trong tủ lạnh}
+
+\begin{ucspec}{UC24}{Xem danh sách thực phẩm trong tủ lạnh}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng xem toàn bộ tồn kho của không gian hiện hành theo vị trí lưu trữ và trạng thái hạn dùng.}
+\ucfield{Điều kiện trước}{Người dùng đang đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Mở màn hình Tủ lạnh.}
+\ucstep{2}{Hệ thống}{Hiển thị dải thống kê nhanh (tổng số lô, số lô sắp hết hạn, số lô đã hết hạn) và các thẻ vị trí Ngăn mát, Ngăn đông, Ngăn rau củ, Cánh tủ, Kệ bếp.}
+\ucstep{3}{Hệ thống}{Trong mỗi vị trí, hiển thị thực phẩm gộp theo tên với tổng lượng còn lại và ngày hết hạn gần nhất, sắp xếp mặc định theo hạn gần nhất; màu và nhãn theo \nfr{NFR04}.}
+\ucstep{4}{Người dùng}{Chạm vào một thực phẩm để xem các lô chi tiết.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Tủ lạnh trống: hiển thị trạng thái rỗng với nút “Thêm thực phẩm” và “Cất hàng vừa mua”.}
+\ucstep{3a}{Người dùng}{Đổi cách sắp xếp theo tên hoặc theo ngày nhập, hoặc áp bộ lọc (\uc{UC43}).}
+\ucstep{4a}{Người dùng}{Trên một lô, chọn “Sửa” (\uc{UC27}), “Đã dùng” (\uc{UC28}) hoặc “Bỏ đi” (\uc{UC29}).}
+\ucfield{Điều kiện sau}{Không thay đổi dữ liệu.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR12}, \br{BR23}}
+\end{ucspec}
+
+\begin{ucspec}{UC26}{Quét mã vạch sản phẩm}
+\ucfield{Tác nhân}{Người dùng (chính); Cơ sở dữ liệu sản phẩm mở (phụ)}
+\ucfield{Mô tả}{Cho phép người dùng nhận diện thực phẩm đóng gói bằng camera để điền nhanh biểu mẫu \uc{UC25}.}
+\ucfield{Điều kiện trước}{Người dùng đang ở biểu mẫu \uc{UC25}; thiết bị có camera.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Nhấn “Quét mã vạch”.}
+\ucstep{2}{Hệ thống}{Xin quyền camera nếu chưa có, mở khung quét hỗ trợ EAN-8, EAN-13, UPC.}
+\ucstep{3}{Người dùng}{Đưa mã vạch vào khung quét.}
+\ucstep{4}{Hệ thống}{Nhận diện mã, rung nhẹ xác nhận, tra cứu mã trong danh mục thực phẩm nội bộ.}
+\ucstep{5}{Hệ thống}{Tìm thấy: quay về \uc{UC25} với thực phẩm đã được chọn.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Người dùng từ chối quyền camera: hiển thị hướng dẫn cấp quyền và cho phép nhập mã bằng tay.}
+\ucstep{4a}{Hệ thống}{Không có trong danh mục nội bộ: tra cứu Cơ sở dữ liệu sản phẩm mở; nếu tìm thấy, đề xuất tên sản phẩm và loại tương ứng để người dùng xác nhận, lưu thành thực phẩm riêng ở trạng thái Chờ duyệt, kèm mã vạch vừa quét.}
+\ucstep{4b}{Hệ thống}{Không tìm thấy ở cả hai nguồn hoặc dịch vụ ngoài không phản hồi trong 5 giây: hiển thị \msg{MSG23}, quay về \uc{UC25} và giữ mã vạch để gắn vào thực phẩm người dùng nhập.}
+\ucfield{Điều kiện sau}{Biểu mẫu \uc{UC25} được điền thực phẩm tương ứng với mã vạch, hoặc giữ nguyên để nhập tay.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR22}}
+\end{ucspec}
+
+\begin{ucspec}{UC27}{Cập nhật thông tin thực phẩm}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng sửa số lượng còn lại, ngày hết hạn, vị trí và ghi chú của một lô.}
+\ucfield{Điều kiện trước}{Lô có lượng còn lại lớn hơn 0.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chọn “Sửa” trên một lô tại \uc{UC24}.}
+\ucstep{2}{Hệ thống}{Hiển thị biểu mẫu với dữ liệu hiện có.}
+\ucstep{3}{Người dùng}{Sửa thông tin và nhấn “Lưu”.}
+\ucstep{4}{Hệ thống}{Kiểm tra như bước 6 của \uc{UC25}; lưu, tính lại trạng thái hạn dùng (\br{BR12}); hiển thị \msg{MSG10}.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Người dùng}{Đổi vị trí lưu trữ: hệ thống hỏi có muốn cập nhật ngày hết hạn theo hạn dùng gợi ý của vị trí mới tính từ hôm nay hay không, ví dụ khi chuyển thịt sang ngăn đông.}
+\ucstep{4a}{Hệ thống}{Dữ liệu không hợp lệ: hiển thị \msg{MSG14} hoặc \msg{MSG16}.}
+\ucfield{Điều kiện sau}{Lô được cập nhật; nếu ngày hết hạn được kéo dài ra ngoài ngưỡng, lô trở về trạng thái Còn hạn.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR11}, \br{BR12}, \br{BR14}}
+\end{ucspec}
+
+\begin{ucspec}{UC29}{Loại bỏ thực phẩm}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng ghi nhận một lô hoặc một phần lô bị bỏ đi do hỏng hoặc hết hạn.}
+\ucfield{Điều kiện trước}{Lô có lượng còn lại lớn hơn 0.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chọn “Bỏ đi” trên một lô.}
+\ucstep{2}{Hệ thống}{Hiển thị lượng loại bỏ mặc định bằng toàn bộ lượng còn lại và danh sách lý do Hết hạn, Hỏng, Khác; lý do mặc định là Hết hạn nếu lô ở trạng thái Đã hết hạn.}
+\ucstep{3}{Người dùng}{Điều chỉnh lượng, chọn lý do và xác nhận.}
+\ucstep{4}{Hệ thống}{Trừ lượng còn lại, ghi nhật ký loại bỏ; nếu lượng còn lại bằng 0 thì lô chuyển sang Đã loại bỏ; hiển thị giá trị ước tính bị lãng phí nếu lô có đơn giá.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Hệ thống}{Lượng loại bỏ vượt lượng còn lại: hiển thị \msg{MSG17}.}
+\ucfield{Điều kiện sau}{Nhật ký loại bỏ được ghi nhận và được tính vào \uc{UC46}.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR14}, \br{BR21}}
+\end{ucspec}
+
+\begin{ucspec}{UC30}{Xem thực phẩm sắp hết hạn}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Hiển thị tập trung các lô Sắp hết hạn và Đã hết hạn cùng các món ăn gợi ý để sử dụng kịp thời.}
+\ucfield{Điều kiện trước}{Người dùng đang đăng nhập; mở từ thẻ trên màn hình chính hoặc từ thông báo nhắc nhở.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Mở “Sắp hết hạn”.}
+\ucstep{2}{Hệ thống}{Hiển thị hai nhóm “Sắp hết hạn” và “Đã hết hạn”, mỗi lô kèm số ngày còn lại hoặc số ngày quá hạn, sắp xếp tăng dần theo ngày hết hạn.}
+\ucstep{3}{Hệ thống}{Hiển thị ba món gợi ý hàng đầu từ \uc{UC40} có sử dụng các thực phẩm trong nhóm Sắp hết hạn.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Người dùng}{Vuốt trên một lô để chọn nhanh “Đã dùng” (\uc{UC28}) hoặc “Bỏ đi” (\uc{UC29}).}
+\ucstep{3a}{Người dùng}{Chọn một món gợi ý: thực hiện \uc{UC34} hoặc thêm vào lịch theo \uc{UC37}.}
+\ucfield{Điều kiện sau}{Không thay đổi dữ liệu nếu người dùng chỉ xem.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR12}, \br{BR19}}
+\end{ucspec}
+
+% =====================================================================
+\subsection{Gói Quản lý công thức nấu ăn}
+
+\begin{ucspec}{UC33}{Cập nhật, xóa công thức}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng sửa hoặc xóa công thức trong bộ sưu tập cá nhân.}
+\ucfield{Điều kiện trước}{Công thức thuộc bộ sưu tập của người dùng (không phải công thức mẫu).}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Tại \uc{UC34}, chọn “Sửa”.}
+\ucstep{2}{Hệ thống}{Mở biểu mẫu của \uc{UC32} với dữ liệu hiện có.}
+\ucstep{3}{Người dùng}{Sửa và lưu.}
+\ucstep{4}{Hệ thống}{Kiểm tra theo \br{BR17}, lưu và hiển thị \msg{MSG10}; các bữa ăn dự kiến tham chiếu công thức dùng nội dung mới.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{1a}{Người dùng}{Chọn “Xóa”: hệ thống hiển thị \msg{MSG19}, nêu số món dự kiến đang dùng công thức; khi được xác nhận, các món Dự kiến dùng công thức chuyển thành món tự do giữ nguyên tên, các món Đã nấu giữ tham chiếu lịch sử và công thức bị ẩn khỏi bộ sưu tập.}
+\ucfield{Điều kiện sau}{Công thức được cập nhật hoặc bị xóa mà không làm mất dữ liệu lịch sử.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR17}, \br{BR18}}
+\end{ucspec}
+
+\begin{ucspec}{UC35}{Đánh dấu công thức yêu thích}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng thêm một công thức vào hoặc bỏ khỏi danh sách yêu thích.}
+\ucfield{Điều kiện trước}{Người dùng đang xem một công thức.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chạm biểu tượng trái tim.}
+\ucstep{2}{Hệ thống}{Đảo trạng thái yêu thích, cập nhật biểu tượng ngay; công thức yêu thích được hiển thị ở thẻ “Yêu thích” và nhận hệ số $F = 1$ khi gợi ý món (\br{BR19}).}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Mất kết nối mạng: lưu thay đổi trên thiết bị và đồng bộ sau.}
+\ucfield{Điều kiện sau}{Trạng thái yêu thích của công thức đối với người dùng được cập nhật.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR19}}
+\end{ucspec}
+
+\begin{ucspec}{UC36}{Bổ sung nguyên liệu còn thiếu vào danh sách mua sắm}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng đưa nhanh phần nguyên liệu còn thiếu của công thức đang xem vào một danh sách mua sắm.}
+\ucfield{Điều kiện trước}{Kết quả đối chiếu của \uc{UC34} có ít nhất một nguyên liệu Thiếu hoặc Không có.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chọn “Thêm phần thiếu vào danh sách mua sắm”.}
+\ucstep{2}{Hệ thống}{Hiển thị các nguyên liệu thiếu với lượng thiếu đã tính theo số khẩu phần đang chọn, mặc định chọn tất cả; đề xuất danh sách đích là danh sách chưa hoàn tất có ngày dự kiến mua gần nhất, hoặc tạo danh sách mới.}
+\ucstep{3}{Người dùng}{Bỏ chọn nguyên liệu không cần, chọn danh sách đích và xác nhận.}
+\ucstep{4}{Hệ thống}{Thêm các mặt hàng vào danh sách đích, gộp nếu trùng (\br{BR09}); hiển thị \msg{MSG10} kèm lối tắt mở danh sách.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Không gian hiện hành không có danh sách nào đang lập hoặc đang mua: tạo danh sách mới theo \uc{UC16} với ngày dự kiến mua là hôm nay.}
+\ucfield{Điều kiện sau}{Danh sách đích chứa các nguyên liệu còn thiếu.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR09}, \br{BR16}}
+\end{ucspec}
+
+% =====================================================================
+\subsection{Gói Quản lý kế hoạch bữa ăn}
+
+\begin{ucspec}{UC38}{Xem lịch bữa ăn theo ngày, tuần}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng xem kế hoạch bữa ăn của không gian hiện hành theo ngày hoặc theo tuần.}
+\ucfield{Điều kiện trước}{Người dùng đang đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Mở màn hình Kế hoạch.}
+\ucstep{2}{Hệ thống}{Hiển thị chế độ tuần chứa ngày hôm nay: bảy cột ngày, mỗi ngày ba ô bữa sáng, trưa, tối với tên món và biểu tượng đủ hoặc thiếu nguyên liệu.}
+\ucstep{3}{Người dùng}{Vuốt sang trái, phải để chuyển tuần, hoặc chạm vào một ngày để xem chế độ ngày.}
+\ucstep{4}{Hệ thống}{Ở chế độ ngày, hiển thị chi tiết từng món: số khẩu phần, trạng thái Dự kiến hoặc Đã nấu, nguyên liệu thiếu.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Người dùng}{Chọn “Tạo danh sách mua sắm”: thực hiện \uc{UC22}.}
+\ucstep{4a}{Người dùng}{Trên một món, chọn “Sửa”, “Xóa” (\uc{UC39}) hoặc “Đã nấu” (\uc{UC41}).}
+\ucfield{Điều kiện sau}{Không thay đổi dữ liệu.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR18}}
+\end{ucspec}
+
+\begin{ucspec}{UC39}{Cập nhật lịch bữa ăn}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng đổi món, đổi số khẩu phần, di chuyển món sang bữa hoặc ngày khác, hoặc xóa món khỏi lịch.}
+\ucfield{Điều kiện trước}{Người dùng đang xem một món trong lịch bữa ăn.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chọn “Sửa” trên một món, hoặc nhấn giữ và kéo món sang ô bữa khác.}
+\ucstep{2}{Hệ thống}{Hiển thị biểu mẫu sửa hoặc xem trước vị trí mới.}
+\ucstep{3}{Người dùng}{Xác nhận thay đổi.}
+\ucstep{4}{Hệ thống}{Kiểm tra ngày đích theo \br{BR18}, lưu thay đổi, đối chiếu lại nguyên liệu.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{1a}{Người dùng}{Chọn “Xóa”: hệ thống xóa món và cho phép hoàn tác trong 5 giây.}
+\ucstep{1b}{Hệ thống}{Món đã ở trạng thái Đã nấu: không cho phép sửa (\br{BR18}).}
+\ucstep{4a}{Hệ thống}{Ngày đích không hợp lệ: hiển thị \msg{MSG28}.}
+\ucfield{Điều kiện sau}{Lịch bữa ăn phản ánh thay đổi; các danh sách đã sinh từ kế hoạch không tự động thay đổi.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR18}}
+\end{ucspec}
+
+% =====================================================================
+\subsection{Gói Tìm kiếm và phân loại thực phẩm}
+
+\begin{ucspec}{UC43}{Lọc thực phẩm theo danh mục}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng thu hẹp danh sách thực phẩm hoặc kết quả tìm kiếm theo loại, vị trí lưu trữ và trạng thái hạn dùng.}
+\ucfield{Điều kiện trước}{Người dùng đang xem kết quả tìm kiếm (\uc{UC42}) hoặc danh sách thực phẩm trong tủ (\uc{UC24}).}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chạm biểu tượng bộ lọc.}
+\ucstep{2}{Hệ thống}{Hiển thị bảng lọc gồm các loại thực phẩm (kèm số lượng mỗi loại), vị trí lưu trữ và trạng thái hạn dùng.}
+\ucstep{3}{Người dùng}{Chọn một hoặc nhiều giá trị và nhấn “Áp dụng”.}
+\ucstep{4}{Hệ thống}{Kết hợp các điều kiện (cùng nhóm là “hoặc”, khác nhóm là “và”), cập nhật danh sách và hiển thị các thẻ bộ lọc đang áp dụng.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Người dùng}{Chạm “x” trên một thẻ bộ lọc để bỏ điều kiện đó.}
+\ucstep{4a}{Hệ thống}{Không có kết quả: hiển thị \msg{MSG18} và nút “Xóa bộ lọc”.}
+\ucfield{Điều kiện sau}{Bộ lọc được ghi nhớ trong phiên làm việc của màn hình.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR12}}
+\end{ucspec}
+
+% =====================================================================
+\subsection{Gói Thống kê báo cáo}
+
+\begin{ucspec}{UC45}{Xem báo cáo tiêu thụ thực phẩm}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng xem lượng thực phẩm đã tiêu thụ theo thời gian, theo loại và theo bữa ăn.}
+\ucfield{Điều kiện trước}{Người dùng đang đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Mở màn hình Thống kê, chọn thẻ “Tiêu thụ”.}
+\ucstep{2}{Hệ thống}{Hiển thị bộ chọn khoảng thời gian như \uc{UC44}.}
+\ucstep{3}{Người dùng}{Chọn khoảng thời gian và, tùy chọn, một loại thực phẩm.}
+\ucstep{4}{Hệ thống}{Kiểm tra khoảng thời gian (\br{BR21}); tổng hợp nhật ký tiêu thụ, quy đổi về đơn vị cơ sở (\br{BR16}).}
+\ucstep{5}{Hệ thống}{Hiển thị biểu đồ đường xu hướng tiêu thụ, biểu đồ cơ cấu theo loại, mười thực phẩm tiêu thụ nhiều nhất và số bữa đã nấu trong kỳ.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{4a}{Hệ thống}{Khoảng thời gian không hợp lệ: hiển thị \msg{MSG25}.}
+\ucstep{4b}{Hệ thống}{Không có dữ liệu: hiển thị \msg{MSG26}.}
+\ucstep{5a}{Người dùng}{Chọn “Xuất báo cáo”: thực hiện \uc{UC47}.}
+\ucfield{Điều kiện sau}{Không thay đổi dữ liệu.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR16}, \br{BR21}}
+\end{ucspec}
+
+\begin{ucspec}{UC47}{Xuất báo cáo}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng kết xuất báo cáo đang xem ra tệp để lưu trữ hoặc chia sẻ.}
+\ucfield{Điều kiện trước}{Người dùng đang xem một trong ba báo cáo \uc{UC44}, \uc{UC45}, \uc{UC46} và báo cáo có dữ liệu.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chọn “Xuất báo cáo” và chọn định dạng PDF hoặc CSV.}
+\ucstep{2}{Hệ thống}{Với PDF: kết xuất tiêu đề, khoảng thời gian, các chỉ số, biểu đồ và bảng chi tiết; với CSV: kết xuất bảng dữ liệu chi tiết mã hóa UTF-8.}
+\ucstep{3}{Hệ thống}{Mở bảng chia sẻ của hệ điều hành để người dùng lưu hoặc gửi tệp.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Kết xuất thất bại: hiển thị lỗi và cho phép thử lại.}
+\ucfield{Điều kiện sau}{Tệp báo cáo được tạo trên thiết bị; dữ liệu hệ thống không thay đổi.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR21}}
+\end{ucspec}
+
+% =====================================================================
+\subsection{Gói Quản trị hệ thống}
+
+\begin{ucspec}{UC48}{Quản lý tài khoản người dùng}
+\ucfield{Tác nhân}{Quản trị viên}
+\ucfield{Mô tả}{Cho phép quản trị viên tra cứu tài khoản, khóa, mở khóa tài khoản vi phạm và cấp, thu hồi vai trò quản trị.}
+\ucfield{Điều kiện trước}{Quản trị viên đã đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Quản trị viên}{Mở “Tài khoản người dùng”.}
+\ucstep{2}{Hệ thống}{Hiển thị danh sách tài khoản có phân trang với email, họ tên, trạng thái, ngày tạo, lần đăng nhập gần nhất; có tìm kiếm theo email, họ tên và lọc theo trạng thái.}
+\ucstep{3}{Quản trị viên}{Chọn một tài khoản và chọn “Khóa tài khoản”, nhập lý do.}
+\ucstep{4}{Hệ thống}{Hiển thị \msg{MSG19}; khi được xác nhận, chuyển tài khoản sang Bị khóa, thu hồi mọi phiên, ghi nhật ký quản trị và gửi thư thông báo cho chủ tài khoản.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Quản trị viên chỉ xem được thông tin tài khoản, không xem được nội dung dữ liệu của các nhóm (\br{BR23}).}
+\ucstep{3a}{Quản trị viên}{Chọn “Mở khóa”: tài khoản trở về Hoạt động, ghi nhật ký.}
+\ucstep{3b}{Quản trị viên}{Chọn “Cấp quyền quản trị” hoặc “Thu hồi quyền quản trị”: cập nhật vai trò hệ thống, ghi nhật ký; không cho phép tự thu hồi quyền của chính mình nếu là quản trị viên cuối cùng.}
+\ucfield{Điều kiện sau}{Trạng thái hoặc vai trò của tài khoản được cập nhật và lưu vết.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR03}, \br{BR23}}
+\end{ucspec}
+
+\begin{ucspec}{UC50}{Quản lý loại mặt hàng}
+\ucfield{Tác nhân}{Quản trị viên}
+\ucfield{Mô tả}{Cho phép quản trị viên thêm, sửa, ngừng sử dụng các loại thực phẩm dùng để phân loại và lọc.}
+\ucfield{Điều kiện trước}{Quản trị viên đã đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Quản trị viên}{Mở “Loại mặt hàng”.}
+\ucstep{2}{Hệ thống}{Hiển thị danh sách loại với tên, biểu tượng, vị trí lưu trữ mặc định, số thực phẩm thuộc loại.}
+\ucstep{3}{Quản trị viên}{Thêm hoặc sửa một loại, nhập tên, chọn biểu tượng và vị trí mặc định, nhấn “Lưu”.}
+\ucstep{4}{Hệ thống}{Kiểm tra tên duy nhất (\br{BR22}), lưu và hiển thị \msg{MSG10}.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Quản trị viên}{Chọn “Xóa” trên một loại đang có thực phẩm: hệ thống hiển thị \msg{MSG22} và chỉ cho phép chuyển loại sang Ngừng sử dụng.}
+\ucstep{4a}{Hệ thống}{Tên trùng: hiển thị \msg{MSG02}.}
+\ucfield{Điều kiện sau}{Danh mục loại được cập nhật, có hiệu lực cho bộ lọc và biểu mẫu nhập liệu.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR22}}
+\end{ucspec}
+
+\begin{ucspec}{UC51}{Quản lý đơn vị đo lường}
+\ucfield{Tác nhân}{Quản trị viên}
+\ucfield{Mô tả}{Cho phép quản trị viên quản lý đơn vị đo, nhóm đại lượng và hệ số quy đổi về đơn vị cơ sở.}
+\ucfield{Điều kiện trước}{Quản trị viên đã đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Quản trị viên}{Mở “Đơn vị đo lường”.}
+\ucstep{2}{Hệ thống}{Hiển thị đơn vị nhóm theo đại lượng Khối lượng, Thể tích, Số đếm, mỗi đơn vị kèm hệ số quy đổi.}
+\ucstep{3}{Quản trị viên}{Thêm hoặc sửa một đơn vị, ví dụ “lạng”, nhóm Khối lượng, hệ số 100; nhấn “Lưu”.}
+\ucstep{4}{Hệ thống}{Kiểm tra ký hiệu duy nhất, hệ số dương, đơn vị cơ sở của mỗi nhóm có hệ số bằng 1 (\br{BR16}); lưu và hiển thị \msg{MSG10}.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Quản trị viên}{Sửa hệ số hoặc nhóm đại lượng của đơn vị đang được tham chiếu: hệ thống cảnh báo ảnh hưởng tới phép quy đổi và chỉ cho phép sau khi xác nhận lần hai.}
+\ucstep{3b}{Quản trị viên}{Chọn “Xóa” trên một đơn vị đang được tham chiếu: hiển thị \msg{MSG22}; đơn vị được chuyển sang Ngừng sử dụng, bị ẩn khỏi lựa chọn mới nhưng dữ liệu cũ giữ nguyên.}
+\ucstep{4a}{Hệ thống}{Dữ liệu không hợp lệ: hiển thị \msg{MSG02}.}
+\ucfield{Điều kiện sau}{Danh mục đơn vị và hệ số quy đổi được cập nhật.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR16}, \br{BR22}}
+\end{ucspec}
+
+\begin{ucspec}{UC52}{Quản lý công thức mẫu}
+\ucfield{Tác nhân}{Quản trị viên}
+\ucfield{Mô tả}{Cho phép quản trị viên biên soạn, cập nhật, ẩn các công thức mẫu dùng chung cho mọi người dùng.}
+\ucfield{Điều kiện trước}{Quản trị viên đã đăng nhập.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Quản trị viên}{Mở “Công thức mẫu”.}
+\ucstep{2}{Hệ thống}{Hiển thị danh sách công thức mẫu với trạng thái Công bố hoặc Nháp, số lượt lưu về bộ sưu tập.}
+\ucstep{3}{Quản trị viên}{Thêm hoặc sửa một công thức theo biểu mẫu của \uc{UC32}, chọn trạng thái và nhấn “Lưu”.}
+\ucstep{4}{Hệ thống}{Kiểm tra theo \br{BR17}, yêu cầu mọi nguyên liệu tham chiếu thực phẩm dùng chung; lưu và hiển thị \msg{MSG10}.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{3a}{Quản trị viên}{Chọn “Ẩn”: công thức không còn xuất hiện trong gợi ý; các bản sao người dùng đã lưu không bị ảnh hưởng.}
+\ucstep{4a}{Hệ thống}{Dữ liệu không hợp lệ: hiển thị \msg{MSG01} hoặc \msg{MSG02}.}
+\ucfield{Điều kiện sau}{Bộ công thức mẫu được cập nhật, công thức Công bố tham gia \uc{UC40} cho mọi người dùng.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR17}, \br{BR22}}
+\end{ucspec}

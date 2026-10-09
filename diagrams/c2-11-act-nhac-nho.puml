@@ -1,0 +1,40 @@
+@startuml c2-11-act-nhac-nho
+!include _style.iuml
+
+|Bộ lập lịch|
+start
+:Đến khung giờ nhắc nhở
+(mặc định 08:00 hằng ngày);
+|Hệ thống|
+:Cập nhật trạng thái hạn dùng
+cho toàn bộ thực phẩm còn trong tủ;
+:Lấy danh sách nhóm có thực phẩm
+"Sắp hết hạn" hoặc "Đã hết hạn";
+repeat :Xét từng thành viên của nhóm;
+  :Đọc thiết lập nhắc nhở cá nhân
+  (ngưỡng N ngày, bật/tắt);
+  if (Thành viên tắt nhắc nhở?) then (có)
+  else (không)
+    :Lọc thực phẩm có
+    số ngày còn lại ≤ N;
+    if (Đã nhắc thực phẩm này\ntrong hôm nay?) then (có)
+    else (chưa)
+      :Gom thành một thông báo tổng hợp
+      (tối đa 5 thực phẩm gần hết hạn nhất);
+      :Lưu thông báo vào hộp thư
+      trong ứng dụng;
+      |Dịch vụ thông báo đẩy|
+      :Đẩy thông báo tới
+      các thiết bị đã đăng ký;
+      |Hệ thống|
+      if (Gửi thất bại?) then (có)
+        :Ghi nhật ký, thử lại
+        tối đa 3 lần;
+      else (không)
+      endif
+    endif
+  endif
+repeat while (Còn thành viên?) is (có)
+-> không;
+stop
+@enduml

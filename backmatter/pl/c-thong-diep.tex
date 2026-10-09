@@ -1,0 +1,51 @@
+% ---------------------------------------------------------------------
+%  PHỤ LỤC C. DANH MỤC THÔNG ĐIỆP HỆ THỐNG
+% ---------------------------------------------------------------------
+\section{Danh mục thông điệp hệ thống}\label{pl:thong-diep}
+
+Bảng~\ref{tab:thong-diep} liệt kê các thông điệp hiển thị cho người dùng. Mỗi thông điệp có mã \msg{MSGxx} để dẫn chiếu trong đặc tả use case. Việc chuẩn hóa giúp giao diện nhất quán, hỗ trợ bản địa hóa theo \nfr{NFR07} và thuận tiện kiểm thử. Thông điệp gồm bốn loại: \emph{Lỗi} khi không thể thực hiện thao tác, \emph{Cảnh báo} khi thao tác có thể gây hệ quả cần lưu ý, \emph{Xác nhận} khi cần người dùng đồng ý và \emph{Thông tin} để thông báo kết quả. Nội dung trong ngoặc nhọn là tham số được thay bằng giá trị cụ thể khi hiển thị.
+
+{\small
+\begin{longtable}{|C{1.4cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-1.4cm-1.9cm-3.6cm\relax}|C{1.9cm}|L{3.6cm}|}
+\caption{Danh mục thông điệp hệ thống}\label{tab:thong-diep}\\
+\hline
+\hd{Mã} & \hd{Nội dung thông điệp} & \hd{Loại} & \hd{Use case sử dụng}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Mã} & \hd{Nội dung thông điệp} & \hd{Loại} & \hd{Use case sử dụng}\\ \hline
+\endhead
+MSG01 & Vui lòng nhập đầy đủ các trường bắt buộc. & Lỗi & UC01, UC03, UC25, UC32, UC49, UC52\\ \hline
+MSG02 & \{Tên trường\} không hợp lệ: \{yêu cầu cụ thể\}. & Lỗi & UC01, UC04, UC06, UC07, UC09, UC16, UC18, UC32, UC49–UC52\\ \hline
+MSG03 & Email này đã được sử dụng. Bạn có thể đăng nhập hoặc khôi phục mật khẩu. & Lỗi & UC01\\ \hline
+MSG04 & Mã xác thực không đúng hoặc đã hết hiệu lực. & Lỗi & UC02\\ \hline
+MSG05 & Email hoặc mật khẩu không đúng. & Lỗi & UC03\\ \hline
+MSG06 & Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau \{n\} phút. & Lỗi & UC03\\ \hline
+MSG07 & Mã mời không tồn tại, đã hết hạn hoặc đã bị thu hồi. & Lỗi & UC11\\ \hline
+MSG08 & Bạn đang là thành viên của nhóm \{tên nhóm\}. Vui lòng rời nhóm hiện tại trước khi tham gia hoặc tạo nhóm mới. & Lỗi & UC09, UC11\\ \hline
+MSG09 & Nhóm đã đạt số thành viên tối đa (\{n\} người). & Lỗi & UC10, UC11\\ \hline
+MSG10 & Đã lưu thay đổi. & Thông tin & Dùng chung cho các thao tác thành công\\ \hline
+MSG11 & “\{tên mặt hàng\}” đã có trong danh sách, số lượng đã được cộng dồn thành \{số lượng\}. & Thông tin & UC17\\ \hline
+MSG12 & Mặt hàng này đang được giao cho \{tên thành viên\}. Bạn có muốn đánh dấu mua thay không? & Xác nhận & UC20\\ \hline
+MSG13 & Bạn không có quyền thực hiện thao tác này. & Lỗi & UC13, UC19\\ \hline
+MSG14 & Ngày hết hạn không được trước ngày mua. & Lỗi & UC21, UC25, UC27\\ \hline
+MSG15 & Tủ lạnh đã có đủ nguyên liệu cho các bữa ăn đã chọn. & Thông tin & UC22\\ \hline
+MSG16 & Số lượng phải là số dương, tối đa hai chữ số thập phân. & Lỗi & UC17, UC25, UC27\\ \hline
+MSG17 & Lượng nhập vượt quá lượng còn lại (\{lượng còn lại\}). & Lỗi & UC28, UC29\\ \hline
+MSG18 & Không tìm thấy kết quả phù hợp. & Thông tin & UC42, UC43\\ \hline
+MSG19 & Bạn có chắc chắn muốn \{thao tác\} \{đối tượng\}? \{Hệ quả nếu có\}. & Xác nhận & UC10, UC13, UC15, UC33, UC48, UC49\\ \hline
+MSG20 & Không có kết nối mạng. Thay đổi đã được lưu trên thiết bị và sẽ đồng bộ khi có mạng. & Cảnh báo & UC16 và các thao tác hỗ trợ ngoại tuyến\\ \hline
+MSG21 & Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên. & Lỗi & UC03\\ \hline
+MSG22 & Dữ liệu danh mục đang được sử dụng nên không thể xóa, chỉ có thể chuyển sang Ngừng sử dụng. & Cảnh báo & UC50, UC51\\ \hline
+MSG23 & Không tìm thấy sản phẩm ứng với mã vạch này. Vui lòng nhập thông tin thủ công. & Thông tin & UC26\\ \hline
+MSG24 & Bạn là trưởng nhóm. Hãy chuyển quyền cho một thành viên khác trước khi rời nhóm. & Cảnh báo & UC15\\ \hline
+MSG25 & Khoảng thời gian không hợp lệ. Vui lòng chọn tối đa 12 tháng. & Lỗi & UC44, UC45, UC46\\ \hline
+MSG26 & Chưa có dữ liệu trong khoảng thời gian đã chọn. & Thông tin & UC44, UC45\\ \hline
+MSG27 & Giá trị của \{tham số\} phải nằm trong khoảng \{miền hợp lệ\}. & Lỗi & UC53\\ \hline
+MSG28 & Chỉ có thể lập kế hoạch từ hôm nay đến \{n\} ngày tới. & Lỗi & UC37, UC39\\ \hline
+MSG29 & Mật khẩu xác nhận không khớp. & Lỗi & UC01, UC04, UC07\\ \hline
+MSG30 & Vui lòng chờ \{n\} giây trước khi yêu cầu gửi lại mã. & Thông tin & UC02\\ \hline
+MSG31 & Chưa có món nào phù hợp với thực phẩm hiện có. Dưới đây là các món gần đủ nguyên liệu nhất. & Thông tin & UC40\\ \hline
+MSG32 & Mặt hàng đã được cất vào tủ lạnh nên không thể sửa hoặc hoàn tác. & Lỗi & UC17\\ \hline
+MSG33 & Không thể kết nối tới máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại. & Lỗi & UC01 và các thao tác bắt buộc trực tuyến\\ \hline
+\end{longtable}
+}

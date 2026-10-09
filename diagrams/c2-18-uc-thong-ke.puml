@@ -1,0 +1,21 @@
+@startuml c2-18-uc-thong-ke
+!include _style.iuml
+left to right direction
+
+actor "Người dùng" as U
+
+rectangle "Thống kê báo cáo" as B {
+  usecase "UC44\nXem báo cáo mua sắm\nvà chi tiêu" as UC44
+  usecase "UC45\nXem báo cáo tiêu thụ\nthực phẩm" as UC45
+  usecase "UC46\nXem báo cáo lãng phí\nthực phẩm" as UC46
+  usecase "UC47\nXuất báo cáo" as UC47
+}
+
+U -- UC44
+U -- UC45
+U -- UC46
+UC44 <.[norank]. UC47 : <<extend>>
+UC45 <.[norank]. UC47 : <<extend>>
+UC46 <.[norank]. UC47 : <<extend>>
+UC45 -[hidden]-> UC47
+@enduml

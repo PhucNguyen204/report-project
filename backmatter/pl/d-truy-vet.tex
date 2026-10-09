@@ -1,0 +1,51 @@
+% ---------------------------------------------------------------------
+%  PHỤ LỤC D. MA TRẬN TRUY VẾT YÊU CẦU
+% ---------------------------------------------------------------------
+\section{Ma trận truy vết yêu cầu}\label{pl:truy-vet}
+
+Ma trận truy vết tại Bảng~\ref{tab:truy-vet} liên kết yêu cầu trong đề bài~\cite{debai} và chức năng mở rộng ở Bảng~\ref{tab:chuc-nang-mo-rong} với nghiệp vụ con, use case, quy tắc nghiệp vụ và yêu cầu phi chức năng tương ứng. Yêu cầu đề bài được mã hóa theo thứ tự xuất hiện (YC); ba đặc điểm nổi bật được ký hiệu ĐĐ. Ma trận hỗ trợ kiểm tra theo hai chiều: mỗi yêu cầu phải được hiện thực bởi ít nhất một use case và mỗi use case phải truy ngược được về ít nhất một yêu cầu.
+
+{\small
+\begin{longtable}{|C{1.2cm}|L{\dimexpr\textwidth-12\tabcolsep-7\arrayrulewidth-1.2cm-2.0cm-2.6cm-1.9cm-1.7cm\relax}|L{2.0cm}|L{2.6cm}|L{1.9cm}|L{1.7cm}|}
+\caption{Ma trận truy vết từ yêu cầu đến nghiệp vụ và use case}\label{tab:truy-vet}\\
+\hline
+\hd{Mã} & \hd{Yêu cầu} & \hd{Nghiệp vụ} & \hd{Use case} & \hd{Quy tắc} & \hd{NFR}\\ \hline
+\endfirsthead
+\multicolumn{6}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Mã} & \hd{Yêu cầu} & \hd{Nghiệp vụ} & \hd{Use case} & \hd{Quy tắc} & \hd{NFR}\\ \hline
+\endhead
+\multicolumn{6}{|l|}{\hs{Yêu cầu của đề bài}}\\ \hline
+YC00 & Định danh người dùng làm nền tảng cho chia sẻ và phân quyền (yêu cầu ngầm định) & NV01.1–NV01.4 & UC01–UC07 & BR01–BR03 & NFR14, NFR15, NFR17\\ \hline
+YC01 & Tạo danh sách mua sắm theo từng ngày, chỉnh sửa, cập nhật và lưu lại cho những lần sau & NV02.1–NV02.3 & UC16, UC17, UC18, UC23 & BR08, BR09 & NFR05, NFR11\\ \hline
+YC02 & Tạo nhóm gia đình, chia sẻ danh sách, mọi thành viên cùng đóng góp và cập nhật & NV01.5–NV01.7, NV02.2 & UC09–UC15, UC17 & BR04–BR07, BR23 & NFR10, NFR16\\ \hline
+YC03 & Trưởng nhóm điều phối, phân công mua sắm, bảo đảm không quên hoặc trùng lặp & NV02.4, NV02.5 & UC19, UC20 & BR09, BR10 & NFR10\\ \hline
+YC04 & Lên kế hoạch bữa sáng, trưa, tối theo ngày hoặc tuần & NV05.1, NV05.2 & UC37, UC38, UC39 & BR18 & NFR05\\ \hline
+YC05 & Đề xuất món ăn dựa trên thực phẩm có sẵn trong tủ lạnh & NV05.3 & UC40 & BR19 & NFR09\\ \hline
+YC06 & Lưu thông tin thực phẩm: tên, số lượng, ngày hết hạn, vị trí lưu trữ; theo dõi và quản lý & NV03.1–NV03.4 & UC24, UC25, UC27, UC28, UC29 & BR11, BR12, BR14, BR15 & NFR04\\ \hline
+YC07 & Tự động nhắc khi thực phẩm sắp hết hạn trước 3 ngày & NV03.5 & UC08, UC30, UC31 & BR12, BR13 & NFR12\\ \hline
+YC08 & Lưu, quản lý công thức yêu thích, liên kết nguyên liệu với tủ lạnh & NV04.1, NV04.2, NV04.4 & UC32, UC33, UC34, UC35 & BR16, BR17 & —\\ \hline
+YC09 & Tìm kiếm món ăn, thực phẩm trong hệ thống hoặc trong tủ lạnh & NV06.1 & UC42 & BR23 & NFR09\\ \hline
+YC10 & Phân loại thực phẩm theo danh mục như thịt, rau củ, đồ hộp & NV06.2, NV08.3 & UC43, UC50 & BR22 & —\\ \hline
+YC11 & Gợi ý món ăn phù hợp với thực phẩm sẵn có & NV06.3 & UC30, UC40 & BR19 & NFR09\\ \hline
+YC12 & Báo cáo đồ đã mua và thực phẩm đã tiêu thụ trong một khoảng thời gian & NV07.1, NV07.2 & UC44, UC45 & BR21 & —\\ \hline
+YC13 & Quản trị viên quản lý tài khoản người dùng & NV08.1 & UC48 & BR23 & NFR16\\ \hline
+YC14 & Quản trị viên quản lý danh mục tên món đồ, loại mặt hàng, đơn vị đo và cấu hình hệ thống & NV08.2–NV08.5 & UC49–UC53 & BR16, BR22 & NFR20\\ \hline
+\multicolumn{6}{|l|}{\hs{Đặc điểm nổi bật của đề bài}}\\ \hline
+ĐĐ01 & Tính tiện lợi cao, kiểm soát toàn bộ quy trình mua sắm và nấu nướng & NV01–NV08 & Toàn bộ & — & NFR05, NFR08, NFR11\\ \hline
+ĐĐ02 & Chia sẻ trong gia đình, phân công giữa các thành viên & NV01.5–NV01.7, NV02.4 & UC09–UC15, UC19 & BR04–BR07, BR10 & NFR10, NFR16\\ \hline
+ĐĐ03 & Thông báo nhắc nhở thông minh, chọn món từ nguyên liệu sẵn có & NV03.5, NV05.3 & UC08, UC31, UC40 & BR13, BR19 & NFR12\\ \hline
+\multicolumn{6}{|l|}{\hs{Chức năng mở rộng đề xuất}}\\ \hline
+MR01 & Mời thành viên bằng mã mời hoặc mã QR & NV01.6 & UC10, UC11 & BR06 & NFR17\\ \hline
+MR02 & Chuyển mặt hàng đã mua vào tủ lạnh & NV02.6 & UC21 & BR11 & NFR13\\ \hline
+MR03 & Sinh danh sách mua sắm từ kế hoạch bữa ăn & NV02.7 & UC22 & BR20 & —\\ \hline
+MR04 & Quét mã vạch sản phẩm & NV03.1 & UC26 & BR22 & NFR18\\ \hline
+MR05 & Gợi ý món có chấm điểm, ưu tiên thực phẩm sắp hết hạn & NV05.3 & UC40 & BR19 & NFR09\\ \hline
+MR06 & Xác nhận đã nấu, trừ kho theo FEFO & NV05.4 & UC41 & BR15 & NFR13\\ \hline
+MR07 & Bổ sung nguyên liệu còn thiếu từ công thức & NV04.3 & UC36 & BR09 & —\\ \hline
+MR08 & Báo cáo chi tiêu, lãng phí, xuất báo cáo & NV07.1, NV07.3, NV07.4 & UC44, UC46, UC47 & BR21 & —\\ \hline
+MR09 & Thiết lập nhắc nhở cá nhân hóa & NV01.4 & UC08 & BR12, BR13 & —\\ \hline
+MR10 & Đồng bộ thời gian thực và hoạt động ngoại tuyến & NV02.2, NV02.5 & UC16, UC17, UC20 & — & NFR10, NFR11\\ \hline
+\end{longtable}
+}
+
+Kiểm tra ngược cho thấy cả 53 use case đều có trong ma trận. Trong số đó, 46 use case hiện thực các yêu cầu YC00–YC14; bảy use case còn lại — \uc{UC21}, \uc{UC22}, \uc{UC26}, \uc{UC36}, \uc{UC41}, \uc{UC46} và \uc{UC47} — phát sinh từ chức năng mở rộng. Các use case \uc{UC08}, \uc{UC10}, \uc{UC11}, \uc{UC40} và \uc{UC44} vừa đáp ứng yêu cầu đề bài, vừa được mở rộng tương ứng. Kết quả truy vết không ghi nhận use case nằm ngoài phạm vi hoặc yêu cầu nào chưa được hiện thực.

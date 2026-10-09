@@ -1,0 +1,106 @@
+% =====================================================================
+%  ucspec.tex — Môi trường đặc tả use case và bảng dữ liệu đầu vào
+%  Bố cục bám theo bảng mẫu "Đặc tả ca sử dụng" trong dsds.docx.
+% =====================================================================
+
+\newlength{\ucA}\newlength{\ucB}\newlength{\ucC}\newlength{\ucD}
+\newlength{\ucBCD}\newlength{\ucCD}
+\newcommand{\ucsetwidths}{%
+  \setlength{\ucA}{2.55cm}\setlength{\ucB}{2.75cm}\setlength{\ucC}{2.55cm}%
+  \setlength{\ucD}{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-\ucA-\ucB-\ucC\relax}%
+  \setlength{\ucBCD}{\dimexpr\ucB+\ucC+\ucD+4\tabcolsep+2\arrayrulewidth\relax}%
+  \setlength{\ucCD}{\dimexpr\ucC+\ucD+2\tabcolsep+\arrayrulewidth\relax}}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+% \begin{ucspec}{UC01}{Đăng ký tài khoản} ... \end{ucspec}
+\newenvironment{ucspec}[2]{%
+  \ucsetwidths\small
+  \begin{longtable}{|L{\ucA}|L{\ucB}|L{\ucC}|L{\ucD}|}
+  \caption{Đặc tả use case #1 – #2}\label{tab:#1}\\
+  \hline
+  \hd{Mã use case} & \textbf{#1} & \hd{Tên use case} & \textbf{#2}\\ \hline
+  \endfirsthead
+  \multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo) – #1 – #2}\\ \hline
+  \endhead
+  \endfoot
+  \endlastfoot
+}{\end{longtable}}
+
+% Một dòng thuộc tính: nhãn ở cột 1, nội dung trải 3 cột còn lại
+\newcommand{\ucfield}[2]{%
+  \hd{#1} & \multicolumn{3}{L{\ucBCD}|}{#2}\\ \hline}
+
+% Mở đầu một luồng sự kiện (chính / thay thế / ngoại lệ)
+\newcommand{\ucflow}[1]{%
+  \multicolumn{4}{|l|}{\cellcolor{headerbg}\textbf{#1}}\\ \hline
+  \hs{STT} & \hs{Thực hiện bởi} & \multicolumn{2}{L{\ucCD}|}{\cellcolor{subheaderbg}\textbf{Hành động}}\\ \hline}
+
+% Một bước trong luồng sự kiện
+\newcommand{\ucstep}[3]{%
+  #1 & #2 & \multicolumn{2}{L{\ucCD}|}{#3}\\ \hline}
+
+% ---------------------------------------------------------------------
+% Bảng mô tả dữ liệu đầu vào của một use case
+% \begin{fieldtable}{Chú thích}{nhãn} \frow{...}{...}{...}{...}{...} \end{fieldtable}
+\newlength{\ftLast}
+\newenvironment{fieldtable}[2]{%
+  \small
+  \setlength{\ftLast}{\dimexpr\textwidth-12\tabcolsep-7\arrayrulewidth-0.95cm-2.5cm-2.9cm-1.25cm-3.2cm\relax}%
+  \begin{longtable}{|C{0.95cm}|L{2.5cm}|L{2.9cm}|C{1.25cm}|L{3.2cm}|L{\ftLast}|}
+  \caption{#1}\label{#2}\\
+  \hline
+  \hd{STT} & \hd{Trường dữ liệu} & \hd{Mô tả} & \hd{Bắt buộc} & \hd{Điều kiện hợp lệ} & \hd{Ví dụ}\\ \hline
+  \endfirsthead
+  \multicolumn{6}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+  \hd{STT} & \hd{Trường dữ liệu} & \hd{Mô tả} & \hd{Bắt buộc} & \hd{Điều kiện hợp lệ} & \hd{Ví dụ}\\ \hline
+  \endhead
+  \endfoot
+  \endlastfoot
+}{\end{longtable}}
+\newcounter{frowcnt}
+\AtBeginEnvironment{fieldtable}{\setcounter{frowcnt}{0}}
+\newcommand{\frow}[5]{%
+  \stepcounter{frowcnt}\thefrowcnt & #1 & #2 & #3 & #4 & #5\\ \hline}
+
+% ---------------------------------------------------------------------
+% Bảng phân rã nghiệp vụ theo mô hình Đầu vào – Xử lý – Đầu ra
+% \begin{nvtable}{Chú thích}{nhãn} \nvrow{Mã}{Nghiệp vụ}{Đầu vào}{Xử lý}{Đầu ra} \end{nvtable}
+\newlength{\nvX}
+\newenvironment{nvtable}[2]{%
+  \small
+  \setlength{\nvX}{\dimexpr\textwidth-10\tabcolsep-6\arrayrulewidth-1.45cm-2.55cm-3.25cm-3.25cm\relax}%
+  \begin{longtable}{|C{1.45cm}|L{2.55cm}|L{3.25cm}|L{\nvX}|L{3.25cm}|}
+  \caption{#1}\label{#2}\\
+  \hline
+  \hd{Mã} & \hd{Nghiệp vụ} & \hd{Đầu vào} & \hd{Xử lý chính} & \hd{Đầu ra}\\ \hline
+  \endfirsthead
+  \multicolumn{5}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+  \hd{Mã} & \hd{Nghiệp vụ} & \hd{Đầu vào} & \hd{Xử lý chính} & \hd{Đầu ra}\\ \hline
+  \endhead
+  \endfoot
+  \endlastfoot
+}{\end{longtable}}
+\newcommand{\nvrow}[5]{#1 & #2 & #3 & #4 & #5\\ \hline}
+
+% ---------------------------------------------------------------------
+% Bảng từ điển dữ liệu nghiệp vụ (Phụ lục A)
+% \begin{ddtable}{Chú thích}{nhãn} \ddentity{Tên khái niệm} \dd{Thuộc tính}{Kiểu}{Bắt buộc}{Mô tả} \end{ddtable}
+\newlength{\ddX}
+\newenvironment{ddtable}[2]{%
+  \small
+  \setlength{\ddX}{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-3.6cm-3.3cm-1.3cm\relax}%
+  \begin{longtable}{|L{3.6cm}|L{3.3cm}|C{1.3cm}|L{\ddX}|}
+  \caption{#1}\label{#2}\\
+  \hline
+  \hd{Thuộc tính} & \hd{Kiểu dữ liệu} & \hd{Bắt buộc} & \hd{Mô tả, ràng buộc}\\ \hline
+  \endfirsthead
+  \multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+  \hd{Thuộc tính} & \hd{Kiểu dữ liệu} & \hd{Bắt buộc} & \hd{Mô tả, ràng buộc}\\ \hline
+  \endhead
+  \endfoot
+  \endlastfoot
+}{\end{longtable}}
+\newcommand{\ddentity}[1]{\multicolumn{4}{|l|}{\cellcolor{subheaderbg}\textbf{#1}}\\ \hline}
+\newcommand{\dd}[4]{#1 & #2 & #3 & #4\\ \hline}
