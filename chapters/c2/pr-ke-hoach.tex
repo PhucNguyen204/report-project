@@ -70,7 +70,8 @@ Xét ví dụ một gia đình có cá lóc còn 1 ngày, dứa còn 2 ngày, c�
 \ucstep{4b}{Hệ thống}{Chỉ còn lô Đã hết hạn cho một nguyên liệu: không tự động trừ, yêu cầu người dùng chọn rõ theo \br{BR15}.}
 \ucstep{5a}{Người dùng}{Chọn “Bỏ qua trừ kho”: món chuyển sang Đã nấu mà không thay đổi tồn kho.}
 \ucstep{6a}{Hệ thống}{Có thay đổi tồn kho đồng thời từ thành viên khác làm lượng còn lại không đủ: hủy giao dịch, tải lại số liệu và quay lại bước 4.}
-\ucfield{Điều kiện sau}{Món ở trạng thái Đã nấu và không thể sửa (\br{BR18}); tồn kho giảm đúng lượng đã xác nhận; nhật ký tiêu thụ được ghi nhận.}
+\ucstep{6b}{Hệ thống}{Món đã được xác nhận nấu trên thiết bị khác hoặc yêu cầu được gửi lại: trả trạng thái Đã nấu, không trừ tồn kho hay ghi nhật ký lần thứ hai.}
+\ucfield{Điều kiện sau}{Món ở trạng thái Đã nấu và không thể sửa (\br{BR18}); nếu người dùng xác nhận trừ kho, tồn kho giảm đúng lượng và nhật ký tiêu thụ chỉ được ghi một lần; nếu bỏ qua trừ kho, tồn kho và nhật ký tiêu thụ không đổi.}
 \ucfield{Quy tắc nghiệp vụ}{\br{BR14}, \br{BR15}, \br{BR16}, \br{BR18}}
 \end{ucspec}
 
