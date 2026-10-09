@@ -7,10 +7,10 @@ Hiện đã hoàn thiện **Chương 1** (Khảo sát bài toán), **Chương 2*
 
 Cần có Git và [Homebrew](https://brew.sh). Nếu máy chưa có Git, chạy
 `xcode-select --install` và hoàn tất cài đặt Command Line Tools trước.
-Repo public nên không cần đăng nhập GitHub để tải mã nguồn.
+Mã nguồn báo cáo nằm trên nhánh `baocao` của repo GitLab của nhóm.
 
 ```bash
-git clone https://github.com/PhucNguyen204/report-project.git
+git clone --branch baocao https://gitlab.nqtuan0192.me/baotg235019/172915-nhom7-dichothongminh.git report-project
 cd report-project
 ./setup.sh
 ./run.sh --open
@@ -22,7 +22,7 @@ Lần chạy Tectonic đầu tiên cần Internet để tải các gói LaTeX v�
 những lần sau dùng lại bộ nhớ đệm.
 
 **PDF đầu ra:** `output/pdf/bao-cao.pdf`. Tệp trung gian và log nằm trong `build/`.
-PDF và các tệp trung gian không được lưu trên GitHub; mỗi người chạy lệnh trên
+PDF và các tệp trung gian không được lưu trên GitLab; mỗi người chạy lệnh trên
 để tạo bản PDF tại máy mình. PDF đầu ra chỉ được cập nhật khi biên dịch thành công.
 
 ## Chạy lại sau khi sửa báo cáo
@@ -34,7 +34,7 @@ Sửa các tệp `.tex`, lưu lại rồi chạy:
 ./run.sh --open   # tạo PDF và mở để xem
 ```
 
-Không cần chạy lại `setup.sh` mỗi lần. Khi cần lấy thay đổi mới từ GitHub,
+Không cần chạy lại `setup.sh` mỗi lần. Khi cần lấy thay đổi mới từ GitLab,
 commit hoặc cất các thay đổi đang làm trước, rồi chạy `git pull --ff-only`.
 Script cũng chạy được khi gọi bằng đường dẫn tuyệt đối từ thư mục khác.
 
@@ -57,7 +57,7 @@ bởi `./run.sh`.
   cần thiết; sau đó chạy `bash run.sh --xelatex`.
 - **Windows:** dùng WSL và làm theo hướng dẫn Linux. Mở `output/pdf/bao-cao.pdf`
   thủ công nếu WSL không có ứng dụng xem PDF.
-- **Overleaf:** tải mã nguồn từ GitHub bằng **Code → Download ZIP**, tạo dự án từ
+- **Overleaf:** tải mã nguồn từ GitLab bằng **Code → Download source code → zip**, tạo dự án từ
   ZIP, chọn compiler **XeLaTeX** và tệp chính `main.tex`. PDF do Overleaf tạo có
   tên `main.pdf`.
 
@@ -149,7 +149,14 @@ Nếu máy không có Graphviz, thêm dòng `!pragma layout smetana` vào đầu
 
 ## Đóng góp
 
-Mọi người có thể fork repo, sửa nội dung và gửi pull request vào nhánh `main`.
-Thành viên đã được chủ repo thêm làm collaborator và chấp nhận lời mời có thể
-push nhánh và merge pull request. Repo public không tự cấp quyền merge cho mọi
-tài khoản; gửi username GitHub cho chủ repo nếu cần quyền cộng tác.
+Mỗi thành viên sửa báo cáo trên nhánh của mình (`baocao-phucnn`,
+`baocao-ducdn`, `baocao-tungnn`), rồi tạo merge request vào nhánh `baocao`.
+Ví dụ với nhánh của Phúc:
+
+```bash
+git switch baocao-phucnn
+# Sửa nội dung và chạy ./run.sh để kiểm tra trước khi commit.
+git add <cac-tep-da-sua>
+git commit -m "Cập nhật báo cáo"
+git push origin baocao-phucnn
+```
