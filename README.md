@@ -1,6 +1,6 @@
 # Báo cáo LaTeX – Ứng dụng “Đi chợ tiện lợi” (IT4788)
 
-Báo cáo bài tập lớn môn Phát triển ứng dụng đa nền tảng của **Nhóm 10**, mục lục bám theo mẫu `dsds.docx`.
+Báo cáo bài tập lớn môn Phát triển ứng dụng đa nền tảng của **Nhóm 7**, mục lục bám theo mẫu `dsds.docx`.
 Hiện đã hoàn thiện **Chương 1** (Khảo sát bài toán), **Chương 2** (Đặc tả yêu cầu bài toán) và các phụ lục liên quan; Chương 3–6 và phần Kết luận vẫn đang ở dạng khung, được ẩn mặc định khỏi bản biên dịch.
 
 ## Chạy nhanh trên macOS
