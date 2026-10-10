@@ -65,7 +65,23 @@ bởi `./run.sh`.
 gói của Windows. Hướng dẫn macOS đã được chạy kiểm tra trên máy của nhóm;
 các môi trường còn lại cần tự chuẩn bị bộ biên dịch và font tương ứng.
 
-## Font chữ
+## Slide báo cáo chương 1 và chương 2
+
+Nội dung 13 slide đã điền trực tiếp vào mẫu HUST Beamer tại
+`HUST_THEME_BEAMER___LATEX_BY_FRC/Slide_HUST.tex`. Bộ slide có trang bìa đủ
+thành viên, sơ đồ phân rã, bảng 53 use case theo 9 nhóm và các use case tiêu biểu.
+Lời dẫn và lịch trình 10 phút nằm trong
+`HUST_THEME_BEAMER___LATEX_BY_FRC/THUYET_TRINH_10_PHUT.md`.
+
+```bash
+bash build-slides.sh
+```
+
+PDF đầu ra: `output/pdf/slide-chuong-1-2.pdf`. Cần Tectonic và font Arial;
+lần biên dịch đầu cần mạng để tải gói Beamer. Các tệp trung gian nằm trong
+`build/slides/` và không được đưa vào Git.
+
+## Font chữ báo cáo
 
 Thân bài ưu tiên **Times New Roman**, tiêu đề ưu tiên **Arial**. Để giữ đúng hai
 font này, cần cài chúng vào hệ điều hành trước khi biên dịch; `setup.sh` không tải
