@@ -1,5 +1,5 @@
 % 21 slide, trình bày 10 phút. Dùng trực tiếp ảnh PNG của báo cáo.
-% UC-AI01 là đề xuất mở rộng, không cộng vào 53 use case hiện tại.
+% Hỏi đáp AI là tính năng liên kết với danh sách mua sắm.
 \documentclass[t,aspectratio=169,10pt]{beamer}
 \usepackage{fontspec}
 \setsansfont{Arial}
@@ -95,7 +95,8 @@ Theo dõi hạn dùng & Lưu thực phẩm, nhắc hết hạn & Tách rời mua
 \gap
 \begin{columns}[T,onlytextwidth]
 \column{0.49\textwidth}\key{Phạm vi chính}\par Nhóm gia đình, danh sách mua sắm, tủ lạnh, công thức, kế hoạch và thống kê.
-\column{0.47\textwidth}\key{Ngoài phạm vi hiện tại}\par Thanh toán, giao hàng, IoT. Trợ lý AI được trình bày như đề xuất mở rộng.
+\column{0.47\textwidth}\key{Không bao gồm}\par Thanh toán, giao hàng và IoT.
+\gap\key{Tính năng hỏi đáp AI}\par Làm rõ món ăn, khẩu phần và nguyên liệu trước khi tạo danh sách mua sắm.
 \end{columns}
 \source{Chương 1, khảo sát của nhóm và bảng phạm vi.}
 \end{frame}
@@ -108,7 +109,7 @@ Theo dõi hạn dùng & Lưu thực phẩm, nhắc hết hạn & Tách rời mua
 \column{0.48\textwidth}\key{Kết quả mong đợi}\par Mua đúng phần thiếu, sử dụng thực phẩm gần hết hạn và ghi nhận tiêu thụ.
 \end{columns}
 \gap\key{Đối tượng sử dụng:} Cá nhân và các thành viên cùng quản lý thực phẩm gia đình.
-\source{Chương 1, ảnh chu trình nghiệp vụ đề xuất.}
+\source{Chương 1, ảnh chu trình nghiệp vụ của hệ thống.}
 \end{frame}
 % 06
 \begin{frame}{Sơ đồ phân rã chức năng: 8 phân hệ}
@@ -158,7 +159,7 @@ Theo dõi hạn dùng & Lưu thực phẩm, nhắc hết hạn & Tách rời mua
 9. Quản trị & UC48--UC53 & 6 & Tài khoản, danh mục, tham số hệ thống\\\bottomrule
 \end{tabular}
 \gap\key{Trọng tâm đặc tả:} 12 use case đầy đủ, 12 mô tả ngắn, 29 ở phụ lục.
-\noteinfo{UC-AI01 ở cuối bài là đề xuất mới, chưa tính trong 53 use case của báo cáo.}
+\noteinfo{Tính năng hỏi đáp AI tạo danh sách nguyên liệu và phối hợp với chức năng mua sắm.}
 \end{frame}
 % 10
 \begin{frame}{Nhóm gia đình và UC11: tham gia bằng mã mời}
@@ -264,7 +265,7 @@ Chờ mua & 0,1 kg, đến trước D\\\bottomrule
 R: đáp ứng nguyên liệu.\par E: ưu tiên thực phẩm gần hạn.\par F: món yêu thích.
 \gap\key{Ví dụ trong báo cáo}\par Canh chua cá lóc: \textbf{0,75}.\\Trứng xào cà chua: \textbf{0,60}.
 \gap Canh chua dùng cá và dứa gần hết hạn, nhưng cần mua thêm me.
-\gap\noteinfo{Đặc tả hiện tại dùng công thức chấm điểm, chưa dùng trợ lý AI.}
+\gap\noteinfo{Hỏi đáp AI hỗ trợ tạo danh sách; UC40 xếp hạng món theo công thức chấm điểm.}
 \end{columns}
 \source{Chương 2, gói kế hoạch bữa ăn và ví dụ UC40.}
 \end{frame}
@@ -281,10 +282,10 @@ R: đáp ứng nguyên liệu.\par E: ưu tiên thực phẩm gần hạn.\par F
 \end{columns}
 \source{Chương 2, ảnh hoạt động và đặc tả UC41.}
 \end{frame}
-\section{Đề xuất mở rộng trợ lý AI}
+\section{Tính năng hỏi đáp AI}
 % 19
 \begin{frame}{UC-AI01: hỏi đáp để lập danh sách nguyên liệu}
-\noteinfo{Đề xuất mở rộng mới, chưa thuộc 53 use case trong báo cáo.}
+\noteinfo{Tính năng hỏi đáp AI liên kết với chức năng sinh danh sách nguyên liệu và mua sắm.}
 \gap
 \begin{columns}[T,onlytextwidth]
 \column{0.47\textwidth}\small
@@ -293,7 +294,7 @@ R: đáp ứng nguyên liệu.\par E: ưu tiên thực phẩm gần hạn.\par F
 \gap\key{Thông tin cần hỏi}\par Món muốn nấu, số người, ngày nấu, sở thích và nguyên liệu đã có.
 \gap\key{Điều kiện sau}\par Danh sách nguyên liệu theo khẩu phần được người dùng xác nhận và lưu vào mua sắm.
 \column{0.49\textwidth}
-\key{Luồng tương tác đề xuất}
+\key{Luồng tương tác}
 \begin{enumerate}\setlength\itemsep{5pt}
 \item Người dùng nêu mong muốn bằng câu tự nhiên.
 \item AI hỏi bổ sung khi thiếu món, khẩu phần hoặc ngày nấu.
@@ -313,7 +314,7 @@ R: đáp ứng nguyên liệu.\par E: ưu tiên thực phẩm gần hạn.\par F
 \gap\key{Người dùng}\par “Có thịt băm, giữ các nguyên liệu còn lại.”
 \gap\key{Trợ lý AI}\par “Mình đã đối chiếu tủ lạnh. Đây là phần còn thiếu. Bạn kiểm tra lượng rồi xác nhận lưu nhé.”
 \column{0.48\textwidth}\small
-\key{Danh sách đề xuất sau đối chiếu}
+\key{Danh sách cần mua sau đối chiếu}
 \renewcommand{\arraystretch}{1.4}
 \begin{tabular}{@{}P{2.6cm}rrr@{}}\toprule
 \textbf{Nguyên liệu} & \textbf{Cần} & \textbf{Có} & \textbf{Mua}\\\midrule
@@ -342,7 +343,7 @@ Phân quyền & Máy chủ kiểm tra vai trò và không gian ở mọi API\\
 \gap\normalsize
 \key{Chương 1:} Bài toán và 8 phân hệ nghiệp vụ.\par
 \key{Chương 2:} 53 use case thuộc 9 gói chức năng.\par
-\key{Đề xuất mới:} Hỏi đáp AI để làm rõ nhu cầu và tạo danh sách nguyên liệu.
+\key{Tính năng AI:} Hỏi đáp để làm rõ nhu cầu, đối chiếu tồn kho và tạo danh sách nguyên liệu.
 \gap\key{Cảm ơn thầy và các bạn!}
 \end{frame}
 \end{document}
