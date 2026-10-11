@@ -16,7 +16,9 @@ Quy trình này được mô hình hóa ở Hình~\ref{fig:quy-trinh-thu-cong} v
 
 \diagram[0.86\textwidth]{c1-01-quy-trinh-thu-cong}{Quy trình đi chợ và sử dụng thực phẩm theo cách thủ công}{fig:quy-trinh-thu-cong}
 
-Lãng phí thực phẩm ở hộ gia đình cũng là vấn đề đáng kể trên phạm vi toàn cầu. Theo Báo cáo Chỉ số Lãng phí Thực phẩm năm 2024 của Chương trình Môi trường Liên Hợp Quốc, năm 2022 thế giới phát sinh khoảng 1,05 tỷ tấn chất thải thực phẩm; khu vực hộ gia đình chiếm khoảng 60\%, tương đương bình quân 79 kg mỗi người mỗi năm~\cite{unep2024}. Số liệu này cho thấy quy mô lớn của vấn đề. Việc không theo dõi tồn kho và hạn sử dụng có thể khiến thực phẩm bị bỏ quên, trong khi mua sắm thiếu kế hoạch gây khó khăn cho việc kiểm soát chi tiêu và duy trì chế độ ăn uống ổn định.
+Xét một tình huống minh họa trong gia đình có nhiều người cùng chuẩn bị bữa tối. Một thành viên nhắn cần mua trứng và rau, trong khi người khác đã mua trứng trên đường về nhưng chưa kịp báo lại. Người đang ở chợ chỉ nhìn thấy tin nhắn ban đầu nên tiếp tục mua cùng mặt hàng. Đến lúc nấu ăn, gia đình mới phát hiện lượng trứng còn từ lần mua trước chưa được dùng hết. Vấn đề xuất hiện ở cả ba thời điểm: lúc tổng hợp nhu cầu, lúc xác nhận kết quả mua và lúc kiểm tra thực phẩm trong nhà.
+
+Khi kế hoạch thay đổi, cách quản lý thủ công càng khó theo dõi. Một bữa ăn bị hủy hoặc có ít người ăn hơn làm nhu cầu nguyên liệu giảm, nhưng danh sách mua sắm có thể vẫn giữ số lượng cũ. Sau khi nấu, phần nguyên liệu còn lại thường không được ghi nhận nên người lập thực đơn cho ngày tiếp theo phải kiểm tra lại từ đầu. Nếu thực phẩm bị bỏ đi, gia đình cũng khó biết nguyên nhân là mua quá nhiều, thay đổi lịch ăn hay quên sử dụng. Do đó, bài toán cần theo dõi cả nhu cầu dự kiến, lượng mua thực tế và lượng đã dùng, đồng thời làm rõ trách nhiệm cập nhật của các thành viên.
 
 \subsection{Khảo sát một số giải pháp hiện có}\label{ssec:giai-phap-hien-co}
 
@@ -48,6 +50,8 @@ Từ thực trạng trên, đề tài hướng tới xây dựng một ứng d�
 Thứ nhất, danh sách mua sắm được tổ chức theo ngày, hỗ trợ chỉnh sửa, tái sử dụng và tự động gộp các mặt hàng trùng lặp. Thứ hai, nhóm gia đình cho phép trưởng nhóm phân công việc mua sắm, còn các thành viên cùng cập nhật danh sách. Thứ ba, hệ thống quản lý tên, số lượng, hạn sử dụng và vị trí lưu trữ của thực phẩm, đồng thời gửi thông báo trước ba ngày khi thực phẩm sắp hết hạn. Thứ tư, kế hoạch bữa ăn và công thức được liên kết với tồn kho để gợi ý món từ nguyên liệu sẵn có, ưu tiên thực phẩm sắp hết hạn và xác định phần nguyên liệu còn thiếu cần mua.
 
 Ứng dụng cũng cần cung cấp báo cáo về thói quen mua sắm và tiêu thụ để người dùng điều chỉnh ngân sách, kế hoạch dinh dưỡng; đồng thời có phân hệ quản trị để duy trì chất lượng dữ liệu danh mục dùng chung, gồm tên thực phẩm, loại mặt hàng và đơn vị đo lường.
+
+Các yêu cầu này phải được giải quyết trên cùng một dòng dữ liệu. Người dùng ghi nhận mặt hàng đã mua một lần, sau đó dùng thông tin đó để nhập tủ và theo dõi chi tiêu. Khi xác nhận đã nấu, lượng nguyên liệu thực dùng trở thành căn cứ cập nhật tồn kho và báo cáo tiêu thụ. Nếu mỗi chức năng yêu cầu nhập lại một danh sách riêng, dữ liệu giữa các màn hình dễ lệch nhau và người dùng phải đối chiếu thủ công. Vì vậy, tính liên kết giữa các bước là tiêu chí quan trọng khi phân tích bài toán.
 
 \subsection{Mục tiêu, phạm vi và đối tượng sử dụng}\label{ssec:muc-tieu}
 
@@ -94,9 +98,9 @@ Quản trị tài khoản, danh mục dùng chung và tham số hệ thống & H
 
 Đối tượng sử dụng chính là các hộ gia đình, đặc biệt là người đảm nhận việc nội trợ, người bận rộn và gia đình có nhiều thành viên cùng tham gia mua sắm. Trong ứng dụng, “gia đình” được hiểu rộng là nhóm người dùng chung một không gian bếp; do đó, ứng dụng cũng phù hợp với sinh viên ở ghép hoặc nhóm bạn thuê chung nhà. Đối tượng sử dụng khác là quản trị viên, chịu trách nhiệm vận hành hệ thống và duy trì dữ liệu danh mục.
 
-\subsection{Chức năng chính và chức năng mở rộng đề xuất}\label{ssec:chuc-nang}
+\subsection{Các chức năng và mối liên hệ nghiệp vụ}\label{ssec:chuc-nang}
 
-Ứng dụng gồm tám phân hệ, được trình bày trong sơ đồ phân rã chức năng ở Hình~\ref{fig:phan-ra-chuc-nang}. Bảy phân hệ tương ứng với các nhóm chức năng trong đề bài~\cite{debai}: quản lý danh sách mua sắm, kế hoạch bữa ăn, thực phẩm trong tủ lạnh, công thức nấu ăn, tìm kiếm và phân loại thực phẩm, thống kê và báo cáo, quản trị hệ thống. Phân hệ tài khoản và nhóm gia đình được tách riêng vì cung cấp nền tảng chia sẻ dữ liệu và phân quyền cho các phân hệ còn lại.
+Ứng dụng gồm tám phân hệ, được trình bày trong sơ đồ phân rã chức năng ở Hình~\ref{fig:phan-ra-chuc-nang}: tài khoản và nhóm gia đình, danh sách mua sắm, kế hoạch bữa ăn, thực phẩm trong tủ lạnh, công thức nấu ăn, tìm kiếm và phân loại thực phẩm, thống kê báo cáo, quản trị hệ thống. Phân hệ tài khoản và nhóm gia đình cung cấp nền tảng chia sẻ dữ liệu và phân quyền cho các phân hệ còn lại.
 
 % Sơ đồ phân rã chức năng rộng 8 nhánh nên đặt trên trang khổ ngang
 \begin{figure}[H]
@@ -105,16 +109,16 @@ Quản trị tài khoản, danh mục dùng chung và tham số hệ thống & H
   \caption{Sơ đồ phân rã chức năng của ứng dụng}\label{fig:phan-ra-chuc-nang}
 \end{figure}
 
-Ngoài các chức năng trong đề bài, nhóm đề xuất một số chức năng mở rộng, được đánh dấu màu cam trong Hình~\ref{fig:phan-ra-chuc-nang} và liệt kê tại Bảng~\ref{tab:chuc-nang-mo-rong}. Các chức năng này liên kết các khâu trong quy trình: mặt hàng đã mua có thể được chuyển vào tủ lạnh cùng hạn dùng đề xuất; nguyên liệu được trừ khỏi tồn kho khi người dùng xác nhận đã nấu; phần nguyên liệu còn thiếu được đưa vào danh sách mua sắm khi lập kế hoạch bữa ăn. Nhờ đó, dữ liệu được tái sử dụng giữa các khâu thay vì phải nhập lại.
+Các chức năng trong Bảng~\ref{tab:chuc-nang-mo-rong} hỗ trợ phối hợp thành viên và liên kết các khâu của quy trình. Mặt hàng đã mua được chuyển vào tủ lạnh cùng thông tin số lượng và hạn dùng gợi ý; nguyên liệu được trừ khỏi tồn kho khi người dùng xác nhận đã nấu; phần nguyên liệu còn thiếu được đưa vào danh sách mua sắm khi lập kế hoạch bữa ăn. Người dùng có thể bắt đầu từ danh sách cần mua hoặc từ món định nấu, nhưng các bước tiếp theo đều sử dụng chung dữ liệu thực phẩm và không gian gia đình.
 
 {\small
 \begin{longtable}{|C{1.1cm}|L{3.7cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-1.1cm-3.7cm-2.1cm\relax}|C{2.1cm}|}
-\caption{Các chức năng mở rộng đề xuất}\label{tab:chuc-nang-mo-rong}\\
+\caption{Các chức năng hỗ trợ phối hợp và liên kết nghiệp vụ}\label{tab:chuc-nang-mo-rong}\\
 \hline
-\hd{Mã} & \hd{Chức năng mở rộng} & \hd{Vấn đề được giải quyết} & \hd{Use case}\\ \hline
+\hd{Mã} & \hd{Chức năng} & \hd{Vấn đề được giải quyết} & \hd{Use case}\\ \hline
 \endfirsthead
 \multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
-\hd{Mã} & \hd{Chức năng mở rộng} & \hd{Vấn đề được giải quyết} & \hd{Use case}\\ \hline
+\hd{Mã} & \hd{Chức năng} & \hd{Vấn đề được giải quyết} & \hd{Use case}\\ \hline
 \endhead
 MR01 & Mời thành viên bằng mã mời hoặc mã QR & Thành viên gia nhập nhóm nhanh, không cần trưởng nhóm biết trước email; mã có thời hạn và có thể thu hồi để bảo đảm an toàn & \uc{UC10}, \uc{UC11}\\ \hline
 MR02 & Chuyển mặt hàng đã mua vào tủ lạnh & Loại bỏ việc nhập lại thông tin thực phẩm sau khi đi chợ; hạn dùng được đề xuất theo loại thực phẩm và vị trí bảo quản & \uc{UC21}\\ \hline
@@ -129,9 +133,9 @@ MR10 & Đồng bộ thời gian thực và hoạt động ngoại tuyến & Danh
 \end{longtable}
 }
 
-Hình~\ref{fig:chu-trinh} minh họa chu trình nghiệp vụ đề xuất. Chu trình bắt đầu từ lập kế hoạch bữa ăn, tiếp tục qua các khâu tạo danh sách, phân công mua sắm, nhập thực phẩm vào tủ lạnh, theo dõi hạn dùng và nấu ăn, rồi kết thúc bằng thống kê. Kết quả thống kê được dùng để điều chỉnh kế hoạch tiếp theo. Mũi tên nét đứt biểu thị việc thông tin về thực phẩm sắp hết hạn được sử dụng để ưu tiên gợi ý món trong bước lập kế hoạch.
+Hình~\ref{fig:chu-trinh} minh họa chu trình nghiệp vụ của hệ thống. Chu trình bắt đầu từ lập kế hoạch bữa ăn, tiếp tục qua các khâu tạo danh sách, phân công mua sắm, nhập thực phẩm vào tủ lạnh, theo dõi hạn dùng và nấu ăn, rồi kết thúc bằng thống kê. Kết quả thống kê được dùng để điều chỉnh kế hoạch tiếp theo. Mũi tên nét đứt biểu thị việc thông tin về thực phẩm sắp hết hạn được sử dụng để ưu tiên gợi ý món trong bước lập kế hoạch.
 
-\diagram[\textwidth]{c1-02-chu-trinh-nghiep-vu}{Chu trình nghiệp vụ khép kín đề xuất cho ứng dụng}{fig:chu-trinh}
+\diagram[\textwidth]{c1-02-chu-trinh-nghiep-vu}{Chu trình nghiệp vụ khép kín của ứng dụng}{fig:chu-trinh}
 
 % ---------------------------------------------------------------------
 \section{Xác định thông tin cơ bản cho nghiệp vụ của bài toán}\label{sec:thong-tin-nghiep-vu}
@@ -140,7 +144,7 @@ Phần này phân tích bài toán ở mức nghiệp vụ, độc lập với g
 
 \subsection{Ngữ cảnh hệ thống và các nhóm nghiệp vụ}\label{ssec:ngu-canh}
 
-Hình~\ref{fig:ngu-canh} xác định ranh giới hệ thống “Đi chợ tiện lợi”, gồm ứng dụng di động trên thiết bị người dùng và máy chủ lưu trữ dữ liệu tập trung. Các bên tương tác trực tiếp gồm khách chưa có tài khoản, người dùng, thành viên gia đình, trưởng nhóm và quản trị viên. Hệ thống phụ thuộc vào ba dịch vụ bên ngoài: dịch vụ thông báo đẩy, dịch vụ thư điện tử để gửi mã xác thực và thư khôi phục mật khẩu, và cơ sở dữ liệu sản phẩm mở để tra cứu mã vạch~\cite{openfoodfacts}. Ngoài ra, bộ lập lịch kích hoạt tác vụ kiểm tra hạn sử dụng hằng ngày.
+Hình~\ref{fig:ngu-canh} xác định ranh giới hệ thống “Đi chợ tiện lợi”, gồm ứng dụng di động trên thiết bị người dùng và máy chủ lưu trữ dữ liệu tập trung. Các bên tương tác trực tiếp gồm khách chưa có tài khoản, người dùng, thành viên gia đình, trưởng nhóm và quản trị viên. Hệ thống sử dụng ba dịch vụ bên ngoài: dịch vụ thông báo đẩy, dịch vụ thư điện tử để gửi mã xác thực và thư khôi phục mật khẩu, và cơ sở dữ liệu sản phẩm mở để tra cứu mã vạch. Ngoài ra, bộ lập lịch kích hoạt tác vụ kiểm tra hạn sử dụng hằng ngày.
 
 \diagram[0.95\textwidth]{c1-04-ngu-canh}{Sơ đồ ngữ cảnh của hệ thống}{fig:ngu-canh}
 
@@ -174,6 +178,8 @@ NV08 & Quản trị hệ thống & Quản lý tài khoản, dữ liệu danh m�
 
 NV01 quản lý tài khoản và quyền truy cập của người dùng. Người dùng đăng ký bằng email và xác thực địa chỉ này qua mã OTP. Sau khi tài khoản được kích hoạt, hệ thống tạo một \emph{không gian cá nhân} — một nhóm chỉ có một thành viên — để người dùng có thể sử dụng ứng dụng mà không cần tham gia nhóm gia đình. Khi muốn chia sẻ dữ liệu, người dùng có thể tạo nhóm gia đình, trở thành trưởng nhóm và mời thành viên khác bằng mã mời hoặc mã QR. Mọi danh sách mua sắm, tồn kho và kế hoạch bữa ăn đều gắn với một nhóm, dù là không gian cá nhân hay nhóm gia đình. Các nghiệp vụ con được trình bày trong Bảng~\ref{tab:nv01}.
 
+Việc tách không gian cá nhân và nhóm giúp một người vừa quản lý đồ dùng riêng, vừa tham gia công việc chung. Khi chuyển sang nhóm gia đình, người dùng phải nhìn thấy danh sách, tồn kho và lịch ăn của đúng nhóm đó; dữ liệu cá nhân không tự động trở thành dữ liệu chung. Vai trò trưởng nhóm phục vụ điều phối, còn các thành viên vẫn có thể cập nhật nhu cầu và kết quả mua. Khi một người rời nhóm, quyền truy cập dữ liệu chung và các phân công chưa hoàn thành cần được xử lý đồng thời để không còn mặt hàng giao cho người không thuộc nhóm.
+
 \begin{nvtable}{Phân rã nghiệp vụ NV01 – Quản lý tài khoản và nhóm gia đình}{tab:nv01}
 \nvrow{NV01.1}{Đăng ký}{Họ tên, email, mật khẩu}{Kiểm tra \br{BR01}, tạo tài khoản chờ xác thực}{Tài khoản chờ, mã OTP}
 \nvrow{NV01.2}{Xác thực}{Email, OTP}{Kiểm tra hạn và số lần sai; kích hoạt theo \br{BR02}, \br{BR04}}{Tài khoản hoạt động, không gian cá nhân}
@@ -194,7 +200,9 @@ Vòng đời của mặt hàng được biểu diễn ở Hình~\ref{fig:trang-t
 
 \diagram[0.58\textwidth]{c1-07-trang-thai-mat-hang}{Vòng đời của một mặt hàng trong danh sách mua sắm}{fig:trang-thai-mat-hang}
 
-Các nghiệp vụ con của NV02 được phân tích trong Bảng~\ref{tab:nv02}.
+Trong quá trình mua, cần phân biệt số lượng dự kiến với số lượng thực tế. Chẳng hạn, danh sách yêu cầu 0,5 kg cà chua nhưng người mua chọn được 0,6 kg; lượng nhập tủ và chi tiêu phải dựa trên kết quả mua đã xác nhận. Trường hợp mua hộ người khác cũng cần lưu đúng người mua thực tế để thành viên được phân công biết công việc đã hoàn thành. Nếu thiết bị mất mạng, trạng thái chờ đồng bộ phải được thể hiện rõ vì các thành viên khác có thể chưa nhận được thay đổi.
+
+Danh sách cũ có thể được tái sử dụng cho một lần đi chợ mới, nhưng chỉ sao chép nhu cầu mặt hàng. Trạng thái đã mua, người mua và thời điểm của lần trước không được mang sang lần mới. Tương tự, khi gộp các mặt hàng trùng, hệ thống cần đối chiếu cả thực phẩm và đơn vị: cùng tên chưa đủ để cộng số lượng nếu một dòng tính theo bó và dòng khác tính theo gam. Các nghiệp vụ con của NV02 được phân tích trong Bảng~\ref{tab:nv02}.
 
 \begin{nvtable}{Phân rã nghiệp vụ NV02 – Quản lý danh sách mua sắm}{tab:nv02}
 \nvrow{NV02.1}{Tạo danh sách mua sắm}{Tên danh sách, ngày dự kiến mua, ghi chú}{Kiểm tra ngày không ở quá khứ, gắn danh sách vào không gian hiện hành (\br{BR08})}{Danh sách ở trạng thái Đang lập}
@@ -227,13 +235,15 @@ Kệ bếp, tủ khô & Nhiệt độ phòng, khô ráo & Gạo, mì khô, đồ
 \end{longtable}
 }
 
-Các giá trị trong Bảng~\ref{tab:vi-tri-luu-tru} là giá trị mặc định nhằm giảm thao tác nhập liệu, được xây dựng dựa trên khuyến nghị bảo quản thực phẩm của cơ quan an toàn thực phẩm Hoa Kỳ~\cite{usdafoodkeeper}. Quản trị viên có thể điều chỉnh các giá trị này trong danh mục thực phẩm; người dùng cũng có thể sửa theo hạn sử dụng ghi trên bao bì.
+Hạn dùng gợi ý trong Bảng~\ref{tab:vi-tri-luu-tru} hỗ trợ điền trước biểu mẫu~\cite{usdafoodkeeper}. Người dùng kiểm tra và sửa theo hạn ghi trên bao bì trước khi lưu lô. Một thực phẩm có thể có nhiều lô với hạn dùng khác nhau, nên hệ thống không được gộp toàn bộ thành một bản ghi chỉ có tổng số lượng. Ví dụ, khi hai lần mua tạo ra hai lô sữa, người dùng cần biết lượng còn lại của từng lô để chọn lô cần dùng trước và theo dõi đúng phần đã hết.
 
 Trạng thái hạn dùng được xác định theo số ngày còn lại $d$ và ngưỡng nhắc $N$ của người dùng (mặc định $N = 3$). Lô ở trạng thái \emph{Còn hạn} khi $d > N$, \emph{Sắp hết hạn} khi $0 \le d \le N$ và \emph{Đã hết hạn} khi $d < 0$. Ví dụ, thực phẩm hết hạn ngày 10 sẽ bắt đầu được nhắc từ ngày 7. Vòng đời của lô được thể hiện ở Hình~\ref{fig:trang-thai-thuc-pham}. Trạng thái có thể chuyển từ \emph{Sắp hết hạn} về \emph{Còn hạn} nếu người dùng cập nhật hạn dùng, chẳng hạn khi chuyển thịt từ ngăn mát sang ngăn đông.
 
 \diagram[0.56\textwidth]{c1-08-trang-thai-thuc-pham}{Vòng đời của một lô thực phẩm trong tủ lạnh}{fig:trang-thai-thuc-pham}
 
-Mọi thay đổi về số lượng của lô được ghi vào \emph{nhật ký sử dụng}, gồm hai loại: \emph{tiêu thụ} khi thực phẩm được dùng để nấu ăn và \emph{loại bỏ} khi thực phẩm bị hỏng hoặc hết hạn. Nhật ký này cung cấp dữ liệu cho các báo cáo tiêu thụ và lãng phí trong NV07. Các nghiệp vụ con của NV03 được trình bày tại Bảng~\ref{tab:nv03}.
+Mọi thay đổi về số lượng của lô được ghi vào \emph{nhật ký sử dụng}, gồm hai loại: \emph{tiêu thụ} khi thực phẩm được dùng để nấu ăn và \emph{loại bỏ} khi thực phẩm bị hỏng hoặc hết hạn. Nhật ký này cung cấp dữ liệu cho các báo cáo tiêu thụ và lãng phí trong NV07. Việc giảm số lượng không được thực hiện bằng cách xóa hẳn lô, vì khi đó hệ thống sẽ mất thông tin về nguyên nhân và thời điểm giảm. Lô đã dùng hết hoặc đã loại bỏ vẫn cần được nhận diện trong lịch sử, dù không còn xuất hiện trong danh sách thực phẩm khả dụng.
+
+Nhắc hạn dùng phải dựa trên lượng còn lại và thiết lập của người nhận. Một lô đã dùng hết không còn cần nhắc; cùng một lô có thể được nhắc cho các thành viên ở những thời điểm khác nhau do ngưỡng nhắc khác nhau. Thông báo cần dẫn về danh sách hiện tại để người dùng chọn sử dụng, cập nhật hoặc loại bỏ thực phẩm. Nếu chỉ hiển thị cảnh báo mà không liên kết tới thao tác tiếp theo, người dùng vẫn phải tự tìm lại lô trong tủ. Các nghiệp vụ con của NV03 được trình bày tại Bảng~\ref{tab:nv03}.
 
 \begin{nvtable}{Phân rã nghiệp vụ NV03 – Quản lý thực phẩm trong tủ lạnh}{tab:nv03}
 \nvrow{NV03.1}{Nhập thực phẩm vào tủ}{Thực phẩm hoặc mã vạch, số lượng, đơn vị, ngày mua, ngày hết hạn, vị trí}{Tra cứu danh mục theo tên hoặc mã vạch; đề xuất hạn dùng nếu bỏ trống; kiểm tra ngày hết hạn không trước ngày mua (\br{BR11}, \br{BR14})}{Lô thực phẩm mới ở trạng thái tương ứng}
@@ -247,6 +257,8 @@ Mọi thay đổi về số lượng của lô được ghi vào \emph{nhật k�
 
 NV04 cho phép người dùng lưu trữ công thức nấu ăn. Mỗi công thức gồm tên món, ảnh minh họa, số khẩu phần chuẩn, thời gian chuẩn bị và nấu, các bước thực hiện và danh sách nguyên liệu. Mỗi nguyên liệu được liên kết với một thực phẩm trong danh mục, kèm số lượng và đơn vị, thay vì chỉ được ghi dưới dạng văn bản tự do. Nhờ đó, hệ thống có thể đối chiếu công thức với tồn kho, xác định nguyên liệu còn thiếu và điều chỉnh lượng nguyên liệu theo số khẩu phần. Nguyên liệu được phân thành loại bắt buộc và tùy chọn để việc đánh giá khả năng chế biến linh hoạt hơn. Ngoài công thức do người dùng tạo, hệ thống cung cấp bộ công thức mẫu do quản trị viên biên soạn. Các nghiệp vụ con của NV04 được trình bày tại Bảng~\ref{tab:nv04}.
 
+Công thức và bữa ăn giữ hai loại thông tin khác nhau: công thức mô tả định lượng chuẩn, còn bữa ăn ghi số người ăn ở một thời điểm cụ thể. Khi tăng khẩu phần cho một bữa, hệ thống tính lại nhu cầu của bữa đó mà không sửa công thức gốc. Kết quả đối chiếu phải chỉ ra lượng thiếu của từng nguyên liệu, thay vì chỉ kết luận món có nấu được hay không. Nhờ vậy, người dùng có thể quyết định đổi món, giảm khẩu phần hoặc bổ sung nguyên liệu vào danh sách mua sắm.
+
 \begin{nvtable}{Phân rã nghiệp vụ NV04 – Quản lý công thức nấu ăn}{tab:nv04}
 \nvrow{NV04.1}{Tạo và cập nhật công thức}{Tên món, ảnh, khẩu phần, thời gian, các bước, nguyên liệu kèm định lượng}{Kiểm tra trường bắt buộc, ít nhất một nguyên liệu, liên kết nguyên liệu với danh mục (\br{BR16}, \br{BR17})}{Công thức trong bộ sưu tập của người dùng}
 \nvrow{NV04.2}{Đối chiếu nguyên liệu với tủ lạnh}{Công thức, số khẩu phần mong muốn, tồn kho}{Nhân tỷ lệ định lượng, quy đổi đơn vị, so sánh với lượng còn hạn trong tủ (\br{BR15}, \br{BR16})}{Nhãn Đủ hoặc Thiếu cho từng nguyên liệu}
@@ -259,6 +271,8 @@ NV04 cho phép người dùng lưu trữ công thức nấu ăn. Mỗi công th�
 NV05 hỗ trợ lập kế hoạch bữa ăn theo lịch. Mỗi ngày gồm ba bữa sáng, trưa và tối; mỗi bữa có thể có nhiều món, trong đó mỗi món liên kết với một công thức và số khẩu phần. Người dùng có thể xem kế hoạch theo ngày hoặc tuần để dự trù nguyên liệu. Quy trình lập kế hoạch gắn với tồn kho được trình bày ở Hình~\ref{fig:quy-trinh-ke-hoach}.
 
 \diagram[0.6\textwidth]{c1-09-quy-trinh-ke-hoach-bua-an}{Quy trình lập kế hoạch bữa ăn gắn với tồn kho}{fig:quy-trinh-ke-hoach}
+
+Lập kế hoạch không làm giảm tồn kho ngay, vì món dự kiến có thể bị thay đổi hoặc hủy. Ở bước này, hệ thống chỉ tính nhu cầu và đối chiếu lượng có thể sử dụng vào ngày nấu. Khi tổng hợp nhiều bữa, một lượng thực phẩm không được tính là đủ cho nhiều bữa khác nhau; lô hết hạn trước ngày nấu cũng không được dùng để bù nhu cầu của ngày đó. Phần còn thiếu sau khi xét tồn kho và hàng đang chờ mua mới trở thành nhu cầu mua thêm. Đây là điểm liên kết trực tiếp giữa lịch bữa ăn, tủ lạnh và danh sách mua sắm.
 
 Gợi ý món là nghiệp vụ có nhiều bước xử lý nhất trong nhóm này. Với mỗi công thức ứng viên $c$, hệ thống tính ba đại lượng. Tỷ lệ đáp ứng $R(c)$ bằng tỷ số giữa số nguyên liệu bắt buộc hiện có đủ trong tủ và tổng số nguyên liệu bắt buộc của công thức. Điểm ưu tiên hạn dùng $E(c)$ phản ánh khả năng sử dụng thực phẩm sắp hết hạn và được tính như sau:
 \begin{equation}\label{eq:diem-han-dung}
@@ -274,6 +288,8 @@ trong đó $I_c$ là tập nguyên liệu của công thức có trong tủ và 
 S(c) = 0{,}6\,R(c) + 0{,}3\,E(c) + 0{,}1\,F(c).
 \end{equation}
 Hệ thống chỉ đưa vào kết quả các công thức có $R(c) \ge \theta$ (mặc định $\theta = 0{,}6$), sau đó sắp xếp theo $S(c)$ giảm dần. Quản trị viên có thể điều chỉnh các trọng số và ngưỡng. Do $R$ có trọng số lớn nhất, công thức đáp ứng nhiều nguyên liệu được ưu tiên; khi mức đáp ứng tương đương, công thức giúp sử dụng thực phẩm sắp hết hạn được xếp cao hơn.
+
+Kết quả gợi ý cần giúp người dùng hiểu lý do một món được chọn. Ngoài tên món, hệ thống hiển thị nguyên liệu đã có, phần còn thiếu và thực phẩm sắp hết hạn mà món sẽ sử dụng. Người dùng vẫn là người quyết định món và khẩu phần cuối cùng. Khi tồn kho thay đổi do mua thêm hoặc vừa nấu một bữa khác, kết quả gợi ý phải được tính lại để tránh tiếp tục hiển thị món dựa trên lượng thực phẩm không còn trong tủ.
 
 Khi người dùng xác nhận đã nấu, hệ thống trừ nguyên liệu khỏi tồn kho theo nguyên tắc \emph{hết hạn trước, dùng trước} (First Expired, First Out – FEFO): với mỗi nguyên liệu, lô có ngày hết hạn sớm nhất được trừ trước. Cách xử lý này ưu tiên sử dụng thực phẩm gần hết hạn và hạn chế bỏ quên các lô cũ. Các nghiệp vụ con của NV05 được tổng hợp tại Bảng~\ref{tab:nv05}.
 
@@ -297,6 +313,8 @@ NV06 hỗ trợ tra cứu trong danh mục thực phẩm, tủ lạnh và bộ s
 \subsection{Nghiệp vụ thống kê báo cáo}\label{ssec:nv07}
 
 NV07 tổng hợp dữ liệu từ các nghiệp vụ khác thành thông tin phục vụ việc theo dõi và ra quyết định. Báo cáo sử dụng đơn giá ghi nhận khi đánh dấu đã mua, nhật ký tiêu thụ khi nấu ăn và nhật ký loại bỏ khi thực phẩm hỏng; người dùng không cần nhập thêm dữ liệu. Các chỉ số và cách tính được trình bày tại Bảng~\ref{tab:chi-so-bao-cao}.
+
+Ba nhóm số liệu mua sắm, tiêu thụ và lãng phí phản ánh các thời điểm khác nhau. Thực phẩm mua trong tuần này có thể được sử dụng ở tuần sau, nên lượng mua không đồng nghĩa với lượng đã tiêu thụ. Một lô bị loại bỏ chỉ được tính giá trị khi có thông tin giá mua liên kết; thiếu giá không có nghĩa là giá trị bằng không. Khi xem báo cáo, người dùng cần biết phạm vi thời gian, không gian dữ liệu và những bản ghi chưa đủ thông tin để tránh hiểu sai tổng chi tiêu hoặc giá trị lãng phí.
 
 {\small
 \begin{longtable}{|L{3.6cm}|L{\dimexpr\textwidth-6\tabcolsep-4\arrayrulewidth-3.6cm-3.4cm\relax}|L{3.4cm}|}
@@ -380,4 +398,4 @@ BR23 & Quyền truy cập dữ liệu & Chỉ thành viên của nhóm mới đ�
 \end{longtable}
 }
 
-Chương này xác định vấn đề cốt lõi là sự thiếu liên kết thông tin giữa các khâu mua sắm, bảo quản và sử dụng thực phẩm, cũng như giữa các thành viên trong gia đình. Bài toán được phân rã thành tám nhóm nghiệp vụ; đầu vào, xử lý và đầu ra của từng nghiệp vụ con được xác định, cùng với mười chức năng mở rộng và hai mươi ba quy tắc nghiệp vụ. Đây là cơ sở để xây dựng mô hình use case và đặc tả yêu cầu ở chương tiếp theo.
+Chương này xác định vấn đề cốt lõi là sự thiếu liên kết thông tin giữa các khâu mua sắm, bảo quản và sử dụng thực phẩm, cũng như giữa các thành viên trong gia đình. Tám nhóm nghiệp vụ được phân tích theo dữ liệu đầu vào, cách xử lý và kết quả, cùng hai mươi ba quy tắc dùng chung. Trong đó, không gian dữ liệu xác định ai được thao tác; trạng thái mặt hàng và lô thực phẩm xác định thao tác nào còn hợp lệ; định lượng, đơn vị và hạn dùng quyết định lượng thực phẩm có thể sử dụng. Các mối liên hệ này là cơ sở lựa chọn use case trọng tâm và xác định luồng ngoại lệ ở chương tiếp theo.
