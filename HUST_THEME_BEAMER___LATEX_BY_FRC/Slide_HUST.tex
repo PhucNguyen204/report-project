@@ -1,0 +1,349 @@
+% 21 slide, trình bày 10 phút. Dùng trực tiếp ảnh PNG của báo cáo.
+% Hỏi đáp AI là tính năng liên kết với danh sách mua sắm.
+\documentclass[t,aspectratio=169,10pt]{beamer}
+\usepackage{fontspec}
+\setsansfont{Arial}
+\setmainfont{Arial}
+\usepackage{amsmath,booktabs,array}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+\def\slideContentLeftMargin{0.6cm}
+\def\slideContentRightMargin{0.6cm}
+\def\hustHeaderHeight{1.15cm}
+\def\slideContentTopPadding{0cm}
+\usepackage[blue,169]{beamerthemeHUST}
+\graphicspath{{images/}{../figures/diagrams/}}
+\setbeamerfont{frametitle}{size=\large,series=\bfseries}
+\setbeamercolor{normal text}{fg=black!85}
+\setbeamertemplate{background canvas}{}
+\setbeamercolor{itemize item}{fg=hustprimary}
+\setbeamertemplate{itemize item}{\small\textbullet}
+\setbeamertemplate{footline}{\vspace{0.65cm}}
+\setlength{\parskip}{2pt}
+\newcommand{\key}[1]{\textcolor{hustprimary}{\textbf{#1}}}
+\newcommand{\noteinfo}[1]{\par{\fontsize{8.5}{10}\selectfont\color{black!60}#1\par}}
+\newcommand{\source}[1]{\begin{tikzpicture}[remember picture,overlay]\node[anchor=south west,inner sep=0,text width=14.6cm,font=\fontsize{8}{9}\selectfont,text=black!60] at ([xshift=0.6cm,yshift=0.85cm]current page.south west) {Nguồn: #1};\end{tikzpicture}}
+\newcommand{\gap}{\par\vspace{0.10cm}}
+\newcommand{\fig}[2]{\includegraphics[width=\linewidth,height=#2,keepaspectratio]{#1.png}}
+\newcommand{\talk}[1]{\note{#1}}
+\title{Xây dựng ứng dụng di động đa nền tảng “Đi chợ tiện lợi”}
+\author{Nhóm 7 - IT4788}
+\hypersetup{pdftitle={Đi chợ tiện lợi - Chương 1 và 2 - 21 slide},pdfauthor={Nhóm 7 - IT4788}}
+\begin{document}
+% 01. Bìa đề tài.
+{\setbeamertemplate{background}{\includegraphics[width=\paperwidth,height=\paperheight]{hust-blue-169-title.png}}
+\begin{frame}[plain]
+\begin{tikzpicture}[remember picture,overlay]
+\node[anchor=north west,text width=10.9cm,inner sep=0,align=left] at ([xshift=0.8cm,yshift=-2.1cm]current page.north west) {
+{\fontsize{10}{12}\selectfont\color{hustprimary}\bfseries BÁO CÁO BÀI TẬP LỚN \textbar\ NHÓM 7\par}
+\vspace{0.28cm}
+{\fontsize{25}{30}\selectfont\bfseries\color{hustprimary} ĐI CHỢ TIỆN LỢI\par}
+\vspace{0.08cm}
+{\fontsize{13}{17}\selectfont Xây dựng ứng dụng di động đa nền tảng\par}
+\vspace{0.28cm}
+{\color{hustprimary}\rule{6.8cm}{0.6pt}\par}
+\vspace{0.28cm}
+{\fontsize{10}{14}\selectfont
+Học phần: Phát triển ứng dụng đa nền tảng (IT4788)\par
+Lớp 172915 \quad Học kỳ 20261\par
+Giảng viên hướng dẫn: Thầy Nguyễn Quốc Tuấn\par}
+};
+\end{tikzpicture}
+\end{frame}}
+\useStyleLogoOnly\useThinBar\showPageNumber
+% 02. Thành viên thực hiện.
+\begin{frame}{Thành viên nhóm 7}
+\centering
+\vspace{0.5cm}
+{\small Lớp 172915 \quad|\quad IT4788\par}
+\vspace{0.35cm}
+{\renewcommand{\arraystretch}{1.8}
+\begin{tabular}{@{}P{1.2cm}P{6.2cm}P{3.7cm}@{}}
+\toprule
+\textbf{STT} & \textbf{Họ và tên} & \textbf{Mã sinh viên}\\
+\midrule
+1 & Nguyễn Ngọc Phúc & 20220041\\
+2 & Trần Gia Bảo & 20235019\\
+3 & Đinh Nhẫn Đức & 20215350\\
+4 & Nguyễn Ngọc Tùng & 20204703\\
+\bottomrule
+\end{tabular}\par}
+\end{frame}
+\section{Chương 1. Khảo sát bài toán}
+% 03
+\begin{frame}{Quy trình thủ công và các điểm nghẽn}
+\begin{columns}[T,onlytextwidth]
+\column{0.49\textwidth}\centering
+\fig{c1-01-quy-trinh-thu-cong}{5.75cm}
+\column{0.48\textwidth}
+\key{1. Thông tin rời rạc}\par Nhu cầu mua nằm trong tin nhắn, giấy ghi chú và trí nhớ từng người.
+\gap\key{2. Khó phối hợp}\par Không biết ai đã mua gì, dễ mua trùng hoặc bỏ sót mặt hàng.
+\gap\key{3. Thiếu theo dõi tồn kho}\par Không ghi nhận hạn dùng. Chọn món rồi mới phát hiện thiếu nguyên liệu.
+\gap\key{Bài toán cần giải quyết}\par Quản lý tập trung và tái sử dụng dữ liệu từ lúc lập kế hoạch đến khi nấu ăn.
+\end{columns}
+\source{Chương 1, quy trình thủ công và mục 1.1.1.}
+\end{frame}
+% 04
+\begin{frame}{Khảo sát giải pháp và phạm vi đề tài}
+{\small\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}P{3.2cm}P{4.3cm}P{5.65cm}@{}}\toprule
+\textbf{Nhóm giải pháp} & \textbf{Điểm mạnh} & \textbf{Hạn chế với bài toán của nhóm}\\\midrule
+Ghi chú, tin nhắn & Dễ dùng, quen thuộc & Thiếu trạng thái mua, tồn kho và hạn dùng\\
+Danh sách mua sắm & Chia sẻ, đánh dấu đã mua & Theo dõi tủ lạnh chưa là trọng tâm\\
+Lập thực đơn & Gợi ý món, tạo nguyên liệu & Chưa xuất phát từ tồn kho của gia đình\\
+Theo dõi hạn dùng & Lưu thực phẩm, nhắc hết hạn & Tách rời mua sắm và kế hoạch bữa ăn\\\bottomrule
+\end{tabular}}
+\gap
+\begin{columns}[T,onlytextwidth]
+\column{0.49\textwidth}\key{Phạm vi chính}\par Nhóm gia đình, danh sách mua sắm, tủ lạnh, công thức, kế hoạch và thống kê.
+\column{0.47\textwidth}\key{Không bao gồm}\par Thanh toán, giao hàng và IoT.
+\gap\key{Tính năng hỏi đáp AI}\par Làm rõ món ăn, khẩu phần và nguyên liệu trước khi tạo danh sách mua sắm.
+\end{columns}
+\source{Chương 1, khảo sát của nhóm và bảng phạm vi.}
+\end{frame}
+% 05
+\begin{frame}{Chu trình nghiệp vụ của ứng dụng}
+\centering\fig{c1-02-chu-trinh-nghiep-vu}{4.0cm}
+\gap\raggedright
+\begin{columns}[T,onlytextwidth]
+\column{0.48\textwidth}\key{Dữ liệu đầu vào}\par Món ăn, số khẩu phần, tồn kho, hạn dùng và các mặt hàng đang chờ mua.
+\column{0.48\textwidth}\key{Kết quả mong đợi}\par Mua đúng phần thiếu, sử dụng thực phẩm gần hết hạn và ghi nhận tiêu thụ.
+\end{columns}
+\gap\key{Đối tượng sử dụng:} Cá nhân và các thành viên cùng quản lý thực phẩm gia đình.
+\source{Chương 1, ảnh chu trình nghiệp vụ của hệ thống.}
+\end{frame}
+% 06
+\begin{frame}{Sơ đồ phân rã chức năng: 8 phân hệ}
+\centering
+\fig{c1-03-phan-ra-chuc-nang}{5.8cm}
+\gap
+{\small\key{Phân hệ tài khoản và nhóm gia đình} được tách thành hai gói use case ở Chương 2.}
+\source{Ảnh gốc sơ đồ phân rã chức năng trong Chương 1.}
+\end{frame}
+\section{Chương 2. Đặc tả yêu cầu}
+% 07
+\begin{frame}{Tác nhân và quan hệ kế thừa quyền}
+\begin{columns}[T,onlytextwidth]
+\column{0.57\textwidth}\centering\fig{c2-01-quan-he-tac-nhan}{5.65cm}
+\column{0.40\textwidth}
+\key{5 tác nhân chính}\par Khách, Người dùng, Thành viên nhóm, Trưởng nhóm, Quản trị viên.
+\gap\key{4 tác nhân phụ}\par Bộ lập lịch, thông báo đẩy, thư điện tử và CSDL sản phẩm mở.
+\gap\key{Quyền theo vai trò}\par {\small Trưởng nhóm kế thừa quyền thành viên và có thêm quyền điều phối, phân công.}
+\gap\key{Giới hạn quản trị}\par {\small Quản trị viên không truy cập nội dung riêng của gia đình.}
+\end{columns}
+\source{Chương 2, quan hệ tác nhân; quy tắc BR23.}
+\end{frame}
+% 08
+\begin{frame}{Biểu đồ use case tổng quan}
+\begin{columns}[T,onlytextwidth]
+\column{0.56\textwidth}\centering\fig{c2-02-uc-tong-quan}{5.85cm}
+\column{0.41\textwidth}
+\key{9 gói chức năng}\par Mỗi elip trên hình đại diện một gói, kèm dải mã use case thành phần.
+\gap\key{Người dùng là trung tâm}\par Tham gia 8 gói. Gói quản trị dành cho Quản trị viên.
+\gap\key{Phối hợp trong gia đình}\par Thành viên dùng dữ liệu chung. Trưởng nhóm phân công người mua.
+\gap\key{Tích hợp dịch vụ}\par OTP qua email, nhắc hạn qua thông báo đẩy, mã vạch qua CSDL sản phẩm.
+\end{columns}
+\end{frame}
+% 09
+\begin{frame}{Danh mục 53 use case theo 9 nhóm}
+\small\renewcommand{\arraystretch}{1.13}
+\begin{tabular}{@{}P{3.8cm}P{2.1cm}cP{6.4cm}@{}}\toprule
+\textbf{Nhóm chức năng} & \textbf{Mã use case} & \textbf{Số} & \textbf{Chức năng đại diện}\\\midrule
+1. Tài khoản & UC01--UC08 & 8 & Đăng ký, OTP, đăng nhập, thiết lập nhắc\\
+2. Nhóm gia đình & UC09--UC15 & 7 & Tạo nhóm, mời, tham gia, chuyển quyền\\
+3. Mua sắm & UC16--UC23 & 8 & Phân công, đã mua, nhập tủ, sinh danh sách\\
+4. Tủ lạnh & UC24--UC31 & 8 & Thêm lô, ghi nhận sử dụng, nhắc hạn\\
+5. Công thức & UC32--UC36 & 5 & Lưu món, đối chiếu và bổ sung nguyên liệu\\
+6. Kế hoạch bữa ăn & UC37--UC41 & 5 & Lên lịch, gợi ý món, xác nhận đã nấu\\
+7. Tìm kiếm, phân loại & UC42--UC43 & 2 & Tìm thực phẩm, món ăn, lọc danh mục\\
+8. Thống kê & UC44--UC47 & 4 & Chi tiêu, tiêu thụ, lãng phí, xuất tệp\\
+9. Quản trị & UC48--UC53 & 6 & Tài khoản, danh mục, tham số hệ thống\\\bottomrule
+\end{tabular}
+\gap\key{Trọng tâm đặc tả:} 12 use case đầy đủ, 12 mô tả ngắn, 29 ở phụ lục.
+\noteinfo{Tính năng hỏi đáp AI tạo danh sách nguyên liệu và phối hợp với chức năng mua sắm.}
+\end{frame}
+% 10
+\begin{frame}{Nhóm gia đình và UC11: tham gia bằng mã mời}
+\centering\fig{c2-05-uc-nhom}{4.2cm}
+\gap\raggedright
+\begin{columns}[T,onlytextwidth]
+\column{0.49\textwidth}{\small\key{Luồng chính}\par Nhập mã hoặc quét QR, kiểm tra mã, xác nhận nhóm rồi gia nhập với vai trò thành viên.}
+\column{0.47\textwidth}{\small\key{Điều kiện và ngoại lệ}\par Mã 8 ký tự, mặc định 48 giờ. Từ chối nếu mã hết hạn, đã ở nhóm khác hoặc nhóm đầy.}
+\end{columns}
+\source{Chương 2, ảnh use case nhóm gia đình và đặc tả UC11.}
+\end{frame}
+% 11
+\begin{frame}{Nhóm mua sắm: lập danh sách và phân công}
+\begin{columns}[T,onlytextwidth]
+\column{0.58\textwidth}\centering\fig{c2-07-uc-mua-sam}{5.7cm}
+\column{0.39\textwidth}
+\key{UC19: phân công người mua}\par Trưởng nhóm chọn mặt hàng và người phụ trách. Hệ thống đồng bộ và gửi thông báo.
+\gap\key{Gộp mặt hàng trùng}\par {\small Cùng thực phẩm, cùng nhóm đại lượng mới quy đổi và cộng dồn.}
+\gap{\small\textbf{Ví dụ:} 3 lạng + 0,5 kg thịt = 8 lạng. Không tự gộp 2 bó rau với 300 g rau.}
+\gap\key{Quan hệ mở rộng}\par {\small UC21 nhập tủ là lựa chọn sau UC20 đánh dấu đã mua.}
+\end{columns}
+\source{Chương 2, gói mua sắm; BR09--BR10.}
+\end{frame}
+% 12. Chia đôi theo chiều dọc từ cùng ảnh gốc, không vẽ lại.
+\begin{frame}{UC20 và UC21: ghi nhận mua hàng, chuyển vào tủ}
+\begin{columns}[T,onlytextwidth]
+\column{0.49\textwidth}\centering\key{1. Ghi nhận mua và đồng bộ}\par
+\includegraphics[height=5.1cm,trim=0 1103bp 0 0,clip]{c2-08-act-danh-dau-da-mua.png}
+\column{0.49\textwidth}\centering\key{2. Xác nhận nhập tủ và hoàn tất}\par
+\includegraphics[height=5.1cm,trim=0 0 0 1103bp,clip]{c2-08-act-danh-dau-da-mua.png}
+\end{columns}
+\noteinfo{Mua hộ cần xác nhận. Mỗi mặt hàng chỉ sinh một lô. Yêu cầu gửi lại không tạo lô trùng.}
+\source{Hai phần liên tiếp của ảnh hoạt động UC20--UC21 trong báo cáo.}
+\end{frame}
+% 13
+\begin{frame}{UC22: sinh danh sách nguyên liệu còn thiếu}
+\begin{columns}[T,onlytextwidth]
+\column{0.49\textwidth}\centering\key{1. Tính nhu cầu, phân bổ tồn kho}\par
+\includegraphics[height=5.1cm,trim=0 1177bp 0 0,clip]{c2-09-act-sinh-ds-tu-ke-hoach.png}
+\column{0.49\textwidth}\centering\key{2. Rà soát và tạo danh sách}\par
+\includegraphics[height=5.1cm,trim=0 0 0 1177bp,clip]{c2-09-act-sinh-ds-tu-ke-hoach.png}
+\end{columns}
+\noteinfo{Xét hạn dùng theo ngày nấu. Phân bổ tồn kho và hàng chờ mua mỗi lượng đúng một lần.}
+\source{Hai phần liên tiếp của ảnh hoạt động UC22 trong báo cáo.}
+\end{frame}
+% 14
+\begin{frame}{Ví dụ UC22: vì sao phải xét từng ngày nấu?}
+\begin{columns}[T,onlytextwidth]
+\column{0.48\textwidth}
+\key{Nhu cầu: 1 kg cà rốt cho hai bữa}
+{\small\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{@{}P{2.2cm}P{4.3cm}@{}}\toprule
+Ngày D & Cần 0,4 kg\\
+Ngày D+2 & Cần 0,6 kg\\\midrule
+Lô A & 0,5 kg, hết hạn D+1\\
+Lô B & 0,2 kg, hết hạn D+3\\
+Chờ mua & 0,1 kg, đến trước D\\\bottomrule
+\end{tabular}}
+\column{0.48\textwidth}
+\key{Phân bổ theo FEFO}
+\begin{enumerate}\setlength\itemsep{7pt}
+\item Ngày D dùng 0,4 kg từ lô A.
+\item Ngày D+2, 0,1 kg còn lại của A đã quá hạn.
+\item B và hàng chờ mua đáp ứng 0,3 kg cho bữa thứ hai.
+\end{enumerate}
+\gap{\Large\key{Cần mua thêm 0,3 kg}}
+\end{columns}
+\gap\key{Nếu chỉ lấy tổng nhu cầu trừ tổng tồn kho, kết quả sai thành 0,2 kg.}
+\source{Chương 2, ví dụ kiểm chứng UC22. FEFO: ưu tiên lô hết hạn sớm.}
+\end{frame}
+% 15
+\begin{frame}{Nhóm tủ lạnh: theo dõi theo từng lô thực phẩm}
+\begin{columns}[T,onlytextwidth]
+\column{0.67\textwidth}\centering\fig{c2-10-uc-tu-lanh}{5.75cm}
+\column{0.30\textwidth}\small
+\key{Thông tin mỗi lô}\par Tên thực phẩm, lượng còn lại, ngày mua, hạn dùng, vị trí lưu trữ.
+\gap\key{UC28: ghi nhận sử dụng}\par Trừ lượng thực dùng. Lô về 0 chuyển sang đã dùng hết.
+\gap\key{UC29: loại bỏ}\par Ghi lý do và lượng bỏ để thống kê lãng phí.
+\gap\key{UC26: quét mã vạch}\par Mở rộng luồng thêm thực phẩm, tra cứu khi nhập bằng camera.
+\end{columns}
+\source{Chương 2, gói thực phẩm trong tủ lạnh.}
+\end{frame}
+% 16
+\begin{frame}{UC31: nhắc hạn dùng qua thông báo đẩy}
+\begin{columns}[T,onlytextwidth]
+\column{0.74\textwidth}\centering\fig{c2-12-seq-nhac-nho}{5.8cm}
+\column{0.23\textwidth}\small
+\key{Kích hoạt}\par Mặc định 08:00 mỗi ngày.
+\gap\key{Ngưỡng nhắc}\par Mặc định 3 ngày; cá nhân chọn 1--7 ngày.
+\gap\key{Chống trùng}\par Tối đa một thông báo tổng hợp mỗi người mỗi ngày.
+\gap\key{Lỗi gửi}\par Thử lại tối đa 3 lần. Hộp thư vẫn lưu thông báo.
+\end{columns}
+\source{Chương 2, ảnh tuần tự UC31 và đặc tả nhắc hạn dùng.}
+\end{frame}
+% 17
+\begin{frame}{Kế hoạch bữa ăn và UC40: gợi ý món}
+\begin{columns}[T,onlytextwidth]
+\column{0.60\textwidth}\centering\fig{c2-14-uc-ke-hoach}{4.6cm}
+\gap\raggedright{\small\key{Liên kết nghiệp vụ}\par UC40 giúp chọn món cho UC37. Từ lịch bữa ăn, người dùng sinh danh sách UC22 hoặc xác nhận nấu UC41.}
+\column{0.37\textwidth}\small
+\key{Điểm xếp hạng món}
+\[S=0{,}6R+0{,}3E+0{,}1F\]
+R: đáp ứng nguyên liệu.\par E: ưu tiên thực phẩm gần hạn.\par F: món yêu thích.
+\gap\key{Ví dụ trong báo cáo}\par Canh chua cá lóc: \textbf{0,75}.\\Trứng xào cà chua: \textbf{0,60}.
+\gap Canh chua dùng cá và dứa gần hết hạn, nhưng cần mua thêm me.
+\gap\noteinfo{Hỏi đáp AI hỗ trợ tạo danh sách; UC40 xếp hạng món theo công thức chấm điểm.}
+\end{columns}
+\source{Chương 2, gói kế hoạch bữa ăn và ví dụ UC40.}
+\end{frame}
+% 18
+\begin{frame}{UC41: xác nhận đã nấu và cập nhật tồn kho}
+\begin{columns}[T,onlytextwidth]
+\column{0.43\textwidth}\centering\fig{c2-16-act-xac-nhan-nau}{5.65cm}
+\column{0.54\textwidth}
+\key{Điều kiện trước}\par Món chưa nấu, thuộc hôm nay hoặc ngày đã qua và có công thức.
+\gap\key{Luồng chính}
+\begin{enumerate}\setlength\itemsep{3pt}\item Tính lượng theo khẩu phần thực tế.\item Đề xuất trừ lô hết hạn sớm trước.\item Người dùng xem trước và xác nhận.\item Cập nhật kho, ghi tiêu thụ, đánh dấu đã nấu.\end{enumerate}
+\gap\key{Ngoại lệ cần xử lý}\par {\small Thiếu nguyên liệu: bổ sung kho hoặc bỏ qua phần trừ. Có cập nhật đồng thời: tải lại và xác nhận lại.}
+\gap{\small\key{Gửi lại yêu cầu không trừ kho lần thứ hai.}}
+\end{columns}
+\source{Chương 2, ảnh hoạt động và đặc tả UC41.}
+\end{frame}
+\section{Tính năng hỏi đáp AI}
+% 19
+\begin{frame}{UC-AI01: hỏi đáp để lập danh sách nguyên liệu}
+\noteinfo{Tính năng hỏi đáp AI liên kết với chức năng sinh danh sách nguyên liệu và mua sắm.}
+\gap
+\begin{columns}[T,onlytextwidth]
+\column{0.47\textwidth}\small
+\key{Tác nhân}\par Người dùng; dịch vụ trợ lý AI hỗ trợ xử lý hội thoại.
+\gap\key{Điều kiện trước}\par Đã đăng nhập, chọn không gian cá nhân hoặc gia đình.
+\gap\key{Thông tin cần hỏi}\par Món muốn nấu, số người, ngày nấu, sở thích và nguyên liệu đã có.
+\gap\key{Điều kiện sau}\par Danh sách nguyên liệu theo khẩu phần được người dùng xác nhận và lưu vào mua sắm.
+\column{0.49\textwidth}
+\key{Luồng tương tác}
+\begin{enumerate}\setlength\itemsep{5pt}
+\item Người dùng nêu mong muốn bằng câu tự nhiên.
+\item AI hỏi bổ sung khi thiếu món, khẩu phần hoặc ngày nấu.
+\item Hệ thống đối chiếu nguyên liệu với tủ lạnh và hàng chờ mua.
+\item Người dùng sửa lượng, bỏ món hoặc đổi nguyên liệu.
+\item Xác nhận tạo mới hoặc gộp vào danh sách.
+\end{enumerate}
+\end{columns}
+\gap\noteinfo{Thiếu thông tin thì hỏi lại. Nguyên liệu chưa khớp danh mục cần xác nhận. Dịch vụ lỗi thì giữ bản nháp.}
+\end{frame}
+% 20
+\begin{frame}{Ví dụ hội thoại: tối nay cần mua những gì?}
+\begin{columns}[T,onlytextwidth]
+\column{0.49\textwidth}\small
+\key{Người dùng}\par “Tối nay 4 người ăn gà xào nấm và canh rau ngót. Giúp mình lập danh sách đi chợ.”
+\gap\key{Trợ lý AI}\par “Bạn dùng thịt băm cho canh chứ? Có nguyên liệu nào muốn thay không?”
+\gap\key{Người dùng}\par “Có thịt băm, giữ các nguyên liệu còn lại.”
+\gap\key{Trợ lý AI}\par “Mình đã đối chiếu tủ lạnh. Đây là phần còn thiếu. Bạn kiểm tra lượng rồi xác nhận lưu nhé.”
+\column{0.48\textwidth}\small
+\key{Danh sách cần mua sau đối chiếu}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}P{2.6cm}rrr@{}}\toprule
+\textbf{Nguyên liệu} & \textbf{Cần} & \textbf{Có} & \textbf{Mua}\\\midrule
+Thịt gà & 600 & 200 & \textbf{400}\\
+Nấm & 300 & 100 & \textbf{200}\\
+Rau ngót & 300 & 0 & \textbf{300}\\
+Thịt băm & 150 & 0 & \textbf{150}\\\bottomrule
+\end{tabular}
+\noteinfo{Đơn vị: g. Số liệu minh họa, người dùng được sửa.}
+\gap\key{Trước khi lưu}\par Tủ lạnh còn hạn đến tối nay; chưa có hàng chờ mua. Gia vị cơ bản giả định đã đủ.
+\gap\key{Thao tác cuối}\par Xác nhận tạo danh sách “Bữa tối 4 người”.
+\end{columns}
+\gap\noteinfo{AI giúp làm rõ nhu cầu; hệ thống tính phần thiếu theo quy tắc UC22. Danh sách chỉ lưu sau xác nhận.}
+\end{frame}
+% 21
+\begin{frame}{Yêu cầu chất lượng và kết luận}
+\small\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{@{}P{3.15cm}P{10.8cm}@{}}\toprule
+\textbf{Yêu cầu} & \textbf{Tiêu chí trong báo cáo}\\\midrule
+Hiệu năng & Gợi ý món trong 2 giây; đồng bộ nhóm trong 3 giây\\
+Tin cậy & Thao tác cốt lõi ngoại tuyến; không nhập hoặc trừ kho trùng\\
+Phân quyền & Máy chủ kiểm tra vai trò và không gian ở mọi API\\
+Đa nền tảng & Một mã nguồn Flutter; Android 8.0+, iOS 13+\\\bottomrule
+\end{tabular}
+\noteinfo{Các ngưỡng là mục tiêu kiểm thử cho chức năng hiện tại; chưa phải kết quả đo hay cam kết độ trễ cho AI.}
+\gap\normalsize
+\key{Chương 1:} Bài toán và 8 phân hệ nghiệp vụ.\par
+\key{Chương 2:} 53 use case thuộc 9 gói chức năng.\par
+\key{Tính năng AI:} Hỏi đáp để làm rõ nhu cầu, đối chiếu tồn kho và tạo danh sách nguyên liệu.
+\gap\key{Cảm ơn thầy và các bạn!}
+\end{frame}
+\end{document}
