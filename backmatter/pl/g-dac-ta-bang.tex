@@ -1,0 +1,115 @@
+% ---------------------------------------------------------------------
+%  PHỤ LỤC. ĐẶC TẢ CHI TIẾT CÁC BẢNG CƠ SỞ DỮ LIỆU (tiếp mục Thiết kế CSDL)
+% ---------------------------------------------------------------------
+\section{Đặc tả chi tiết các bảng cơ sở dữ liệu}\label{pl:dac-ta-bang}
+
+Bảng~\ref{tab:c3-dac-ta-bang} đặc tả các bảng trọng tâm (PK, FK, NN, UQ, CK, DF: khóa chính, khóa ngoại, NOT NULL, duy nhất, CHECK, mặc định). Cột chung không lặp lại: \texttt{id} uuid PK; \texttt{created\_at}, \texttt{updated\_at} timestamptz NN DF \texttt{now()}; \texttt{version} int NN DF 1; \texttt{deleted\_at} timestamptz. \texttt{pantry.food\_lots} được đặc tả bằng Mã nguồn~\ref{code:c3-ddl-food-lots}, các bảng còn lại ở Bảng~\ref{tab:c3-bang-con-lai}.
+
+{\footnotesize\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.1}
+\begin{longtable}{|L{4.85cm}|L{2.5cm}|L{1.6cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-4.85cm-2.5cm-1.6cm\relax}|}
+\caption{Đặc tả các bảng trọng tâm}\label{tab:c3-dac-ta-bang}\\
+\hline
+\hd{Tên cột} & \hd{Kiểu dữ liệu} & \hd{Ràng buộc} & \hd{Mô tả}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Tên cột} & \hd{Kiểu dữ liệu} & \hd{Ràng buộc} & \hd{Mô tả}\\ \hline
+\endhead
+\multicolumn{4}{|l|}{\hs{\texttt{identity.users} -- cột chung trừ \texttt{version}}}\\ \hline
+\path{email} & citext & NN, UQ, CK & \texttt{uq\_users\_email}; tối đa 100 ký tự, không phân biệt hoa thường (\br{BR01})\\ \hline
+\path{password_hash} & text & NN & Băm Argon2id kèm tham số (\nfr{NFR14})\\ \hline
+\path{full_name} & varchar(50) & NN, CK & 2--50 ký tự (\br{BR01})\\ \hline
+\path{system_role} & enum & NN, DF & \texttt{user}, \texttt{admin}\\ \hline
+\path{status} & enum & NN, DF & \texttt{pending} (chờ OTP), \texttt{active}, \texttt{locked} (khóa tạm), \texttt{disabled} (quản trị viên khóa)\\ \hline
+\path{failed_login_count} & smallint & NN, DF, CK & Số lần sai liên tiếp, 0--5 (\br{BR03})\\ \hline
+\path{locked_until}, \path{lock_reason} & timestamptz; varchar(200) & -- & Hết khóa tạm 15 phút (\br{BR03}); lý do quản trị viên khóa (\uc{UC48})\\ \hline
+\path{last_login_at} & timestamptz & -- & Lần đăng nhập thành công gần nhất (\uc{UC48})\\ \hline
+\path{locale}, \path{avatar_key} & enum; text & NN; -- & \texttt{vi} hoặc \texttt{en}; khóa ảnh trong MinIO\\ \hline
+\path{last_space_id} & uuid & -- & Không gian mở khi đăng nhập\\ \hline
+\path{token_version} & int & NN, DF 0 & Tăng khi đăng xuất, đổi mật khẩu, bị khóa\\ \hline
+\multicolumn{4}{|l|}{\hs{\texttt{identity.refresh\_sessions} -- cột chung \texttt{id}, \texttt{created\_at}}}\\ \hline
+\path{user_id}, \path{family_id} & uuid & NN, FK & Chủ phiên; họ phiên (thu hồi cả họ)\\ \hline
+\path{token_hash} & bytea & NN, UQ & SHA-256 của refresh token\\ \hline
+\path{device_id}, \path{platform} & uuid; enum & NN & Bản cài đặt; \texttt{android} hoặc \texttt{ios}\\ \hline
+\path{user_agent}, \path{ip} & text; inet & -- & Phục vụ quản lý phiên, điều tra\\ \hline
+\path{expires_at}, \path{rotated_at} & timestamptz & NN; -- & Hết hạn 30 ngày; lúc xoay vòng\\ \hline
+\path{revoked_at}, \path{revoke_reason} & timestamptz; text & -- & Thời điểm, lý do thu hồi\\ \hline
+\multicolumn{4}{|l|}{\hs{\texttt{household.spaces} -- cột chung trừ \texttt{deleted\_at}; UQ (\texttt{id}, \texttt{kind})}}\\ \hline
+\path{kind}, \path{name} & enum; varchar(50) & NN; CK & \texttt{personal}, \texttt{family} (\br{BR04}); 3--50 ký tự\\ \hline
+\path{change_seq} & bigint & NN, DF 0 & Bộ đếm thay đổi của không gian\\ \hline
+\path{avatar_key}, \path{created_by} & text; uuid & --; FK & Ảnh nhóm; người tạo\\ \hline
+\path{dissolved_at} & timestamptz & -- & Giải tán nhóm (\br{BR07}), thay xóa mềm\\ \hline
+\multicolumn{4}{|l|}{\hs{\texttt{household.space\_members} -- không dùng cột chung}}\\ \hline
+\path{space_id}, \path{user_id} & uuid & PK, FK & Khóa chính phức hợp\\ \hline
+\path{space_kind} & enum & NN, FK & Sao chép \texttt{kind}; FK ghép tới (\texttt{id}, \texttt{kind})\\ \hline
+\path{role}, \path{joined_at} & enum; timestamptz & NN & \texttt{leader}, \texttt{member} (\br{BR05}); ngày vào\\ \hline
+\multicolumn{4}{|l|}{\hs{\texttt{shopping.shopping\_items} -- đủ cột chung}}\\ \hline
+\path{list_id}, \path{space_id} & uuid & NN, FK & Danh sách; không gian (lọc quyền)\\ \hline
+\path{food_id}, \path{custom_name} & uuid; varchar(100) & FK; CK & Thực phẩm hoặc tên tự do\\ \hline
+\path{quantity}, \path{unit_id} & numeric(12,2); uuid & NN, CK; FK & Lượng $>$ 0 (\br{BR14}); đơn vị (\br{BR16})\\ \hline
+\path{status} & enum & NN, DF & \texttt{to\_buy}, \texttt{assigned}, \texttt{purchased}, \texttt{stocked}, \texttt{skipped}\\ \hline
+\path{assignee_id}, \path{assigned_by} & uuid & FK & Người được giao, tối đa một (\br{BR10})\\ \hline
+\path{purchased_by}, \path{purchased_at} & uuid; timestamptz & FK; CK & Bắt buộc khi đã mua, đã nhập tủ; người được máy chủ ghi nhận trước\\ \hline
+\path{actual_quantity} & numeric(12,2) & CK & Lượng thực mua, $>$ 0\\ \hline
+\path{unit_price} & bigint & CK & Đơn giá thực mua (đồng), $\ge$ 0; nhân lượng thực mua thành \texttt{total\_cost} của lô (\br{BR21})\\ \hline
+\path{lot_id} & uuid & -- & Lô tạo ra khi nhập tủ (logic)\\ \hline
+\path{note}, \path{position} & varchar(200); int & --; NN & Ghi chú; thứ tự hiển thị\\ \hline
+\multicolumn{4}{|l|}{\hs{\texttt{pantry.stock\_movements} -- cột chung \texttt{id}; chỉ ghi thêm}}\\ \hline
+\path{lot_id}, \path{space_id} & uuid & NN, FK & Lô; không gian (cho báo cáo)\\ \hline
+\path{kind} & enum & NN & \texttt{stock\_in}, \texttt{consume}, \texttt{cook}, \texttt{discard}, \texttt{adjust}\\ \hline
+\path{quantity}, \path{unit_id} & numeric(12,2); uuid & NN, CK; FK & Theo đơn vị lô, $\neq$ 0; dương trừ \texttt{adjust} (chênh lệch có dấu khi P04 sửa lượng còn)\\ \hline
+\path{reason} & enum & CK & \texttt{expired}, \texttt{spoiled}, \texttt{other}; bắt buộc khi loại bỏ\\ \hline
+\path{meal_entry_id} & uuid & CK & Bắt buộc khi \texttt{cook} (\uc{UC41}); logic\\ \hline
+\path{actor_id}, \path{occurred_at} & uuid; timestamptz & NN, FK; DF & Người thực hiện; thời điểm\\ \hline
+\multicolumn{4}{|l|}{\hs{\texttt{mealplan.meal\_entries} -- đủ cột chung}}\\ \hline
+\path{space_id}, \path{meal_date} & uuid; date & NN, FK; NN & Không gian; ngày ăn\\ \hline
+\path{meal_slot}, \path{status} & enum & NN & \texttt{breakfast}, \texttt{lunch}, \texttt{dinner}; \texttt{planned}, \texttt{cooked}\\ \hline
+\path{recipe_id}, \path{custom_name} & uuid; varchar(100) & CK & Công thức (logic) hoặc tên tự do\\ \hline
+\path{servings}, \path{position} & smallint & NN, CK & 1--20 khẩu phần; thứ tự trong bữa\\ \hline
+\path{cooked_at}, \path{cooked_by} & timestamptz; uuid & CK; FK & Bắt buộc khi đã nấu (\uc{UC41}, \br{BR18})\\ \hline
+\path{created_by} & uuid & NN, FK & Người lập kế hoạch\\ \hline
+\multicolumn{4}{|l|}{\hs{\texttt{sync.space\_changes} -- không dùng cột chung; giữ 90 ngày}}\\ \hline
+\path{space_id}, \path{seq} & uuid; bigint & PK, FK & \texttt{seq} lấy từ \texttt{spaces.change\_seq}\\ \hline
+\path{entity_type}, \path{entity_id} & varchar(40); uuid & NN & Loại, định danh thực thể thay đổi\\ \hline
+\path{op}, \path{entity_version} & enum; int & NN & \texttt{upsert} hoặc \texttt{delete}; phiên bản mới\\ \hline
+\path{changed_by}, \path{changed_at} & uuid; timestamptz & NN, FK; DF & Người thay đổi; thời điểm (cũng là nguồn hoạt động gần đây của G03)\\ \hline
+\multicolumn{4}{|l|}{\hs{\texttt{sync.idempotency\_keys} -- không dùng cột chung; giữ 7 ngày}}\\ \hline
+\path{user_id}, \path{key} & uuid & PK, FK & Người dùng; khóa lũy đẳng\\ \hline
+\path{request_hash} & bytea & NN & SHA-256 của yêu cầu; khác băm thì trả 400 mã 2002\\ \hline
+\path{status} & enum & NN, DF & \texttt{in\_progress} khi chèn; \texttt{completed} ngay trước commit\\ \hline
+\path{status_code}, \path{response_body} & smallint; jsonb & CK & Bắt buộc khi \texttt{completed}; phản hồi phát lại nguyên văn\\ \hline
+\path{created_at}, \path{expires_at} & timestamptz & NN & Hết hạn sau 7 ngày\\ \hline
+\end{longtable}
+}
+
+{\footnotesize\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.1}
+\begin{longtable}{|L{3.9cm}|L{2.8cm}|L{3.3cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-3.9cm-2.8cm-3.3cm\relax}|}
+\caption{Tóm tắt các bảng còn lại}\label{tab:c3-bang-con-lai}\\
+\hline
+\hd{Bảng} & \hd{Mục đích} & \hd{Cột chính} & \hd{Ràng buộc đáng chú ý}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Bảng} & \hd{Mục đích} & \hd{Cột chính} & \hd{Ràng buộc đáng chú ý}\\ \hline
+\endhead
+\path{user_settings} & Thiết lập nhắc nhở & \path{reminder_days} & CK 1--7, rỗng thì dùng cấu hình (\br{BR12})\\ \hline
+\path{otp_challenges} & Mã OTP, mã đặt lại mật khẩu & \path{code_hash}, \path{reset_token_hash} & Sai $\le$ 5 lần (\br{BR02}); mã đặt lại UQ, 10 phút, dùng một lần\\ \hline
+\path{devices} & Thiết bị nhận đẩy & \path{fcm_token} & UQ mã FCM; \texttt{id} là khóa của A15\\ \hline
+\path{invite_codes} & Mã mời & \path{space_id}, \path{code} & UQ từng phần (\br{BR06})\\ \hline
+\path{food_categories} & Loại thực phẩm & \path{default_storage} & UQ \texttt{lower(name)} (\br{BR22})\\ \hline
+\path{units} & Đơn vị đo & \path{factor_to_base}, \path{is_base} & CK hệ số $>$ 0; một đơn vị cơ sở mỗi nhóm (\br{BR16})\\ \hline
+\path{foods} & Thực phẩm chung và riêng & \path{barcode}, \path{scope}, \path{merged_into} & UQ từng phần theo \texttt{scope} (\br{BR22}); CK gộp thì \texttt{inactive}\\ \hline
+\path{food_shelf_lives} & Hạn dùng gợi ý & \path{storage_location} & PK phức hợp\\ \hline
+\path{shopping_lists} & Danh sách mua sắm & \path{planned_date}, \path{status} & \texttt{status} theo \br{BR08}\\ \hline
+\path{recipes} & Công thức & \path{kind}, \path{status}, \path{steps} & CK \texttt{space\_id} theo \texttt{kind}; công thức không gian luôn \texttt{published}\\ \hline
+\path{recipe_ingredients} & Nguyên liệu & \path{food_id}, \path{required} & PK phức hợp\\ \hline
+\path{favorite_recipes} & Công thức yêu thích & \path{user_id}, \path{recipe_id} & PK phức hợp\\ \hline
+\path{notifications} & Hộp thư thông báo & \path{dedupe_key} & UQ khóa chống trùng (\br{BR13})\\ \hline
+\path{deliveries} & Lần gửi đẩy, thư & \path{device_id}, \path{status} & UQ theo thông báo, thiết bị, kênh\\ \hline
+\path{system_configs} & Tham số (\uc{UC53}) & \path{key}, \path{value} & PK \path{key}; miền ở Bảng~\ref{tab:c3-tham-so}\\ \hline
+\path{audit_logs} & Nhật ký quản trị & \path{old_value}, \path{new_value} & Chỉ ghi thêm\\ \hline
+\path{objects} & Ảnh tải lên (Y03, Y04) & \path{purpose}, \path{target_id} & \texttt{pending}, \texttt{ready}, \texttt{failed}, \texttt{deleted}\\ \hline
+\path{exports} & Tệp báo cáo xuất (\uc{UC47}) & \path{requested_by}, \path{status} & \texttt{pending}, \texttt{ready}, \texttt{failed}; hạn 7 ngày\\ \hline
+\path{daily_space_stats} & Tổng hợp báo cáo & \path{stat_date} & Materialized view\\ \hline
+\path{report.v_*} & Mô hình đọc & -- & View chỉ đọc trên schema khác\\ \hline
+\path{river.*} & Hàng đợi~\cite{river} & \path{river_job} & Do River di trú\\ \hline
+\end{longtable}
+}

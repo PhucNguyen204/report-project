@@ -1,0 +1,77 @@
+@startuml c3-09b-lop-ke-hoach
+!include _style-c3.iuml
+top to bottom direction
+skinparam nodesep 16
+skinparam ranksep 45
+skinparam classAttributeIconSize 0
+skinparam wrapWidth 700
+skinparam packageStyle folder
+hide empty members
+hide circle
+set separator none
+
+package "recipe/api" as RAPI {
+  interface RecipeQuery <<interface>> {
+    + Ingredients(ids) []Ingredient
+  }
+  interface RecipeDeleteHook <<interface>> {
+    + OnRecipeDelete(sid, recipeID)
+  }
+}
+package "shopping/api" as SAPI {
+  interface ListComposer <<interface>> {
+    + PendingQuantities(sid, foodIDs) Pending
+    + Compose(ComposeCmd) ComposeResult
+  }
+}
+package "pantry/api" as PAPI {
+  interface StockQuery <<interface>> {
+    + Available(sid, foodIDs, until) Stock
+    + SearchLots(sid, LotFilter) []LotView
+  }
+  interface StockConsumer <<interface>> {
+    + ConsumeForMeal(MealCmd) []Allocation
+  }
+}
+
+package "mealplan" as MP {
+  class MealPlanService <<application service>> {
+    + PlanMeals(PlanCmd) []MealEntry
+    + UpdateMeal(UpdateMealCmd) *MealEntry
+    + Cook(CookCmd) CookResult
+    + Suggest(SuggestQuery) []Suggestion
+    + GenerateList(GenerateCmd) GenerateResult
+    + OnRecipeDelete(sid, recipeID)
+  }
+  class MealEntry <<aggregate root>> {
+    + ID : uuid.UUID
+    + MealDate : time.Time
+    + Slot : MealSlot
+    + RecipeID : *uuid.UUID
+    + Servings : int16
+    + Status : MealStatus
+    + CookedAt : *time.Time
+    + Version : int
+    + Reschedule(date, slot, today, horizon) error
+    + MarkCooked(by, at) error
+  }
+  class SuggestionEngine <<domain service>> {
+    + Rank(cands, stock, cfg) []Suggestion
+  }
+  class ShortageCalculator <<domain service>> {
+    + Compute(need, stock, pending) []Shortage
+  }
+}
+
+RecipeQuery -[hidden]down- StockQuery
+ListComposer -[hidden]down- StockConsumer
+MealPlanService .up.|> RecipeDeleteHook
+MealPlanService -up-> RecipeQuery
+MealPlanService -up-> ListComposer
+MealPlanService -up-> StockQuery
+MealPlanService -up-> StockConsumer
+MealPlanService ..> MealEntry
+MealPlanService ..> SuggestionEngine
+MealPlanService ..> ShortageCalculator
+SuggestionEngine -[hidden]right- ShortageCalculator
+@enduml

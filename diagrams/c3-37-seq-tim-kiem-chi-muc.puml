@@ -1,0 +1,38 @@
+@startuml c3-37-seq-tim-kiem-chi-muc
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Ứng dụng" as APP
+participant "API\n(SearchService)" as API
+database "Redis" as RD
+database "PostgreSQL" as DB
+participant "IndexWorker" as IW
+database "Elasticsearch" as ES
+
+group (a) Đánh chỉ mục
+  [-> API : D04, P02 (thực phẩm\nriêng), R02, R04…
+  API -> DB : BEGIN; ghi foods/recipes;\nInsertTx IndexFood | IndexRecipe\n(food.changed, recipe.changed);\nCOMMIT
+  IW -> DB : nhận tác vụ (queue\nindex, SKIP LOCKED);\nđọc bản ghi + version
+  IW -> ES : _bulk upsert alias\nfoods | recipes,\nversion_type external;\nbản đã xóa, gộp,\ngiải tán → delete
+  IW -> ES : đối soát hằng tuần:\nid + version so với\nPostgreSQL
+end
+
+group (b) Truy vấn Q02, Q01
+  APP -> API : GET .../foods/suggest\n?q=thit ba (Q02)
+  API -> RD : rl:suggest:{uid} (20/s)
+  break vượt hạn mức
+    API --> APP : 429 (4290) MSG36
+  end
+  API -> ES : multi_match name, name.prefix,\nfuzziness AUTO; lọc status: active\nvà (scope: global hoặc\nowner_space_id: sid);\ntimeout 300 ms
+  alt ES trả kết quả
+    ES --> API : hits (đã xếp hạng)
+  else ES lỗi hoặc quá 300 ms
+    API -> DB : f_unaccent(name) % f_unaccent($q)\n(pg_trgm), cùng bộ lọc không gian
+  end
+  opt Q01: tìm trong không gian
+    API -> DB : StockQuery.SearchLots(sid, q,\nbộ lọc): lô trong tủ
+  end
+  API --> APP : 200 (1000) theo nhóm,\nhoặc danh sách rỗng (MSG18)
+end
+@enduml

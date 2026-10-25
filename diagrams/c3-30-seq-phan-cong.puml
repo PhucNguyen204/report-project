@@ -1,0 +1,53 @@
+@startuml c3-30-seq-phan-cong
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Ứng dụng\n(trưởng nhóm)" as APP
+participant "API\n(ShoppingHandler)" as API
+participant "ShoppingService\n(AssignItem)" as SVC
+database "PostgreSQL" as PG
+database "Redis" as RD
+
+loop mỗi mặt hàng được chọn ở bước 1–3 (S10)
+  APP -> API : PUT .../{itemId}/assignee {assigneeId}\nIf-Match: "v", Idempotency-Key
+  API -> RD : vai trò member:{sid}:{uid}
+  break không phải trưởng nhóm
+    API --> APP : 403 (3007), MSG13
+  end
+  API -> SVC : AssignItem(sid, itemId,\nassigneeId, v)
+  SVC -> PG : BEGIN; khóa lũy đẳng
+  SVC -> PG : space_members (người gọi, người\nđược giao) theo user_id FOR SHARE
+  break vừa mất quyền trưởng nhóm (4a) |\nngười được giao không còn là thành viên
+    API --> APP : 403 (3007), MSG13 |\n422 (4004), BR10, MSG35
+  end
+  SVC -> PG : SELECT mặt hàng, danh sách\nFOR UPDATE
+  break version ≠ v | Đã mua, Đã bỏ qua, Đã nhập\ntủ hoặc danh sách Hoàn tất (4b)
+    API --> APP : 409 (4002), MSG35 + bản hiện tại |\n422 (4004), BR10 / BR08
+  end
+  SVC -> PG : UPDATE assigned, assignee_id,\nversion = v + 1
+  SVC -> PG : InsertTx AssignmentDigest
+  note left
+    duy nhất theo (người được giao,
+    danh sách), chạy sau 5 s; đếm k
+    mặt hàng của đợt → InsertTx
+    PushNotification (item.assigned, k)
+    → NotifyWorker gửi FCM, thử lại
+    ≤ 3 lần (6a)
+  end note
+  SVC -> PG : space_changes; COMMIT
+  SVC -> RD : PUBLISH space:{sid}
+  API --> APP : 200 (1000): version mới
+end
+
+opt Bỏ phân công (3a, S11)
+  APP -> API : DELETE .../{itemId}/assignee\nIf-Match: "v", Idempotency-Key
+  API -> SVC : AssignItem(sid, itemId, nil, v)
+  SVC -> PG : BEGIN; khóa lũy đẳng; kiểm vai trò\ntrưởng nhóm, version (lỗi như S10)
+  SVC -> PG : to_buy, assignee_id = NULL;\nInsertTx AssignmentDigest
+  SVC -> PG : space_changes; COMMIT
+  SVC -> RD : PUBLISH space:{sid}
+  API --> APP : 200 (1000)
+end
+
+@enduml

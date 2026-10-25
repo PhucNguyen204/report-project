@@ -1,0 +1,41 @@
+@startuml c3-19-seq-ma-vach
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Ứng dụng" as APP
+participant "API\n(BarcodeService)" as API
+database "Redis" as RD
+database "PostgreSQL" as DB
+participant "Bộ ngắt\nmạch" as CB
+participant "Open Food\nFacts" as OFF
+
+APP -> API : GET /barcodes/{code}\n(đã tra thực phẩm\nriêng cục bộ trước)
+API -> RD : GET barcode:{code}
+alt có trong bộ đệm
+  API --> APP : 200, hoặc 404 (4001)\nMSG23 đã lưu
+else không có trong bộ đệm
+  API -> DB : SELECT foods WHERE\nbarcode = $1 AND\nscope = 'global'
+  API -> CB : cho phép gọi?
+  CB --> API : đóng | mở | nửa mở
+  alt tìm thấy
+    API -> RD : SET barcode:{code}\n(30 ngày)
+    API --> APP : 200 (thực phẩm)
+  else không thấy, mạch mở
+    API --> APP : 504 (5004)\nMSG23, trả ngay
+  else không thấy, mạch\nđóng hoặc nửa mở
+    API -> OFF : GET /api/v2/product/{code}\n(timeout 3 s)
+    OFF --> API : sản phẩm | không có | lỗi
+    API -> CB : ghi nhận thành công/lỗi
+    alt có sản phẩm
+      API -> RD : SET barcode:{code} (30 ngày)
+      API --> APP : 200 (đề xuất, source =\nopen_food_facts)
+    else không có
+      API -> RD : SET “không có” (1 ngày)
+      API --> APP : 404 (4001) MSG23
+    else lỗi hoặc quá 3 s
+      API --> APP : 504 (5004) MSG23,\nkhông lưu đệm
+    end
+  end
+end
+@enduml

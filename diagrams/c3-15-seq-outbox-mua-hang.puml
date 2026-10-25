@@ -1,0 +1,43 @@
+@startuml c3-15-seq-outbox-mua-hang
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Thiết bị A" as A
+participant "API\n(ShoppingService)" as API
+database "Redis" as RD
+database "PostgreSQL" as DB
+participant "NotifyWorker" as W
+participant "FCM" as F
+
+group S12 – đánh dấu đã mua (UC20)
+  A -> API : POST .../purchase\nIdempotency-Key, items[]
+  API -> DB : BEGIN; khóa lũy đẳng;\nkhóa shopping_lists
+  loop từng mặt hàng, id tăng dần
+    API -> DB : UPDATE shopping_items\nSET status = 'purchased', ...\nWHERE id = $1 AND status\nIN ('to_buy', 'assigned')\nRETURNING assignee_id
+    break không dòng, yêu cầu chỉ một mặt hàng (6a)
+      API -> DB : ROLLBACK
+      API --> A : 409 (4002) MSG35\n+ current.purchasedBy
+    end
+    break giao cho người khác và !onBehalf (2a)
+      API -> DB : ROLLBACK
+      API --> A : 422 (4004)\nBR10, MSG12
+    end
+    opt mua thay (onBehalf)
+      API -> DB : InsertTx PushNotification
+    end
+  end
+  API -> DB : UPDATE shopping_lists\nSET status (BR08);\nspace_changes; COMMIT
+  API -> RD : PUBLISH space:{sid}
+  API --> A : 200 (1000)\nresults[i].outcome:\npurchased |\nalready_purchased
+end
+
+group NotifyWorker – queue notify
+  W -> DB : lấy tác vụ (SKIP LOCKED);\nđọc assignment_notify_on,\ndevices
+  W -> DB : INSERT notifications\nON CONFLICT (dedupe_key)\nDO NOTHING
+  loop thiết bị có deliveries ≠ sent
+    W -> F : gửi tới thiết bị B\n(collapse key)
+    W -> DB : deliveries: sent
+  end
+end
+@enduml

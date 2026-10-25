@@ -1,0 +1,44 @@
+@startuml c3-18-seq-nhac-han-dung-be
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Reminder\nDispatcher" as D
+database "PostgreSQL" as DB
+participant "UserReminder" as UR
+participant "NotifyWorker" as NW
+participant "FCM" as F
+
+[-> D : định kỳ mỗi\n1 phút (River\nleader)
+D -> D : đọc reminder.runAt\n(Redis cfg:all)
+break giờ VN < runAt
+  D -> D : kết thúc
+end
+D -> DB : BEGIN; InsertTx\nkhóa ngày (tác vụ\nduy nhất theo ngày)
+break đã chạy hôm nay
+  D -> DB : ROLLBACK
+end
+D -> DB : người dùng có lô\nactive với −1 ≤\nexpires_on − $today\n≤ 7 (mọi không gian);\nInsertMany UserReminder\n(duy nhất userId+ngày);\nCOMMIT
+
+UR -> DB : nhận tác vụ (SKIP\nLOCKED); user_settings;\nlô theo N riêng, mọi\nkhông gian (−1 ≤ d ≤ N)
+break tắt nhắc (4a) | hết lô (5a)
+  UR -> DB : tác vụ completed,\nkhông tạo thông báo
+end
+UR -> DB : BEGIN; INSERT notifications\n(≤ maxLotsPerNotice lô,\ndedupe_key userId:ngày)\nON CONFLICT DO NOTHING\nRETURNING id
+opt chèn mới
+  UR -> DB : InsertTx\nPushNotification\n(queue notify)
+end
+UR -> DB : COMMIT
+
+NW -> DB : nhận tác vụ (SKIP\nLOCKED); thiết bị có\ndeliveries ≠ sent
+loop từng thiết bị
+  NW -> F : gửi (collapse key)
+  alt thành công
+    NW -> DB : deliveries: sent
+  else invalid_token (7a)
+    NW -> DB : xóa thiết bị;\ndeliveries: invalid_token
+  else lỗi tạm thời (7b)
+    NW -> DB : deliveries: failed;\ncuối vòng trả lỗi →\nRiver thử lại ≤ 3 lần
+  end
+end
+@enduml

@@ -1,0 +1,47 @@
+@startuml c3-28-mo-rong
+!include _style-c3.iuml
+skinparam nodesep 24
+skinparam ranksep 46
+skinparam defaultTextAlignment center
+skinparam node {
+  BackgroundColor #FFFFFF
+  BorderColor #2F5597
+}
+skinparam rectangle {
+  FontStyle normal
+}
+hide stereotype
+
+node "<<device>>\n**Bộ cân bằng tải**\nHTTPS/WSS từ ứng dụng,\nkiểm tra /readyz" as LB
+node "<<device>>\n**Máy giám sát**\nPrometheus, Grafana,\nLoki, Alloy" as MON
+
+rectangle "Tầng ứng dụng — không trạng thái" as APPC #FAFAFA {
+  node "<<device>>\n**app-1**\napi + worker\n<i>River tự bầu leader</i>" as N1
+  node "<<device>>\n**app-2**\napi + worker\n<i>River tự bầu leader</i>" as N2
+  node "<<device>>\n**app-3**\napi" as N3
+}
+
+rectangle "Tầng dữ liệu" as DATAC #FAFAFA {
+  node "<<device>>\n**Redis Sentinel**\n1 primary, 2 replica" as RS
+  node "<<device>>\n**Elasticsearch**\n3 nút" as ESC
+  node "<<device>>\n**MinIO phân tán**\n4 nút" as MIO
+  node "<<device>>\n**db-primary**\nPostgreSQL 16\n<i>ghi, GET /changes</i>" as PGP
+  node "<<device>>\n**db-replica**\nPostgreSQL 16\n<i>đọc báo cáo</i>" as PGR
+}
+
+node "<<device>>\n**Kho sao lưu**\nngoài máy chủ\n(bucket S3)" as BK
+
+N1 -[hidden]right- N2
+N2 -[hidden]right- N3
+RS -[hidden]right- ESC
+ESC -[hidden]right- MIO
+RS -[hidden]down- PGP
+MIO -[hidden]down- PGR
+LB -[hidden]right- MON
+
+LB -down-> APPC : phân phối yêu cầu
+MON .down.> APPC : thu /metrics
+APPC -down-> DATAC : SQL, RESP, HTTPS, S3
+PGP -right-> PGR : luồng WAL
+PGP -down--> BK : pgBackRest: WAL + full
+@enduml

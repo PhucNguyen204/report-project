@@ -1,0 +1,20 @@
+' =====================================================================
+'  _style-c3.iuml — Kiểu dáng cho sơ đồ Chương 3: kế thừa _style.iuml,
+'  tăng cỡ chữ để chữ in ≥ 6,5 pt khi ảnh rộng ≤ 1650 px in ở \textwidth.
+' =====================================================================
+!include _style.iuml
+skinparam defaultFontSize 14
+skinparam ArrowFontSize 13
+skinparam wrapWidth 230
+skinparam note {
+  FontSize 13
+}
+skinparam legend {
+  FontSize 13
+}
+skinparam class {
+  AttributeFontSize 13
+}
+skinparam package {
+  FontSize 14
+}

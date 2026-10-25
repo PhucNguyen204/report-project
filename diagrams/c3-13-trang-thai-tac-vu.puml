@@ -1,0 +1,41 @@
+@startuml c3-13-trang-thai-tac-vu
+!include _style-c3.iuml
+skinparam nodesep 45
+skinparam ranksep 55
+skinparam wrapWidth 400
+
+state "Chờ chạy" as WAIT {
+  state "Đã lên lịch\n<i>scheduled</i>" as SC
+  state "Sẵn sàng\n<i>available</i>" as AV
+  state "Chờ thử lại\n<i>retryable</i>" as RT
+  SC -right-> AV : đến ScheduledAt\n(leader River)
+  RT -left-> AV : hết backoff
+}
+state "Đang chạy\n<i>running</i>" as RU
+state "Hoàn tất\n<i>completed</i>" as CO
+state "Đã hủy\n<i>cancelled</i>" as CA
+state "Bị loại\n<i>discarded</i>" as DI
+state E1 <<end>>
+state E2 <<end>>
+state E3 <<end>>
+
+[*] -down-> AV : InsertTx\n(commit cùng dữ liệu)
+[*] -down-> SC : InsertTx [ScheduledAt > now]\nhoặc tác vụ định kỳ
+AV -down-> RU : worker nhận việc\n(FOR UPDATE SKIP LOCKED)\n/ attempt + 1
+RU -up-> RT : lỗi [attempt < MaxAttempts]\n/ hẹn lại sau backoff;\nrescuer: quá hạn chạy
+RU -down-> CO : Work() trả nil
+RU -down-> CA : Work() trả JobCancel\n(lỗi vĩnh viễn)
+RU -down-> DI : lỗi [attempt =\nMaxAttempts]
+WAIT -down-> CA : client.JobCancel
+DI -up-> AV : client.JobRetry\n(thủ công)
+CO -down-> E1 : JobCleaner
+CA -down-> E2 : JobCleaner
+DI -down-> E3 : JobCleaner
+
+note right of WAIT
+  InsertTx trùng khóa duy nhất
+  (UniqueOpts, ví dụ UserReminder
+  theo userId + ngày) → bỏ qua,
+  không tạo tác vụ thứ hai
+end note
+@enduml

@@ -1,0 +1,49 @@
+@startuml c3-35-seq-dang-ky-otp
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Ứng dụng\nFlutter" as APP
+participant "API\n(AuthHandler)" as API
+participant "identity\nService" as SVC
+participant "household\n(ActivationHook)" as HK
+database "PostgreSQL" as PG
+database "Redis" as RD
+
+group A01 – đăng ký (UC01); A03 gửi lại mã lặp bước 4–8
+  APP -> API : POST /auth/register\n{fullName, email, password}
+  API -> RD : rl:register:{ip} (5/giờ/IP)
+  API -> SVC : Register: kiểm BR01,\nbăm Argon2id
+  SVC -> RD : SET otp:cooldown NX EX 60;\nINCR otp:hourly (BR02)
+  break vượt giới hạn | dữ liệu sai
+    API --> APP : 429 (4290), MSG36 | MSG30\n400 (2001), MSG01\n400 (2002), MSG02
+  end
+  SVC -> PG : BEGIN; INSERT users (pending)\nON CONFLICT (email) DO UPDATE\n… WHERE status = 'pending'
+  break không trả dòng (email đã hoạt động)
+    API --> APP : 409 (4003), MSG03
+  end
+  SVC -> PG : INSERT otp_challenges (vô hiệu\nmã cũ); InsertTx SendEmail; COMMIT
+  API --> APP : 201 (1000): chờ xác thực
+end
+
+group A02 – xác thực OTP (UC02)
+  APP -> API : POST /auth/otp/verify\n{email, purpose, code, deviceId}
+  API -> SVC : VerifyOtp(cmd)
+  SVC -> PG : BEGIN; SELECT otp_challenges\nFOR UPDATE; so HMAC, hạn, lần sai
+  break mã sai | hết hạn | đã sai 5 lần
+    SVC -> PG : failed_attempts + 1; COMMIT
+    API --> APP : 400 (3006), MSG04
+  end
+  alt purpose = register
+    SVC -> PG : consumed_at; users.status = 'active'
+    SVC -> HK : OnActivated(tx, uid)
+    HK -> PG : INSERT spaces,\nspace_members (leader)
+    SVC -> PG : last_space_id, phiên mới; COMMIT
+    API --> APP : 200 (1000): token, không gian
+  else purpose = reset_password (UC04)
+    SVC -> PG : consumed_at; băm resetToken\n(sống 10 phút); COMMIT
+    API --> APP : 200 (1000): resetToken
+  end
+end
+note over APP, SVC : A08: mật khẩu mới (resetToken);\nthu hồi mọi phiên, token_version + 1
+@enduml

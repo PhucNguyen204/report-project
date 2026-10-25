@@ -1,0 +1,44 @@
+@startuml c3-38-seq-quan-tri-cau-hinh
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Ứng dụng\n(quản trị viên)" as APP
+participant "API\n(AdminHandler)" as API
+participant "admin\nService" as SVC
+database "PostgreSQL" as PG
+database "Redis" as RD
+participant "Các bản\nAPI, worker" as OTH
+
+group UC53 – cập nhật tham số hệ thống
+  APP -> API : PUT /admin/configs\n{values: {khóa: giá trị}}
+  break system_role khác admin
+    API --> APP : 403 (3007), MSG13
+  end
+  API -> SVC : UpdateConfigs(values)
+  SVC -> PG : BEGIN; SELECT system_configs\nWHERE key = ANY($1)\nORDER BY key FOR UPDATE
+  SVC -> SVC : kiểu, min_value…max_value;\ntổng suggest.weights = 1
+  break khóa lạ hoặc giá trị sai
+    SVC -> PG : ROLLBACK
+    API --> APP : 400 (2002), MSG27,\nerrors[] theo từng khóa
+  end
+  SVC -> PG : UPDATE system_configs;\nINSERT audit_logs; COMMIT
+  SVC -> RD : DEL cfg:all; [suggest.*] UNLINK\nsuggest:*; PUBLISH cfg {keys}
+  RD -> OTH : cfg: bỏ cấu hình\ntrong bộ nhớ
+  API --> APP : 200 (1000), MSG10
+end
+
+group UC48 – khóa tài khoản
+  APP -> API : PATCH /admin/users/{uid}\n{action: disable, reason}
+  API -> SVC : DisableUser(cmd)
+  SVC -> PG : BEGIN; SELECT users\nFOR UPDATE (cổng identity)
+  break tự khóa chính mình
+    API --> APP : 422 (4004)
+  end
+  SVC -> PG : status = 'disabled',\nlock_reason, token_version + 1;\nthu hồi mọi phiên
+  SVC -> PG : INSERT audit_logs; InsertTx\nSendEmail; COMMIT
+  SVC -> RD : SET auth:ver:{uid};\nPUBLISH user:{uid}
+  RD -> OTH : user:{uid}: đóng\nWebSocket
+  API --> APP : 200 (1000), MSG10
+end
+@enduml

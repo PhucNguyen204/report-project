@@ -1,0 +1,62 @@
+@startuml c3-02-c4-container
+!$TECHN_FONT_SIZE = 14
+!$LEGEND_TITLE_TEXT = "Chú giải"
+!include <C4/C4_Container>
+skinparam dpi 170
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowFontSize 14
+skinparam wrapWidth 190
+skinparam nodesep 45
+skinparam ranksep 40
+HIDE_STEREOTYPE()
+LAYOUT_TOP_DOWN()
+HIDE_PERSON_SPRITE()
+UpdateElementStyle("person", $legendText="tác nhân")
+UpdateElementStyle("container", $legendText="vùng chứa")
+UpdateElementStyle("external_system", $legendText="hệ thống bên ngoài")
+UpdateBoundaryStyle($legendText="ranh giới")
+UpdateSystemBoundaryStyle($legendText="ranh giới hệ thống")
+
+Person(user, "Người dùng, Quản trị viên", "Trên Android hoặc iOS")
+
+System_Boundary(sys, "Hệ thống Đi chợ tiện lợi") {
+  Boundary(dev, "Thiết bị Android / iOS") {
+    Container(app, "Ứng dụng di động", "Flutter 3, Riverpod, dio", "Giao diện, hàng đợi ngoại tuyến")
+    ContainerDb(sqlite, "CSDL cục bộ", "SQLite, drift", "Bản sao cục bộ, lệnh chờ")
+  }
+  Container(caddy, "Reverse proxy", "Caddy 2", "TLS, chia tải, media. tới MinIO")
+  Container(api, "API (×2 bản)", "Go 1.23, chi v5", "REST /it4788/v1, WebSocket")
+  Container(worker, "Worker", "Go 1.23, River", "Tác vụ nền và định kỳ")
+  Boundary(data, "Lưu trữ (mạng data nội bộ)") {
+    ContainerDb(pg, "CSDL chính", "PostgreSQL 16", "Nguồn sự thật, river_job")
+    ContainerDb(redis, "Bộ nhớ đệm", "Redis 7", "Cache, giới hạn, Pub/Sub")
+    ContainerDb(es, "Máy tìm kiếm", "Elasticsearch 8.15", "Chỉ mục foods, recipes")
+    ContainerDb(minio, "Lưu trữ đối tượng", "MinIO (S3)", "Ảnh, tệp báo cáo xuất")
+  }
+}
+
+System_Ext(off, "Open Food Facts", "Tra cứu mã vạch")
+System_Ext(fcm, "FCM / APNs", "Thông báo đẩy")
+System_Ext(smtp, "Dịch vụ SMTP", "Thư OTP, thư tài khoản")
+
+Rel_D(user, app, "Sử dụng")
+Rel_L(app, sqlite, "Đọc/ghi")
+Rel_D(app, caddy, "REST, WS, PUT ảnh", "HTTPS/WSS")
+Rel_D(caddy, api, "Chuyển tiếp", "HTTP")
+Rel_D(api, data, "Đọc/ghi, chèn tác vụ,\ncache, tìm kiếm, ký URL", "pgx, RESP, HTTPS, S3")
+Rel_D(worker, data, "Nhận tác vụ, PUBLISH,\nchỉ mục, lưu tệp", "pgx, RESP, HTTPS, S3")
+Rel_U(api, off, "Tra mã vạch", "HTTPS")
+Rel_U(worker, fcm, "Gửi đẩy", "HTTP v1")
+Rel_D(worker, smtp, "Gửi thư", "SMTP/TLS")
+Rel_L(fcm, app, "Thông báo đẩy")
+
+Lay_R(api, worker)
+Lay_R(minio, pg)
+Lay_D(minio, redis)
+Lay_R(redis, es)
+Lay_R(caddy, off)
+Lay_D(fcm, smtp)
+
+SHOW_LEGEND()
+@enduml

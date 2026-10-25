@@ -1,0 +1,44 @@
+@startuml c3-14-seq-xac-nhan-nau
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "API\n(MealHandler)" as API
+participant "MealPlanService" as SVC
+participant "StockConsumer\n(pantry: PantryService)" as SC
+participant "FEFOAllocator\n(pantry/domain)" as AL
+database "PostgreSQL" as DB
+database "Redis" as RD
+
+[-> API : POST .../{mealId}/cook\nIdempotency-Key\n{servings, lines[],\nskipStock}
+API -> SVC : Cook(ctx, CookCmd)
+SVC -> DB : BEGIN; khóa lũy đẳng
+SVC -> DB : SELECT meal_entries FOR UPDATE
+break status = cooked (6b)
+  SVC -> DB : lưu phản hồi; COMMIT
+  SVC --> API : kết quả đã có
+  [<-- API : 200 (1000)\nkết quả cũ
+end
+opt skipStock = false (5a)
+  SVC -> SVC : needs = RecipeQuery\n.Ingredients × khẩu phần,\nđiều chỉnh theo lines[]
+  SVC -> SC : ConsumeForMeal(needs\nsắp theo food_id,\nmealId)
+  loop từng nguyên liệu, food_id tăng dần
+    SC -> DB : SELECT food_lots FOR UPDATE\nWHERE lifecycle = 'active'\nAND expires_on >= $today\n(hoặc lô chọn – 4b)\nORDER BY expires_on, id
+    SC -> AL : Allocate(lô, lượng)
+    AL --> SC : phần trừ từng lô
+    break lượng còn < lượng xác nhận (6a)
+      SC --> SVC : ErrStockChanged
+      SVC -> DB : ROLLBACK
+      SVC --> API : lỗi + tồn kho mới
+      [<-- API : 409 (4002) MSG35\n+ tồn kho mới
+    end
+    SC -> DB : UPDATE food_lots\n(về 0 → consumed, BR14);\nINSERT stock_movements\n(kind = cook)
+  end
+  SC --> SVC : các lô đã trừ
+end
+SVC -> DB : UPDATE meal_entries\nSET status = 'cooked'
+SVC -> DB : space_changes; COMMIT
+SVC -> RD : DEL suggest:{sid};\nPUBLISH space:{sid}
+SVC --> API : CookResult
+[<-- API : 200 (1000)
+@enduml

@@ -1,0 +1,130 @@
+@startuml c3-23-erd-cong-thuc-ke-hoach
+!pragma layout elk
+!include _style-c3.iuml
+hide circle
+hide methods
+hide stereotype
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 40
+
+  entity "mealplan.meal_entries" as me {
+    * id : uuid <<PK>>
+    --
+    * space_id : uuid <<FK>>
+    * meal_date : date
+    * meal_slot : meal_slot
+    recipe_id : uuid
+    custom_name : varchar(100)
+    * servings : smallint
+    * status : meal_status
+    * position : smallint
+    cooked_at : timestamptz
+    cooked_by : uuid <<FK>>
+    * created_by : uuid <<FK>>
+    * version : int
+    deleted_at : timestamptz
+  }
+
+package "recipe" as prc {
+  entity "recipes" as rc {
+    * id : uuid <<PK>>
+    --
+    * kind : recipe_kind
+    space_id : uuid <<FK>>
+    * name : varchar(100)
+    image_key : text
+    * servings : smallint
+    prep_minutes : smallint
+    cook_minutes : smallint
+    meal_types : text[]
+    * steps : jsonb
+    origin_recipe_id : uuid <<FK>>
+    * created_by : uuid <<FK>>
+    * status : recipe_status
+    * version : int
+    deleted_at : timestamptz
+    ..
+    CK template: space_id IS NULL
+    CK space: space_id NOT NULL,
+      status = 'published'
+  }
+  entity "recipe_ingredients" as ri {
+    * recipe_id : uuid <<PK, FK>>
+    * food_id : uuid <<PK, FK>>
+    --
+    * quantity : numeric(12,2)
+    * unit_id : uuid <<FK>>
+    * required : bool
+    * position : smallint
+  }
+  entity "favorite_recipes" as fr {
+    * user_id : uuid <<PK, FK>>
+    * recipe_id : uuid <<PK, FK>>
+  }
+}
+
+package "catalog" as pct {
+  entity "food_categories" as fc {
+    * id : uuid <<PK>>
+    --
+    * name : varchar(50) <<UQ>>
+    icon_key : text
+    * default_storage : storage_location
+    * status : entity_status
+    * sort_order : smallint
+  }
+  entity "foods" as fd {
+    * id : uuid <<PK>>
+    --
+    * name : varchar(100)
+    aliases : text[]
+    * category_id : uuid <<FK>>
+    * default_unit_id : uuid <<FK>>
+    barcode : varchar(14) <<UQ*>>
+    * scope : food_scope
+    owner_space_id : uuid <<FK>>
+    * status : food_status
+    merged_into : uuid <<FK>>
+    * source : food_source
+    image_key : text
+    * version : int
+    ..
+    «UQ*» UQ từng phần theo scope:
+      global: (barcode)
+      space: (owner_space_id, barcode)
+    CK merged_into → 'inactive'
+  }
+  entity "units" as un {
+    * id : uuid <<PK>>
+    --
+    * symbol : varchar(20) <<UQ>>
+    * name : varchar(50)
+    * dimension : unit_dimension
+    * factor_to_base : numeric(12,4)
+    * is_base : bool
+    * status : entity_status
+    ..
+    UQ (dimension) WHERE is_base
+    CK is_base → factor = 1
+  }
+  entity "food_shelf_lives" as fs {
+    * food_id : uuid <<PK, FK>>
+    * storage_location : enum <<PK>>
+    --
+    * days : int
+  }
+}
+
+
+rc |o..o{ me
+rc ||--|{ ri
+rc ||--o{ fr
+rc |o--o{ rc
+ri }o--|| fd
+ri }o--|| un
+fd }o--|| fc
+fd }o--|| un
+fd ||--o{ fs
+fd |o--o{ fd
+@enduml

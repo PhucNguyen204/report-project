@@ -1,0 +1,49 @@
+@startuml c3-16-seq-dong-bo-ngoai-tuyen
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+box "Thiết bị" #FAFAFA
+  participant "Giao diện" as UI
+  database "SQLite\n(drift)" as L
+  participant "Bộ đồng bộ\n(ứng dụng)" as SE
+end box
+box "Máy chủ" #FAFAFA
+  participant "API" as API
+  database "PostgreSQL" as DB
+end box
+
+[-> UI : đánh dấu\nđã mua
+UI -> L : ghi cục bộ +\npending_ops (khóa,\nversion, X-Client-Time)
+[<-- UI : MSG20
+
+== Có mạng trở lại ==
+loop từng thao tác chờ, theo thứ tự
+  SE -> API : gọi lại REST\n(Idempotency-Key,\nIf-Match,\nX-Client-Time)
+  API -> DB : BEGIN; INSERT idempotency_keys\n(in_progress) ON CONFLICT\nDO NOTHING
+  alt khóa đã completed, cùng băm
+    API --> SE : phản hồi đã lưu\n(Idempotent-Replayed)
+  else cùng khóa, khác băm
+    API --> SE : 400 (2002)
+  else đã được người khác mua
+    API -> DB : ROLLBACK
+    API --> SE : 409 (4002) MSG35\n+ current.purchasedBy
+  else vi phạm BR08, BR11, BR18 theo ngày thao tác
+    API -> DB : ROLLBACK
+    API --> SE : 422 (4004)
+  else hợp lệ
+    API -> DB : nghiệp vụ; lưu phản hồi;\nspace_changes; COMMIT
+    API --> SE : 200/201\n(+ overwrittenFields)
+  end
+  SE -> L : áp kết quả/bản máy\nchủ (422: giữ nháp),\nxóa khỏi pending_ops
+end
+loop hasMore
+  SE -> API : GET .../changes\n?since=s&limit=500
+  break since quá 90 ngày
+    API --> SE : 410 (4100) →\ntải lại toàn bộ
+  end
+  API --> SE : changes, nextSince,\nhasMore
+  SE -> L : upsert, tombstone;\ns = nextSince
+end
+L --> UI : dữ liệu đổi,\nbáo xung đột
+@enduml

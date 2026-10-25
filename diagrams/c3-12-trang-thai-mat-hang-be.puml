@@ -1,0 +1,46 @@
+@startuml c3-12-trang-thai-mat-hang-be
+!include _style-c3.iuml
+skinparam nodesep 40
+skinparam ranksep 60
+skinparam wrapWidth 460
+
+state "Chưa mua" as OPEN {
+  state "Cần mua\n<i>to_buy</i>" as TB
+  state "Đã phân công\n<i>assigned</i>" as AS
+  TB : S08 sửa [version khớp]
+  AS : S10 đổi người [leader]\n/ item.unassigned,\nAssignmentDigest
+  TB -right-> AS : S10 [leader, version khớp]\n/ AssignmentDigest
+  AS -left-> TB : S11 [leader, version khớp]\nhoặc G08, G10 (BR07)\n/ item.unassigned
+}
+state "Đã mua\n<i>purchased</i>" as PU
+state "Đã nhập tủ\n<i>stocked</i>" as ST
+state "Đã bỏ qua\n<i>skipped</i>" as SK
+state E1 <<end>>
+state E2 <<end>>
+state E3 <<end>>
+state E4 <<end>>
+
+PU : S08 [chỉ actualQuantity, unitPrice]
+PU : S12 / 409 (4002) hoặc already_purchased,\nkèm người mua
+PU : S14 [không có food_id] / 422 (4004)
+ST : S14 / already_stocked, trả lô cũ
+
+[*] -down-> TB : S07, S06, S15, R08\n[danh sách chưa Hoàn tất]
+OPEN -down-> PU : S12 [nếu assigned: người\nđược giao hoặc onBehalf]\n/ items.purchased
+PU -up-> TB : S13 [chưa nhập tủ,\nversion khớp]
+OPEN -down-> SK : S08 status=skipped\n[version khớp]\n/ item.unassigned\nnếu đang giao
+OPEN -down-> E1 : S09\n/ xóa mềm
+PU -down-> ST : S14 [có food_id]\n/ items.stocked, lot.changed
+PU -right-> E2 : [danh sách Hoàn tất,\nkhông nhập tủ]
+ST -right-> E3
+SK -right-> E4
+
+legend bottom right
+  <b>Trạng thái danh sách</b> (BR08), ghi cùng giao dịch với mặt hàng:
+  <i>drafting</i>: chưa có mặt hàng purchased, stocked;
+  <i>shopping</i>: đã có, còn mặt hàng to_buy, assigned;
+  <i>completed</i>: không còn mặt hàng to_buy, assigned.
+  Danh sách completed từ chối sửa nội dung (422, 4004)
+  trừ S08 ở trạng thái purchased, S13 (về shopping) và S14.
+endlegend
+@enduml

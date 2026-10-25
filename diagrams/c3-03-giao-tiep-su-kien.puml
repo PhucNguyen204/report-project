@@ -1,0 +1,74 @@
+@startuml c3-03-giao-tiep-su-kien
+!include _style-c3.iuml
+top to bottom direction
+skinparam componentStyle rectangle
+skinparam nodesep 40
+skinparam ranksep 55
+
+frame "Bản API xử lý yêu cầu ghi" as APIW {
+  component "Dịch vụ ứng dụng\ncủa module nguồn" as SRC
+  component "Event publisher\n(River InsertTx)" as PUB
+  component "ChangefeedAppender\n(SyncEngine)" as CF
+}
+
+rectangle "Một giao dịch PostgreSQL (bước 1–3)" as TX {
+  database "river.river_job" as RJ
+  database "Bảng nghiệp vụ\ncủa module" as TBL
+  database "sync.space_changes" as SC
+}
+
+queue "Redis Pub/Sub\nspace:{id}, user:{id}" as RPS
+
+frame "Mọi bản API" as APIS {
+  component "Handler GET /changes\n(đọc space_changes\ntheo seq)" as CH
+  component "Hub WebSocket" as HUB
+}
+
+frame "Tiến trình Worker" as WK {
+  component "River client" as RC
+  component "MediaWorker,\nExportWorker" as MW
+  component "IndexWorker" as IW
+  component "NotifyWorker" as NW
+}
+
+database "MinIO" as MINIO
+database "Elasticsearch" as ES
+cloud "Dịch vụ SMTP" as SMTP
+cloud "FCM / APNs" as FCM
+node "Thiết bị\nthành viên" as DEV
+
+SRC -down-> PUB : gọi
+SRC -down-> CF : gọi
+PUB -[hidden]right- CF
+SRC -down-> TBL : 1. BEGIN; khóa lũy\nđẳng, ghi dữ liệu
+PUB -down-> RJ : 2. chèn tác vụ
+CF -down-> SC : 3. change_seq,\nspace_changes;\nCOMMIT
+CF -down-> RPS : 4a. sau COMMIT:\nPUBLISH space:{id}
+RPS -down-> HUB : 5a. phát tới\nmọi bản API
+HUB -down-> DEV : 6a. gợi ý\n{seq, entityTypes}
+DEV -up-> CH : 7a. GET\n/changes?since=
+
+RJ -[hidden]right- TBL
+TBL -[hidden]right- SC
+CH -[hidden]right- HUB
+RJ -down-> RC : 4b. nhận tác vụ\n(SKIP LOCKED)
+RC -down-> MW
+RC -down-> IW
+RC -down-> NW
+MW -down-> MINIO : 5b. lưu tệp
+IW -down-> ES : 5b. đánh\nchỉ mục
+NW -down-> SMTP : 5b. thư
+NW -down-> FCM : 5b. đẩy
+NW -up-> RPS : 5b. PUBLISH\nuser:{id}
+FCM -right-> DEV : 6b. khi ứng dụng\nchạy nền
+MINIO -[hidden]right- ES
+ES -[hidden]right- SMTP
+SMTP -[hidden]right- FCM
+MW -[hidden]right- IW
+IW -[hidden]right- NW
+
+legend bottom
+  1–3: cùng một giao dịch PostgreSQL (commit cùng nhau, rollback cùng nhau)
+  4a–7a: nhánh thời gian thực sau COMMIT · 4b–6b: nhánh xử lý nền bởi Worker
+endlegend
+@enduml

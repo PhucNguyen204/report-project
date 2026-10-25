@@ -1,0 +1,117 @@
+@startuml c3-22-erd-mua-sam-tu-lanh
+!include _style-c3.iuml
+hide circle
+hide methods
+hide stereotype
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 70
+
+package "shopping" as psh {
+  entity "shopping_lists" as sl {
+    * id : uuid <<PK>>
+    --
+    * space_id : uuid <<FK>>
+    * name : varchar(100)
+    * planned_date : date
+    note : varchar(500)
+    * origin : list_origin
+    source_list_id : uuid <<FK>>
+    * status : list_status
+    completed_at : timestamptz
+    * created_by : uuid <<FK>>
+    * version : int
+    deleted_at : timestamptz
+  }
+  entity "shopping_items" as si {
+    * id : uuid <<PK>>
+    --
+    * list_id : uuid <<FK>>
+    * space_id : uuid <<FK>>
+    food_id : uuid <<FK>>
+    custom_name : varchar(100)
+    * quantity : numeric(12,2)
+    * unit_id : uuid <<FK>>
+    note : varchar(200)
+    * status : item_status
+    assignee_id : uuid <<FK>>
+    assigned_by : uuid <<FK>>
+    purchased_by : uuid <<FK>>
+    purchased_at : timestamptz
+    actual_quantity : numeric(12,2)
+    unit_price : bigint
+    lot_id : uuid
+    * position : int
+    * version : int
+    deleted_at : timestamptz
+  }
+}
+
+entity "catalog.units (rút gọn)" as un {
+  * id : uuid <<PK>>
+  --
+  * dimension : unit_dimension
+  * factor_to_base : numeric(12,4)
+}
+entity "catalog.foods (rút gọn)" as fd {
+  * id : uuid <<PK>>
+  --
+  * name : varchar(100)
+  ...
+}
+
+package "pantry" as ppt {
+  entity "stock_movements" as sm {
+    * id : uuid <<PK>>
+    --
+    * lot_id : uuid <<FK>>
+    * space_id : uuid <<FK>>
+    * kind : movement_kind
+    * quantity : numeric(12,2)
+    * unit_id : uuid <<FK>>
+    reason : discard_reason
+    meal_entry_id : uuid
+    * actor_id : uuid <<FK>>
+    * occurred_at : timestamptz
+  }
+  entity "food_lots" as fl {
+    * id : uuid <<PK>>
+    --
+    * space_id : uuid <<FK>>
+    * food_id : uuid <<FK>>
+    * initial_qty : numeric(12,2)
+    * remaining_qty : numeric(12,2)
+    * unit_id : uuid <<FK>>
+    * unit_factor : numeric(12,4)
+    base_remaining : numeric <<GEN>>
+    * storage_location : storage_location
+    * purchased_on : date
+    * expires_on : date
+    * lifecycle : lot_lifecycle
+    source_item_id : uuid
+    total_cost : bigint
+    note : varchar(200)
+    * created_by : uuid <<FK>>
+    * version : int
+    deleted_at : timestamptz
+  }
+}
+
+legend bottom right
+  ● NOT NULL    «GEN»: cột sinh
+  ─ ─  nét đứt: tham chiếu logic, không FK
+  stock_movements chỉ ghi thêm; kind = adjust:
+  quantity là chênh lệch có dấu (P04, UC27)
+endlegend
+
+sl ||-right-o{ si
+si }o-down-|| un
+si }o-down-o| fd
+si |o.down.o| fl
+sm }o-right-|| fl
+fl }o-up-|| un
+fl }o-up-|| fd
+sm }o-up-|| un
+sl -[hidden]down- un
+un -[hidden]right- fd
+@enduml

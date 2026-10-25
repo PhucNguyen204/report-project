@@ -1,0 +1,39 @@
+@startuml c3-25b-seq-dung-lai-ma-lam-moi
+!include _style-c3.iuml
+hide footbox
+skinparam BoxPadding 6
+
+actor "Kẻ tấn công" as ATK
+participant "Ứng dụng\nFlutter" as APP
+box "Tiến trình api" #F7F9FC
+participant "Middleware\nxác thực" as MW
+participant "Module\nidentity" as ID
+end box
+database "Redis" as R
+database "PostgreSQL" as PG
+
+' thông điệp ẩn chỉ để nới khoảng identity–Redis, tránh nhãn đè đường đời Redis
+ID -[hidden]> R : xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+autonumber "<b>0."
+
+note over APP, ID : Trạng thái đầu: RT1 đã xoay\nthành RT2 (bước làm mới);\nkẻ tấn công giữ bản sao RT1
+
+group Kẻ tấn công dùng lại RT1 đã đánh cắp
+  ATK -> ID : POST /auth/refresh {RT1}
+  ID -> PG : BEGIN; SELECT refresh_sessions\nWHERE token_hash = SHA-256(RT1)\nFOR UPDATE
+  note right of ID : rotated_at đã có,\nngoài cửa sổ ân hạn 30 s
+  ID -> PG : revoked_at = now() cho mọi phiên\ncủa họ F; token_version + 1; COMMIT
+  ID -> R : SET auth:ver:{uid} = v + 1
+  ID --> ATK : 401 (3008)
+end
+
+group Người dùng thật bị buộc đăng nhập lại
+  APP -> MW : GET /spaces (Bearer AT2)
+  MW -> R : GET auth:ver:{uid}\n→ v + 1 ≠ ver của AT2
+  MW --> APP : 401 (3002)
+  APP -> ID : POST /auth/refresh {RT2}
+  ID -> PG : SELECT refresh_sessions\nWHERE token_hash = SHA-256(RT2)\n→ họ F đã bị thu hồi
+  ID --> APP : 401 (3008)
+  note over APP : xóa mã cục bộ,\nchuyển màn hình đăng nhập
+end
+@enduml

@@ -1,0 +1,36 @@
+@startuml c3-40-seq-lap-lich
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Ứng dụng\nFlutter" as APP
+participant "API\n(MealHandler)" as API
+participant "MealPlanService\n(PlanMeals)" as SVC
+participant "Cổng module\n(RecipeQuery,\nStockQuery)" as PORT
+database "PostgreSQL" as PG
+database "Redis" as RD
+
+note over APP, API : bước 1–3: chọn ngày, bữa;\nchọn món từ thẻ Gợi ý (M05),\nYêu thích hoặc Tất cả (R01)
+
+group M02 – lên lịch bữa ăn (UC37)
+  APP -> API : POST .../meals {mealDate,\nmealSlot, items[{id, recipeId |\ncustomName, servings}]},\nIdempotency-Key
+  API -> SVC : PlanMeals(sid, uid, cmd)
+  break mealDate ngoài [$today, $today + 28] (4a)\nhoặc servings ngoài 1–20 (BR18)
+    API --> APP : 400 (2002), MSG28 / MSG02
+  end
+  SVC -> PG : BEGIN; khóa lũy đẳng
+  SVC -> PORT : RecipeQuery: công thức\npublished, mẫu hoặc\nspace_id = sid
+  PORT -> PG : SELECT recipes
+  break công thức ngoài phạm vi
+    SVC -> PG : ROLLBACK
+    API --> APP : 404 (4001)
+  end
+  SVC -> PG : INSERT meal_entries (planned;\ntên tự do không recipe_id, 3a)
+  SVC -> PG : space_changes; COMMIT
+  SVC -> RD : PUBLISH space:{sid}
+  SVC -> PORT : Ingredients, Available\n(chỉ đọc, sau commit)
+  PORT -> PG : nguyên liệu,\nlô còn hạn
+  API --> APP : 201 (1000), MSG10: món +\nđủ / thiếu k nguyên liệu (5)
+end
+note over APP, API : 5a: món trùng trong bữa được\nphát hiện trên bản sao cục bộ\n(tăng khẩu phần bằng M03)
+@enduml

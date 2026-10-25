@@ -1,0 +1,45 @@
+@startuml c3-29-seq-tham-gia-nhom
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Ứng dụng\nFlutter" as APP
+participant "API\n(SpaceHandler)" as API
+participant "household.Service\n(JoinSpace)" as SVC
+database "PostgreSQL" as PG
+database "Redis" as RD
+
+group G07 – kiểm tra mã và xem trước (dryRun, bước 4–6)
+  APP -> API : POST /spaces/join\n{code, dryRun: true}
+  API -> RD : rl:join:{uid} (10 lần/giờ)
+  break vượt giới hạn tần suất
+    API --> APP : 429 (4290), MSG36
+  end
+  API -> SVC : JoinSpace(uid, code, dryRun)
+  SVC -> PG : SELECT invite_codes JOIN spaces\nWHERE code = $1; trưởng nhóm,\nsố thành viên (chỉ đọc)
+  break vi phạm BR06 → BR04 → BR05 (4a, 5a, 5b)
+    API --> APP : 422 (4004): BR06 MSG07 |\nBR04 MSG08 | BR05 MSG09
+  end
+  API --> APP : 200 (1000): tên nhóm,\ntrưởng nhóm, số thành viên
+end
+
+group G07 – gia nhập sau khi người dùng nhấn "Tham gia" (bước 7–8)
+  APP -> API : POST /spaces/join {code}\nIdempotency-Key
+  API -> SVC : JoinSpace(uid, code)
+  SVC -> PG : BEGIN; khóa lũy đẳng
+  SVC -> PG : SELECT invite_codes JOIN spaces\nWHERE code = $1 → space_id
+  SVC -> PG : pg_advisory_xact_lock(\nhashtext(space_id::text))
+  SVC -> PG : đọc lại: mã active, expires_at > now()\n(BR06), BR04, đếm thành viên (BR05)
+  break vi phạm khi kiểm tra lại
+    SVC -> PG : ROLLBACK
+    API --> APP : 422 (4004): MSG07 | MSG08 | MSG09
+  end
+  SVC -> PG : INSERT space_members (member)
+  note left : 23505 uq_member_family\n→ 422 (4004), BR04
+  SVC -> PG : last_space_id (cổng identity);\nInsertTx PushNotification
+  note left : sau commit: NotifyWorker\ngửi FCM tới trưởng nhóm
+  SVC -> PG : space_changes; COMMIT
+  SVC -> RD : DEL member:{sid}:{uid};\nPUBLISH space:{sid}
+  API --> APP : 200 (1000), MSG10:\nkhông gian nhóm, vai trò
+end
+@enduml

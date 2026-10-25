@@ -1,0 +1,73 @@
+@startuml c3-06-c4-thanh-phan-worker
+!$TECHN_FONT_SIZE = 14
+!$LEGEND_TITLE_TEXT = "Chú giải"
+!include <C4/C4_Component>
+skinparam dpi 170
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowFontSize 14
+skinparam wrapWidth 165
+skinparam nodesep 20
+skinparam ranksep 35
+HIDE_STEREOTYPE()
+LAYOUT_TOP_DOWN()
+UpdateElementStyle("container", $legendText="vùng chứa")
+UpdateElementStyle("component", $legendText="thành phần")
+UpdateElementStyle("external_system", $legendText="hệ thống bên ngoài")
+UpdateContainerBoundaryStyle($legendText="ranh giới vùng chứa")
+UpdateBoundaryStyle($legendText="nhóm thành phần")
+AddRelTag("enqueue", $lineStyle = DashedLine(), $legendText = "chèn tác vụ nối tiếp (InsertTx)")
+
+Container_Boundary(wk, "Worker") {
+  Component(sched, "Bộ lập lịch định kỳ", "River PeriodicJobs", "Chỉ leader; mỗi phút, hằng đêm")
+  Component(rc, "River client", "riverqueue/river", "Bầu leader, lấy tác vụ, thử lại")
+  Boundary(jobs, "Worker theo hàng đợi") {
+    Component(rd, "ReminderDispatcher", "default", "≥ runAt, một lần/ngày")
+    Component(iw, "IndexWorker", "index", "Upsert, xóa; đối soát tuần")
+    Component(ur, "UserReminderWorker", "notify", "Lô theo N, dedupe")
+    Component(ad, "AssignmentDigest", "notify (shopping)", "Gộp 5 s, đếm k")
+    Component(nw, "NotifyWorker", "notify", "PushNotification, SendEmail")
+    Component(mx, "MediaWorker, ExportWorker", "media, report", "Thumb WebP; PDF/CSV")
+    Component(dj, "Tác vụ dữ liệu", "default", "CopySpaceData, PurgeSpace, RemapFood")
+    Component(mt, "MaintenanceWorker", "maintenance", "REFRESH MV daily_space_stats; dọn")
+  }
+  Component(svc, "Dịch vụ ứng dụng, adapter ra", "dùng chung mã với API", "notification, pantry, shopping, search, report")
+}
+
+ContainerDb(redis, "Redis", "Redis 7", "cfg:all; kênh user:{id}")
+System_Ext(fcm, "FCM / APNs", "Thông báo đẩy")
+System_Ext(smtp, "Dịch vụ SMTP", "Thư điện tử")
+ContainerDb(es, "Elasticsearch", "8.15", "foods, recipes")
+ContainerDb(minio, "MinIO", "S3", "media, exports")
+ContainerDb(pg, "PostgreSQL", "PostgreSQL 16", "river_job, river_leader; schema")
+
+Rel_R(sched, rc, "Chèn tác vụ định kỳ")
+Rel(rc, pg, "SKIP LOCKED")
+Rel_D(rc, jobs, "Giao\ntác vụ")
+Rel_D(rd, ur, "UserReminder", $tags = "enqueue")
+Rel_D(ur, nw, "PushNotification", $tags = "enqueue")
+Rel_D(ad, nw, "PushNotification", $tags = "enqueue")
+Rel_L(mx, nw, "export.completed", $tags = "enqueue")
+Rel_D(jobs, svc, "Gọi")
+Rel_D(svc, pg, "SQL")
+Rel_D(svc, redis, "PUBLISH user:{id}")
+Rel_D(svc, fcm, "HTTP v1")
+Rel_D(svc, smtp, "SMTP/TLS")
+Rel_D(svc, es, "Bulk API")
+Rel_D(svc, minio, "S3 API")
+
+Lay_R(rd, iw)
+Lay_R(ur, ad)
+Lay_R(nw, mx)
+Lay_D(nw, dj)
+Lay_R(dj, mt)
+Lay_D(dj, svc)
+Lay_R(redis, fcm)
+Lay_R(fcm, smtp)
+Lay_R(smtp, es)
+Lay_R(es, minio)
+Lay_R(minio, pg)
+
+SHOW_FLOATING_LEGEND()
+Lay_L(sched, LEGEND())
+@enduml
