@@ -1,0 +1,190 @@
+% ---------------------------------------------------------------------
+%  3.3. Thiết kế kiến trúc
+% ---------------------------------------------------------------------
+\section{Thiết kế kiến trúc}\label{sec:kien-truc}
+
+Mục này chuyển các yếu tố dẫn dắt ở mục~\ref{ssec:yeu-to-dan-dat} và bộ công nghệ ở mục~\ref{sec:cong-nghe} thành cấu trúc phần mềm, trình bày theo các mức của mô hình C4~\cite{c4model} và kết thúc bằng các quyết định kiến trúc kèm đánh đổi.
+
+\subsection{Lựa chọn kiến trúc phần mềm}\label{ssec:lua-chon-kien-truc}
+
+Bốn đặc điểm chi phối lựa chọn: quy mô nhỏ (theo giả định thiết kế ở mục~\ref{ssec:uoc-luong-tai}, đỉnh khoảng 50 yêu cầu mỗi giây, dữ liệu dưới 2 GB mỗi năm); thao tác phải nguyên tử trên nhiều nghiệp vụ, như nhập mặt hàng đã mua vào tủ (\uc{UC21}) hay xác nhận đã nấu kèm trừ kho FEFO (\uc{UC41}, \br{BR15}, \nfr{NFR13}); nhóm chỉ có bốn người; và mã phải phân tầng, dễ bảo trì để lớn lên khi người dùng vượt giả định (\nfr{NFR20}). Bảng~\ref{tab:c3-so-sanh-kien-truc} so sánh bốn phương án: nguyên khối phân tầng truyền thống (layered monolith), khối nguyên khối chia module (modular monolith), vi dịch vụ (microservices) và nền tảng dịch vụ backend kèm hàm phi máy chủ (Backend-as-a-Service, serverless) như Firebase, Supabase.
+
+{\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{longtable}{|L{2.5cm}|L{\dimexpr(\textwidth-10\tabcolsep-6\arrayrulewidth-2.5cm)/4\relax}|L{\dimexpr(\textwidth-10\tabcolsep-6\arrayrulewidth-2.5cm)/4\relax}|L{\dimexpr(\textwidth-10\tabcolsep-6\arrayrulewidth-2.5cm)/4\relax}|L{\dimexpr(\textwidth-10\tabcolsep-6\arrayrulewidth-2.5cm)/4\relax}|}
+\caption{So sánh các phương án kiến trúc phần mềm}\label{tab:c3-so-sanh-kien-truc}\\
+\hline
+\hd{Tiêu chí} & \hd{Nguyên khối phân tầng} & \hd{Nguyên khối chia module} & \hd{Vi dịch vụ} & \hd{BaaS, serverless}\\ \hline
+\endfirsthead
+\multicolumn{5}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Tiêu chí} & \hd{Nguyên khối phân tầng} & \hd{Nguyên khối chia module} & \hd{Vi dịch vụ} & \hd{BaaS, serverless}\\ \hline
+\endhead
+Độ phức tạp vận hành & Thấp & Thấp: một image, hai chế độ chạy & Cao: broker, trace phân tán & Thấp, phụ thuộc nhà cung cấp\\ \hline
+Giao dịch \uc{UC21}, \uc{UC41} & ACID cục bộ & ACID cục bộ, chung giao dịch & Saga, giao dịch bù & Dồn vào hàm SQL, hàm đám mây\\ \hline
+Chi phí hạ tầng & Một máy chủ & Một máy chủ & Nhiều nút, broker & Rẻ lúc nhỏ, khó dự báo\\ \hline
+Tốc độ phát triển (4 người) & Nhanh, chậm dần khi mã rối & Nhanh, dễ phân công & Chậm vì hạ tầng, hợp đồng & Nhanh với CRUD, chậm với FEFO, gợi ý\\ \hline
+Khả năng mở rộng & Nhân bản cả khối & Cả khối; tách \texttt{worker}, tách module & Độc lập từng dịch vụ & Tự động, trong giới hạn nền tảng\\ \hline
+Ranh giới, bảo trì & Dễ xói mòn & Rõ nhờ gói \texttt{api}, schema, linter & Rất rõ & Logic rải ở client và hàm\\ \hline
+Kiểm thử & Dễ & Dễ, theo module & Khó, cần kiểm thử hợp đồng & Khó mô phỏng cục bộ\\ \hline
+Hợp quy mô giả định & Hợp, khó tiến hóa & Hợp, có lộ trình tách & Thừa & Hợp tải, khó áp \nfr{NFR11}\\ \hline
+\hs{Kết luận} & Loại & \textbf{Chọn} & Loại & Loại\\ \hline
+\end{longtable}
+}
+
+Nhóm chọn khối nguyên khối chia module, bên trong mỗi module dùng kiến trúc lục giác. Mỗi module là một ngữ cảnh giới hạn (bounded context)~\cite{evans} có mô hình miền và schema riêng, chỉ lộ gói \texttt{api} làm cổng công khai; bên trong, cổng và bộ chuyển đổi (ports and adapters)~\cite{hexagonal} cô lập lõi nghiệp vụ khỏi HTTP, CSDL và hàng đợi (mục~\ref{sec:thiet-ke-chi-tiet}). Lựa chọn này theo nguyên tắc “nguyên khối trước”~\cite{fowlermonolith}: tách dịch vụ khi ranh giới nghiệp vụ còn biến động dễ khóa chặt ranh giới sai. Lý do quyết định là tính nguyên tử: vi dịch vụ buộc \uc{UC21}, \uc{UC41} dùng saga và giao dịch bù~\cite{richardson}, ở đây chỉ cần một giao dịch PostgreSQL. BaaS bị loại vì logic FEFO, gợi ý món phải viết thành hàm SQL hoặc hàm đám mây, và cơ chế đồng bộ có sẵn áp “ghi sau thắng” cho mọi trường, trái với \nfr{NFR11}.
+
+Cái giá phải trả là cả khối được nhân bản cùng nhau, các module tranh chấp một CSDL và ranh giới dễ xói mòn nếu chỉ là quy ước. Nhóm giảm thiểu bằng kiểm tra phụ thuộc tự động trong CI (mục~\ref{ssec:tong-quan-module}), tách tác vụ nền sang tiến trình \texttt{worker} và cho mọi tác dụng phụ đi qua sự kiện miền. Nhờ đó lộ trình tách dịch vụ đã sẵn: ứng viên đầu tiên là \texttt{notification}, vốn chỉ nhận sự kiện; khi tách chỉ cần thay bảng tác vụ River bằng message broker (mục~\ref{sec:trien-khai}).
+
+\subsection{Kiến trúc tổng thể theo mô hình C4}\label{ssec:c4-tong-the}
+
+Mô hình C4~\cite{c4model} có bốn mức: ngữ cảnh, vùng chứa (container), thành phần (component) và mã nguồn (mục~\ref{sec:thiet-ke-chi-tiet}). Hình~\ref{fig:c4-ngu-canh} là sơ đồ ngữ cảnh.
+
+\diagram[\textwidth]{c3-01-c4-ngu-canh}{Sơ đồ ngữ cảnh hệ thống theo mô hình C4 (mức 1)}{fig:c4-ngu-canh}
+
+Hệ thống gồm ứng dụng di động và máy chủ, phục vụ người dùng trên Android, iOS (\nfr{NFR19}) và quản trị viên qua khu vực quản trị trong cùng ứng dụng. FCM~\cite{fcm} là API đẩy chung, gửi thẳng tới Android và chuyển tiếp qua APNs~\cite{apns} tới iOS. Open Food Facts~\cite{openfoodfacts} phục vụ tra mã vạch (\uc{UC26}); là dịch vụ công cộng không cam kết chất lượng nên mọi lời gọi có thời gian chờ và bộ nhớ đệm. Bộ lập lịch của chương 2 nay được hiện thực bên trong hệ thống bằng River. Hình~\ref{fig:c4-container} và Bảng~\ref{tab:c3-container} trình bày các vùng chứa; bốn kho dữ liệu phía máy chủ được gom vào ranh giới “Lưu trữ” vì chúng cùng nằm trong mạng Docker nội bộ \texttt{data}, còn các hệ thống bên ngoài xếp thành cột bên phải.
+
+\diagram[\textwidth]{c3-02-c4-container}{Sơ đồ vùng chứa theo mô hình C4 (mức 2)}{fig:c4-container}
+
+{\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{longtable}{|L{2.3cm}|L{3.0cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-2.3cm-3.0cm-4.0cm\relax}|L{4.0cm}|}
+\caption{Các vùng chứa của hệ thống}\label{tab:c3-container}\\
+\hline
+\hd{Vùng chứa} & \hd{Công nghệ} & \hd{Trách nhiệm} & \hd{Giao tiếp chính}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Vùng chứa} & \hd{Công nghệ} & \hd{Trách nhiệm} & \hd{Giao tiếp chính}\\ \hline
+\endhead
+Ứng dụng di động & Flutter 3, Riverpod, dio & Giao diện, hàng đợi lệnh ngoại tuyến & HTTPS, WSS tới Caddy; PUT ảnh lên URL ký sẵn\\ \hline
+CSDL cục bộ & SQLite qua drift & Bản sao dữ liệu không gian, lệnh chờ gửi (\nfr{NFR23}) & Trong tiến trình ứng dụng\\ \hline
+Reverse proxy & Caddy 2~\cite{caddy} & TLS $\ge$ 1.2, HTTP/2, chia tải tới các bản API; phục vụ \path{/.well-known} cho liên kết mời & HTTP tới API; \texttt{media.} tới MinIO\\ \hline
+API (×2 bản) & Go 1.23, chi v5, pgx, sqlc & REST \path{/it4788/v1}, WebSocket, phân quyền, nghiệp vụ, chèn tác vụ & PostgreSQL, Redis, ES, MinIO, Open Food Facts\\ \hline
+Worker & Go 1.23, River~\cite{river} & Tác vụ nền và định kỳ: nhắc, đẩy, thư, chỉ mục, ảnh, xuất tệp & PostgreSQL, Redis, FCM, SMTP, ES, MinIO\\ \hline
+CSDL chính & PostgreSQL 16~\cite{postgresql} & Nguồn sự thật, nhật ký thay đổi, bảng River & Chỉ trong mạng nội bộ\\ \hline
+Bộ nhớ đệm & Redis 7~\cite{redis} & Cache, giới hạn tần suất, Pub/Sub & Dữ liệu tạm, mất không ảnh hưởng tính đúng\\ \hline
+Máy tìm kiếm & Elasticsearch 8.15~\cite{elasticsearch} & Chỉ mục \texttt{foods}, \texttt{recipes} (bản chung và bản riêng của không gian) & Dựng lại được từ PostgreSQL; truy vấn luôn lọc theo không gian\\ \hline
+Lưu trữ đối tượng & MinIO~\cite{minio} & Bucket \texttt{media}, \texttt{exports} & S3 API; bên ngoài chỉ qua URL ký sẵn\\ \hline
+\end{longtable}
+}
+
+Luồng đồng bộ đi qua Caddy tới một trong hai bản API không giữ trạng thái phiên~\cite{twelvefactor}, nên được chia tải tùy ý và cập nhật cuốn chiếu (\nfr{NFR13}). Luồng nền bắt đầu khi API chèn tác vụ vào \texttt{river\_job} trong giao dịch nghiệp vụ, nên độ trễ của FCM, SMTP không cộng vào thời gian phản hồi (\nfr{NFR09}). Luồng thời gian thực dùng Redis Pub/Sub; ảnh được tải thẳng lên MinIO qua URL ký sẵn.
+
+\subsection{Giao tiếp giữa các thành phần}\label{ssec:giao-tiep}
+
+Giao tiếp đồng bộ gồm REST/JSON qua HTTPS~\cite{rfc9110} giữa ứng dụng và API theo hợp đồng OpenAPI (mục~\ref{sec:api}), và lời gọi hàm trong tiến trình giữa các module qua interface của gói \texttt{<module>/api}. \texttt{TxManager} đặt \texttt{pgx.Tx} vào \texttt{context}, nên khi \texttt{shopping} gọi \texttt{pantry} để nhập tủ (\uc{UC21}) hay \texttt{mealplan} gọi \texttt{pantry} để trừ kho (\uc{UC41}), mọi câu lệnh nằm trong một giao dịch.
+
+Giao tiếp bất đồng bộ dựa trên sự kiện miền: module phát chèn một tác vụ River trong chính giao dịch nghiệp vụ, theo mẫu hộp thư đi trong giao dịch (transactional outbox)~\cite{richardson}. Mẫu này tránh lỗi ghi kép (dual write): phát tới broker sau commit có thể mất sự kiện, phát trước commit có thể sinh sự kiện “ma” khi rollback; tác vụ River là một dòng PostgreSQL nên tồn tại khi và chỉ khi dữ liệu được commit. Kênh thời gian thực chỉ báo có thay đổi: ở cuối giao dịch, cổng \texttt{ChangefeedAppender} (hiện thực bởi \texttt{SyncEngine}) tăng \texttt{change\_seq} và ghi \texttt{sync.space\_changes}; sau commit, API phát \texttt{\{seq, entityTypes\}} lên kênh \texttt{space:\{spaceId\}}, mọi bản API giữ WebSocket~\cite{rfc6455} của thành viên chuyển gợi ý xuống, thiết bị gọi \texttt{GET /changes?since=} tới một bản API bất kỳ để kéo phần chênh lệch (\nfr{NFR10}); khi ứng dụng chạy nền, iOS ngắt socket nên hệ thống dùng FCM. Hình~\ref{fig:giao-tiep-su-kien} thể hiện hai nhánh xử lý sau một lệnh ghi.
+
+\diagram[\textwidth]{c3-03-giao-tiep-su-kien}{Luồng sự kiện miền: hộp thư đi trong giao dịch và phát tán thời gian thực}{fig:giao-tiep-su-kien}
+
+Các bước 1–3 cùng một giao dịch: câu lệnh đầu tiên chèn khóa lũy đẳng, câu lệnh cuối cùng tăng \texttt{change\_seq} rồi \texttt{COMMIT}, nên dữ liệu, nhật ký thay đổi và tác vụ luôn cùng tồn tại hoặc cùng biến mất. Bước 4a chỉ chạy sau \texttt{COMMIT}, vì phát trước commit có thể khiến thiết bị kéo về một \texttt{seq} chưa nhìn thấy được. Nhánh “a” đi qua Redis Pub/Sub, vốn giao tối đa một lần; gợi ý bị mất chỉ làm thiết bị cập nhật chậm hơn vì thiết bị luôn kéo theo \texttt{seq} khi kết nối lại. Nhánh “b” do worker xử lý; ngoài việc gửi đẩy và thư, \texttt{NotifyWorker} phát \texttt{user:\{id\}} sau khi tạo thông báo để hộp thư trong ứng dụng của đúng người nhận cập nhật ngay, và cùng kênh này được dùng để đóng socket khi người dùng bị xóa khỏi nhóm hoặc bị khóa. Bảng~\ref{tab:c3-su-kien-mien} liệt kê các sự kiện miền và tác vụ nền tương ứng.
+
+{\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{longtable}{|L{3.9cm}|L{1.7cm}|L{\dimexpr\textwidth-10\tabcolsep-6\arrayrulewidth-3.9cm-1.7cm-1.8cm-2.9cm\relax}|L{1.8cm}|L{2.9cm}|}
+\caption{Các sự kiện miền, tác vụ nền và bảo đảm giao nhận}\label{tab:c3-su-kien-mien}\\
+\hline
+\hd{Sự kiện, tác vụ} & \hd{Module phát} & \hd{Bên xử lý (tác vụ River)} & \hd{Hàng đợi, kênh} & \hd{Bảo đảm}\\ \hline
+\endfirsthead
+\multicolumn{5}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Sự kiện, tác vụ} & \hd{Module phát} & \hd{Bên xử lý (tác vụ River)} & \hd{Hàng đợi, kênh} & \hd{Bảo đảm}\\ \hline
+\endhead
+\texttt{user.registered}, \texttt{password.\allowbreak reset\_requested}; thư báo khóa tài khoản & identity, admin & notification: \texttt{SendEmail} (thư OTP, thư tài khoản) & \texttt{notify} & Outbox, ít nhất một lần\\ \hline
+\texttt{member.joined}, \texttt{member.left}, \texttt{member.removed}, \texttt{leader.transferred} & household & notification: hoạt động nhóm; sync & \texttt{notify}; nhật ký & Outbox; nhật ký nguyên tử\\ \hline
+Tác vụ \texttt{AssignmentDigest} (S10) & shopping & Chính shopping: sau 5 s đếm $k$ mặt hàng đang giao rồi phát \texttt{item.assigned} ($k$, mốc đợt) qua \texttt{PushNotification} & \texttt{notify} & Duy nhất theo người được giao và danh sách\\ \hline
+\texttt{item.assigned}, \texttt{item.unassigned} & shopping & notification: đẩy cho người được giao, đọc \texttt{assignment\_\allowbreak notify\_on}; số mặt hàng lấy từ payload & \texttt{notify} & \texttt{dedupe\_key} gồm mốc đợt\\ \hline
+\texttt{items.purchased} & shopping & sync; report: tổng hợp ngày & Nhật ký; \texttt{default} & Nguyên tử; ít nhất một lần\\ \hline
+\texttt{items.stocked}, \texttt{lot.changed}, \texttt{meal.cooked} & shopping, pantry, mealplan & sync; xóa \texttt{suggest:\{sid\}} khi lô đổi & Nhật ký; \texttt{space:\allowbreak\{id\}} & Nguyên tử; gợi ý tối đa một lần\\ \hline
+\texttt{food.changed}, \texttt{recipe.changed} & catalog, recipe & search: đánh chỉ mục; \texttt{recipe.changed} còn xóa \texttt{suggest:\{sid\}} & \texttt{index} & Ít nhất một lần, ghi đè theo phiên bản\\ \hline
+\texttt{food.merged} (\uc{UC49}) & catalog & \texttt{RemapFood} cho từng module pantry, shopping, recipe; search cập nhật tài liệu & \texttt{default}, \texttt{index} & Lũy đẳng: đổi \texttt{food\_id} cũ sang đích\\ \hline
+\texttt{config.changed} & admin & Mọi bản API và worker: xóa \texttt{cfg:all}; khóa \texttt{suggest.*} đổi thì xóa \texttt{suggest:*} & Pub/Sub \texttt{cfg} & Tối đa một lần, bù bằng TTL 5 phút\\ \hline
+Tác vụ \texttt{CopySpaceData} (G02), \texttt{PurgeSpace} (giải tán nhóm) & household & Sao chép dữ liệu cá nhân sang nhóm mới; xóa mềm dữ liệu chung, xóa tài liệu ES & \texttt{default} & Lũy đẳng theo không gian\\ \hline
+\texttt{media.uploaded}, \texttt{export.requested} & media, report & MediaWorker, ExportWorker & \texttt{media}, \texttt{report} & Outbox, ít nhất một lần\\ \hline
+\texttt{export.completed} & report & notification: báo tệp xuất đã sẵn sàng & \texttt{notify} & Ít nhất một lần\\ \hline
+Định kỳ mỗi phút: \texttt{ReminderDispatcher} & Bộ lập lịch & Chèn \texttt{UserReminder} cho từng người có lô trong cửa sổ nhắc (\uc{UC31}) & \texttt{default}, \texttt{notify} & Duy nhất theo ngày; theo người và ngày\\ \hline
+\end{longtable}
+}
+
+River giao tác vụ theo ngữ nghĩa ít nhất một lần (at-least-once): worker chết sau khi gửi thư nhưng trước khi đánh dấu hoàn tất thì tác vụ chạy lại. Vì vậy mọi bên nhận phải lũy đẳng: thông báo có khóa \texttt{dedupe\_key} duy nhất (\br{BR13}, \nfr{NFR12}); chỉ mục ghi đè tài liệu theo \texttt{id} và \texttt{version}; \texttt{RemapFood} chỉ đổi những dòng còn trỏ tới thực phẩm đã gộp; ảnh thu nhỏ, tệp xuất có khóa đối tượng xác định trước; tác vụ \texttt{PushNotification} mang khóa gộp (collapse key). Thứ tự tác vụ không được bảo đảm, nên bên xử lý đọc trạng thái hiện tại từ CSDL của chính module sở hữu dữ liệu thay vì tin nội dung sự kiện cũ. \texttt{AssignmentDigest} là ví dụ: tác vụ thuộc \texttt{shopping} đếm lại các mặt hàng đang giao ngay lúc chạy rồi mới đóng số $k$ vào payload, nhờ đó \texttt{notification} soạn được nội dung “Bạn được giao mua $k$ mặt hàng” mà không phải đọc bảng của \texttt{shopping}.
+
+\subsection{Thiết kế tổng quan các module}\label{ssec:tong-quan-module}
+
+Backend gồm mười ba module trong \path{internal/modules}, gói hạ tầng \texttt{platform} và nhân \texttt{kernel}. Mỗi module sở hữu một schema PostgreSQL trùng tên gói, riêng \texttt{search} không có bảng. Bảng~\ref{tab:c3-module} nêu trách nhiệm, use case và phụ thuộc biên dịch trực tiếp của từng gói, là căn cứ cấu hình luật kiểm tra kiến trúc; tên cổng ghi trong ngoặc là interface công bố trong gói \texttt{<module>/api} của module được dùng.
+
+{\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{longtable}{|L{2.4cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-2.4cm-1.9cm-4.5cm\relax}|L{1.9cm}|L{4.5cm}|}
+\caption{Các module của backend}\label{tab:c3-module}\\
+\hline
+\hd{Gói, schema} & \hd{Trách nhiệm} & \hd{Use case} & \hd{Phụ thuộc biên dịch}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Gói, schema} & \hd{Trách nhiệm} & \hd{Use case} & \hd{Phụ thuộc biên dịch}\\ \hline
+\endhead
+\texttt{identity} & Đăng ký, OTP, phiên, hồ sơ, thiết lập, thiết bị; định nghĩa \texttt{ActivationHook} & \uc{UC01}--\uc{UC08} & media\\ \hline
+\texttt{household} & Không gian, thành viên, mã mời, chuyển quyền, giải tán; định nghĩa \texttt{MemberLeaveHook} & \uc{UC09}--\uc{UC15} & identity (hiện thực \texttt{identity/api.\allowbreak ActivationHook}), sync, media\\ \hline
+\texttt{catalog} & Thực phẩm, loại, đơn vị, hạn dùng gợi ý, mã vạch, duyệt và gộp thực phẩm riêng & \uc{UC26}, \uc{UC49}--\uc{UC51} & household, media\\ \hline
+\texttt{shopping} & Danh sách, mặt hàng, phân công, đã mua; công bố \texttt{ListComposer}; tác vụ \texttt{AssignmentDigest} & \uc{UC16}--\uc{UC23} & household (hiện thực \texttt{household/api.\allowbreak MemberLeaveHook}, \br{BR07}), catalog, pantry (\texttt{StockIn}), sync\\ \hline
+\texttt{pantry} & Lô, biến động kho, FEFO; công bố \texttt{StockQuery}, \texttt{StockIn}, \texttt{StockConsumer} & \uc{UC24}--\uc{UC30} & household, catalog, sync\\ \hline
+\texttt{recipe} & Công thức của không gian và công thức mẫu, yêu thích; công bố \texttt{RecipeQuery}, định nghĩa \texttt{RecipeDeleteHook} & \uc{UC32}--\uc{UC36}, \uc{UC52} & household, catalog, pantry (\texttt{StockQuery}: \uc{UC34}, \uc{UC36}), shopping (\texttt{ListComposer}), sync, media\\ \hline
+\texttt{mealplan} & Lịch bữa ăn, gợi ý món, xác nhận đã nấu; điều phối sinh danh sách & \uc{UC37}--\uc{UC41}, điều phối \uc{UC22} & household, catalog, pantry (\texttt{StockQuery}, \texttt{StockConsumer}), recipe (\texttt{RecipeQuery}; hiện thực \texttt{recipe/api.\allowbreak RecipeDeleteHook}, \uc{UC33}), shopping (\texttt{ListComposer}), sync\\ \hline
+\texttt{search} & Chỉ mục, truy vấn ES lọc theo không gian, dự phòng trigram & \uc{UC42}, \uc{UC43} & catalog, recipe, pantry (\texttt{StockQuery.\allowbreak SearchLots} cho Q01)\\ \hline
+\texttt{report} & Mô hình đọc: báo cáo qua view, xuất tệp; sở hữu bảng \texttt{report.exports} & \uc{UC44}--\uc{UC47} & Không; \texttt{SELECT} qua view \texttt{report.v\_*} trên shopping, pantry, mealplan, catalog\\ \hline
+\texttt{notification} & Hộp thư, nhắc hạn dùng, đẩy, thư & \uc{UC31} & identity, household, pantry; số mặt hàng phân công nhận qua payload, không đọc bảng shopping\\ \hline
+\texttt{sync} & \texttt{SyncEngine}: nhật ký thay đổi (hiện thực \texttt{ChangefeedAppender}), khóa lũy đẳng; hub WebSocket & \nfr{NFR10}, \nfr{NFR11} & Không\\ \hline
+\texttt{admin} & Tài khoản, cấu hình, nhật ký quản trị, cổng quản trị danh mục & \uc{UC48}, \uc{UC53} & identity, catalog, recipe\\ \hline
+\texttt{media} & URL ký sẵn, xác nhận tải lên, xử lý ảnh & Dùng chung & Không\\ \hline
+\texttt{platform} & db, \texttt{TxManager}, httpx, auth, events, idgen, i18n, observability\ldots & — & Không\\ \hline
+\texttt{kernel} & \texttt{Quantity} (\br{BR16}), \texttt{Money}, \texttt{DateRange}, kiểu ID & — & Chỉ thư viện chuẩn\\ \hline
+\end{longtable}
+}
+
+Hình~\ref{fig:phu-thuoc-module} biểu diễn các phụ thuộc bằng sơ đồ gói UML~\cite{uml251}, gom module thành bốn tầng. Sơ đồ dùng bốn loại quan hệ: nét liền «use» là phụ thuộc biên dịch qua gói \texttt{<module>/api}; nét đứt tam giác rỗng «hook» là hiện thực giao diện móc; nét đứt «flow» là luồng thông tin (information flow) của UML 2.5 dành cho sự kiện miền đi qua River, không phải phụ thuộc; nét đứt «read» là quyền đọc qua view của mô hình đọc \texttt{report}. Mũi tên giữa hai khung nghĩa là một số module khung trên dùng một số module khung dưới.
+
+Phụ thuộc biên dịch không có chu trình và luôn hướng xuống. Trong tầng B, mỗi mũi tên ghi tên cổng được dùng: \texttt{mealplan} dùng \texttt{StockQuery}, \texttt{StockConsumer} (\uc{UC40}, \uc{UC41}), \texttt{RecipeQuery} và \texttt{ListComposer} (\uc{UC22}, nên API S15 do handler của \texttt{mealplan} xử lý); \texttt{recipe} dùng \texttt{ListComposer} để đưa phần thiếu vào danh sách và \texttt{StockQuery} để đối chiếu nguyên liệu với tủ lạnh (\uc{UC34}, \uc{UC36}); \texttt{shopping} dùng \texttt{StockIn} (\uc{UC21}). Từ tầng A, \texttt{search} dùng \texttt{StockQuery.SearchLots} để tìm lô trong không gian cho Q01, vì dữ liệu lô ở PostgreSQL chứ không ở Elasticsearch. Khi module được dùng cần kích hoạt hành vi ở module dùng nó, nhóm áp dụng nguyên lý đảo phụ thuộc: module được dùng định nghĩa giao diện móc (hook) trong gói \texttt{api} của mình, module kia hiện thực và đăng ký tại \texttt{cmd/api/main.go}. Ba móc như vậy là \texttt{identity/api.ActivationHook} (\texttt{OnActivated}, hiện thực bởi \texttt{household} để tạo không gian cá nhân khi A02 kích hoạt tài khoản), \texttt{household/api.MemberLeaveHook} (\texttt{OnMemberLeave}, hiện thực bởi \texttt{shopping} để hủy phân công của người rời nhóm, \br{BR07}) và \texttt{recipe/api.RecipeDeleteHook} (\texttt{OnRecipeDelete}, hiện thực bởi \texttt{mealplan} để xử lý món đã lên lịch, \uc{UC33}); cả ba chạy trong cùng giao dịch với thao tác gốc. Tương tự, \uc{UC30} do ứng dụng ghép từ P07 và M05 thay vì để \texttt{pantry} gọi \texttt{mealplan}.
+
+\diagram[\textwidth]{c3-04-phu-thuoc-module}{Sơ đồ gói thể hiện phụ thuộc giữa các module}{fig:phu-thuoc-module}
+
+Hình~\ref{fig:phu-thuoc-module} cũng cho thấy tầng B, C không nhập gói của tầng A: thông tin đi lên tầng A chỉ bằng «flow», tức sự kiện miền có kiểu định nghĩa trong \texttt{platform/events}, được chèn thành tác vụ River trong giao dịch nghiệp vụ. Trong tầng A cũng vậy: \texttt{report} báo cho \texttt{notification} bằng sự kiện \texttt{export.completed} chứ không gọi hàm. Sự kiện \texttt{food.merged} của \texttt{catalog} đi tới \texttt{pantry}, \texttt{shopping}, \texttt{recipe} theo cùng cơ chế nên không tạo phụ thuộc ngược từ tầng C lên tầng B. \texttt{sync} được gọi qua \texttt{ChangefeedAppender} nhưng không nhập ngược module nghiệp vụ. Ngoại lệ có chủ đích duy nhất về dữ liệu là \texttt{report}: là mô hình đọc (read model), module này không nhập gói nào của module khác nhưng được cấp quyền \texttt{SELECT} trên các view \texttt{report.v\_*} đặt trên bảng của \texttt{shopping}, \texttt{pantry}, \texttt{mealplan} và \texttt{catalog}; bảng duy nhất nó sở hữu là \texttt{report.exports}. Các view này là hợp đồng đọc có phiên bản, nên module nguồn đổi cấu trúc bảng mà giữ nguyên view thì báo cáo không bị ảnh hưởng.
+
+Ranh giới được cưỡng chế ở ba lớp. Về ngôn ngữ, Go cấm chu trình nhập giữa các gói và cấm mã ngoài kho nhập gói \texttt{internal}. Về công cụ, luật \texttt{depguard} của \texttt{golangci-lint} ở bước verify trong CI chỉ cho phép nhập gói \texttt{api} của module khác theo đúng Bảng~\ref{tab:c3-module} và cấm tầng B, C nhập tầng A. Về dữ liệu, mỗi module chỉ truy vấn schema của mình; khóa ngoại liên schema chỉ trỏ tới \texttt{identity.users}, \texttt{household.spaces} và \texttt{catalog} (mục~\ref{sec:csdl}), nên khi tách dịch vụ chỉ cần chuyển chúng thành kiểm tra ở tầng ứng dụng.
+
+\subsection{Thiết kế thành phần (C4 mức 3)}\label{ssec:thiet-ke-thanh-phan}
+
+Vùng chứa API có quá nhiều thành phần để đọc được trên một trang, nên được trình bày thành hai hình: phía vào (nhận và kiểm soát yêu cầu) và phía ra (dịch vụ ứng dụng cùng các adapter tới kho dữ liệu, dịch vụ ngoài). Ở cả hai hình, handler của mọi module được gom thành một thành phần, dịch vụ ứng dụng của các module cũng vậy, vì cấu trúc bên trong chúng giống nhau và được trình bày ở mức lớp tại mục~\ref{sec:thiet-ke-chi-tiet}. Hình~\ref{fig:c4-thanh-phan-api-vao} là phía vào.
+
+\diagram[\textwidth]{c3-05a-c4-thanh-phan-api-vao}{Sơ đồ thành phần của vùng chứa API theo mô hình C4 (mức 3): phía vào}{fig:c4-thanh-phan-api-vao}
+
+Yêu cầu đi qua router chi và chuỗi middleware \texttt{net/http}: mã yêu cầu, nhật ký, trace~\cite{opentelemetry}, giới hạn thân 1~MB, phiên bản ứng dụng, giới hạn tần suất và lũy đẳng (chi tiết ở Hình~\ref{fig:pipeline-yeu-cau}). Bộ đếm giới hạn tần suất nằm trong Redis dưới khóa \texttt{rl:*} để mọi bản API dùng chung một hạn mức (\nfr{NFR17}). Lớp lũy đẳng của \texttt{SyncEngine} làm việc với bảng \texttt{sync.idempotency\_keys}: câu lệnh đầu tiên của giao dịch ghi chèn khóa ở trạng thái \texttt{in\_progress}, nên hai bản sao đồng thời của một yêu cầu va nhau ngay tại khóa chính; các API công khai như đăng ký, đăng nhập, làm mới phiên không dùng cơ chế này vì đã có giới hạn tần suất và OTP. Thành phần xác thực và phân quyền kiểm JWT, đối chiếu \texttt{token\_version} trong Redis (\texttt{auth:ver}) để thu hồi tức thời, rồi kiểm tra người gọi là thành viên không gian trong đường dẫn với đúng vai trò (\texttt{member:*}, \nfr{NFR16}, \br{BR23}). Hub WebSocket cũng gọi thành phần này để xác thực kết nối \texttt{/ws} trước khi nạp danh sách không gian của người dùng và đăng ký kênh \texttt{space:*} tương ứng cùng kênh riêng \texttt{user:*}; mỗi bản API chỉ đăng ký kênh của những người đang nối với chính nó. Handler sinh từ OpenAPI chỉ kiểm tra đầu vào, ánh xạ DTO và lỗi, rồi gọi dịch vụ ứng dụng, được phóng to ở Hình~\ref{fig:c4-thanh-phan-api-ra}.
+
+\diagram[\textwidth]{c3-05b-c4-thanh-phan-api-ra}{Sơ đồ thành phần của vùng chứa API theo mô hình C4 (mức 3): phía ra}{fig:c4-thanh-phan-api-ra}
+
+Dịch vụ ứng dụng là ranh giới giao dịch: nó mở giao dịch qua \texttt{TxManager} rồi gọi các adapter ra. Repository sinh bởi sqlc luôn lọc \texttt{space\_id} và khóa dòng tường minh khi cần; event publisher chỉ chèn tác vụ River trong giao dịch; \texttt{ChangefeedAppender} là lời gọi cuối cùng trước \texttt{COMMIT}, tăng \texttt{change\_seq}, ghi \texttt{space\_changes} và đăng ký hàm phát \texttt{space:\{id\}} chạy sau commit. Bộ đệm cấu hình và gợi ý giữ \texttt{cfg:all} trong bộ nhớ tiến trình với thời hạn sống 5 phút, đồng thời đăng ký kênh \texttt{cfg} để xóa ngay khi quản trị viên đổi tham số; kết quả gợi ý món được lưu ở \texttt{suggest:\{sid\}} và bị xóa khi lô, công thức hoặc trọng số gợi ý thay đổi. \texttt{BarcodeService} của \texttt{catalog} bọc lời gọi Open Food Facts bằng bộ ngắt mạch và thời hạn 3 giây, tra bộ đệm \texttt{barcode:\{code\}} rồi tới danh mục chung qua repository trước khi ra ngoài (\uc{UC26}). Search client luôn thêm điều kiện lọc theo không gian vào truy vấn Elasticsearch và tự chuyển sang trigram trên PostgreSQL khi Elasticsearch lỗi; S3 presigner chỉ ký URL và kiểm tra đối tượng bằng \texttt{HEAD}, không truyền nội dung ảnh qua API. Hình~\ref{fig:c4-thanh-phan-worker} phóng to vùng chứa Worker, chạy cùng tệp thực thi và dùng lại dịch vụ ứng dụng của các module.
+
+\diagram[\textwidth]{c3-06-c4-thanh-phan-worker}{Sơ đồ thành phần của vùng chứa Worker theo mô hình C4 (mức 3)}{fig:c4-thanh-phan-worker}
+
+River client bầu một bản làm leader qua bảng \texttt{river\_leader}; bộ lập lịch chỉ chạy trên leader nên tăng số bản worker không nhân đôi tác vụ định kỳ. Hàng đợi \texttt{notify} có ưu tiên cao nhất để \nfr{NFR12} không bị lô đánh chỉ mục lớn làm chậm. Luồng \uc{UC31} gồm ba tác vụ nối tiếp. Mỗi phút, \texttt{ReminderDispatcher} kiểm tra giờ Việt Nam đã tới \texttt{reminder.runAt} và hôm nay chưa chạy (tác vụ duy nhất theo ngày), rồi chèn một \texttt{UserReminder} cho mỗi người dùng có lô nằm trong cửa sổ nhắc, duy nhất theo người và ngày. \texttt{UserReminderWorker} bỏ qua người đã tắt nhắc, lọc lô trên mọi không gian của người đó theo ngưỡng $N$ riêng (\br{BR12}), nêu tên tối đa \texttt{reminder.maxLotsPerNotice} lô (mặc định 5), rồi chèn thông báo với \texttt{dedupe\_key} theo người và ngày; chỉ khi bản ghi thực sự mới được tạo thì tác vụ \texttt{PushNotification} mới được chèn trong cùng giao dịch, nên mỗi người nhận tối đa một thông báo nhắc mỗi ngày (\br{BR13}). \texttt{NotifyWorker} xử lý \texttt{PushNotification} và \texttt{SendEmail}: gửi FCM tới từng thiết bị, ghi \texttt{deliveries} và bỏ qua thiết bị đã gửi thành công, xóa thiết bị có mã không còn hợp lệ, thử lại tối đa ba lần với khoảng chờ tăng lũy thừa khi lỗi tạm thời. Cũng trên hàng đợi này, \texttt{AssignmentDigest} gộp các phân công cho cùng một người trong cùng danh sách trong 5 giây. Nhóm tác vụ dữ liệu gồm \texttt{CopySpaceData} khi tạo nhóm kèm dữ liệu cá nhân, \texttt{PurgeSpace} khi giải tán nhóm và \texttt{RemapFood} khi quản trị viên gộp thực phẩm. \texttt{MaintenanceWorker} chạy hằng đêm: làm mới materialized view \texttt{report.daily\_space\_stats} bằng \texttt{REFRESH MATERIALIZED VIEW CONCURRENTLY} để báo cáo không bị chặn, và dọn OTP, khóa lũy đẳng, phiên, tombstone hết hạn.
+
+\subsection{Ghi nhận các quyết định kiến trúc}\label{ssec:adr}
+
+Mỗi quyết định có ảnh hưởng rộng được ghi thành một bản ghi quyết định kiến trúc (Architecture Decision Record, ADR) gồm bối cảnh, quyết định và hệ quả, lấy đánh đổi về thuộc tính chất lượng làm trung tâm~\cite{bass}. Bảng~\ref{tab:c3-adr} tóm tắt mười quyết định; bản đầy đủ lưu tại \path{docs/adr/}.
+
+{\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{longtable}{|C{1.5cm}|L{3.2cm}|L{\dimexpr(\textwidth-8\tabcolsep-5\arrayrulewidth-1.5cm-3.2cm)/2\relax}|L{\dimexpr(\textwidth-8\tabcolsep-5\arrayrulewidth-1.5cm-3.2cm)/2\relax}|}
+\caption{Các quyết định kiến trúc chính}\label{tab:c3-adr}\\
+\hline
+\hd{Mã} & \hd{Quyết định} & \hd{Bối cảnh, lý do} & \hd{Hệ quả, đánh đổi}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Mã} & \hd{Quyết định} & \hd{Bối cảnh, lý do} & \hd{Hệ quả, đánh đổi}\\ \hline
+\endhead
+\mbox{ADR-01} & Nguyên khối chia module, lục giác trong module & Quy mô nhỏ; \uc{UC21}, \uc{UC41} nguyên tử; nhóm 4 người & Một giao dịch, vận hành đơn giản; nhân bản cả khối, cần kỷ luật ranh giới\\ \hline
+\mbox{ADR-02} & Go 1.23, một tệp thực thi hai chế độ & Tệp tĩnh, image nhỏ, goroutine hợp với WebSocket (mục~\ref{sec:cong-nghe}) & Phải tự ghép chi, sqlc, River; xử lý lỗi tường minh\\ \hline
+\mbox{ADR-03} & PostgreSQL là nguồn sự thật, mỗi module một schema & Dữ liệu quan hệ, ràng buộc, ACID, khóa dòng cho FEFO & Một nơi sao lưu; khóa ngoại liên schema bị giới hạn\\ \hline
+\mbox{ADR-04} & River làm hàng đợi và outbox thay message broker & Cần chèn tác vụ cùng giao dịch, định kỳ, duy nhất, thử lại & Không ghi kép, không thêm hệ thống; hàng đợi dùng tài nguyên PostgreSQL\\ \hline
+\mbox{ADR-05} & ES cho thực phẩm, công thức (bản chung và bản riêng của không gian); PostgreSQL cho lô, mặt hàng & Tìm không dấu, chịu lỗi gõ, gợi ý $\le$ 500 ms (\nfr{NFR09}) cần cả cho thực phẩm riêng, công thức của nhóm (\uc{UC25}, \uc{UC42}); lô, mặt hàng ít, đổi liên tục, phải thấy ngay & Mọi truy vấn ES bắt buộc lọc \texttt{scope = global} hoặc \texttt{owner\_space\_id = sid} (công thức: mẫu đã công bố hoặc \texttt{space\_id = sid}) ngay trong search client (\br{BR23}); xóa tài liệu khi giải tán nhóm, xóa tài khoản (\nfr{NFR18}); cần đối soát, dự phòng trigram\\ \hline
+\mbox{ADR-06} & WebSocket chỉ gửi gợi ý, client kéo delta & Nhiều thiết bị, mạng chập chờn, socket bị ngắt & Một đường đọc cho trực tuyến và ngoại tuyến; thêm một vòng yêu cầu, vẫn $\le$ 3 s\\ \hline
+\mbox{ADR-07} & UUIDv7 sinh ở client, \texttt{Idempotency-\allowbreak Key} cho lệnh ghi đã xác thực & Tạo bản ghi ngoại tuyến, phát lại an toàn~\cite{idempotencykey} & Không cần mã tạm, UUIDv7~\cite{rfc9562} tốt cho chỉ mục; khóa chèn đầu giao dịch, chỉ lưu kết quả thành công, giữ 7 ngày\\ \hline
+\mbox{ADR-08} & Trạng thái hạn dùng suy diễn lúc truy vấn & Ngưỡng $N$ thuộc người xem (\br{BR12}) & Không cần tác vụ hằng đêm, không lệch giữa thành viên; lọc qua \texttt{expires\_on}\\ \hline
+\mbox{ADR-09} & JWT 30 phút ký EdDSA, refresh token xoay vòng & API phi trạng thái; thu hồi khi đăng xuất (\br{BR03}, \nfr{NFR15}) & Không truy vấn CSDL mỗi yêu cầu; cần \texttt{token\_version}, xoay khóa\\ \hline
+\mbox{ADR-10} & Docker Compose trên một VPS (GĐ1) & Tải giả định nhỏ, ngân sách, nhóm nhỏ & Đơn giản, rẻ; một điểm lỗi, bù bằng sao lưu WAL; GĐ2 khi vượt 50.000 người dùng (Hình~\ref{fig:mo-rong})\\ \hline
+\end{longtable}
+}
+
+ADR-01 và ADR-04 cùng dựa trên tiền đề một CSDL nên phải được xem lại cùng lúc khi tách \texttt{notification}; ADR-06 đến ADR-08 cùng phục vụ đồng bộ ngoại tuyến. ADR-05 là quyết định có rủi ro riêng tư cao nhất: đưa thực phẩm riêng và công thức của nhóm vào Elasticsearch giúp một đường gợi ý duy nhất đạt \nfr{NFR09}, nhưng biến điều kiện lọc theo không gian thành một quy tắc an ninh, nên điều kiện này được dựng tập trung trong search client chứ không để từng handler tự thêm, và có kiểm thử tích hợp riêng chứng minh không gian khác không thấy tài liệu của nhau. Khi số liệu vận hành vượt giả định mà một ADR dựa vào, ADR đó được mở lại.

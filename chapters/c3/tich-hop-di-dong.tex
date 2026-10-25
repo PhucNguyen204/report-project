@@ -1,0 +1,97 @@
+% ---------------------------------------------------------------------
+%  3.4. Thiết kế tích hợp với ứng dụng di động iOS và Android
+% ---------------------------------------------------------------------
+\section{Thiết kế tích hợp với ứng dụng di động iOS và Android}\label{sec:tich-hop-di-dong}
+
+Mục~\ref{ssec:cn-di-dong} đã nêu các yêu cầu mà thiết bị di động đặt lên backend. Mục này kiểm tra thiết kế theo chiều ngược lại: xuất phát từ kiến trúc tham chiếu chính thức của Android~\cite{androidarch}, Flutter~\cite{flutterarch} và hướng dẫn của Apple về tác vụ nền, thông báo đẩy~\cite{applebgtasks,appleapns}, xác định mỗi khuyến nghị đòi hỏi gì ở máy chủ và hợp đồng API đã đáp ứng tới đâu. Phía ứng dụng chỉ được trình bày ở mức kiến trúc và tại các điểm tiếp xúc với backend, không đi vào thiết kế giao diện.
+
+% =====================================================================
+\subsection{Kiến trúc tham chiếu phía ứng dụng}\label{ssec:kien-truc-tham-chieu}
+
+Hướng dẫn kiến trúc của Android~\cite{androidarch} chia ứng dụng thành tầng giao diện (UI layer), tầng miền (domain layer, tùy chọn) và tầng dữ liệu (data layer), với hai nguyên tắc trung tâm là nguồn sự thật duy nhất (single source of truth, SSOT), tức mỗi kiểu dữ liệu chỉ có một thành phần được sửa, và luồng dữ liệu một chiều (unidirectional data flow, UDF), tức trạng thái chảy lên giao diện còn sự kiện chảy ngược lại. Hướng dẫn của Flutter~\cite{flutterarch} cụ thể hóa cùng tư tưởng theo mẫu MVVM: View và ViewModel tạo thành tầng giao diện; Repository và Service tạo thành tầng dữ liệu, tức phần Model; mỗi tính năng có một ViewModel, một hoặc nhiều Repository làm nguồn sự thật và không hoặc nhiều Service bọc API bên ngoài; tầng miền là tùy chọn. Nhóm theo hướng dẫn của Flutter vì ứng dụng chỉ có một mã nguồn (\nfr{NFR19}) mà vẫn giữ trọn các nguyên tắc của Android; khác biệt nền tảng (lập lịch nền, kho khóa, thông báo đẩy) được khoanh vào vài Service mỏng như Hình~\ref{fig:kien-truc-ung-dung}.
+
+\diagram{c3-41-kien-truc-ung-dung}{Kiến trúc tầng của ứng dụng Flutter và các điểm tiếp xúc với backend}{fig:kien-truc-ung-dung}
+
+ViewModel chỉ đọc qua các Stream mà Repository mở trên SQLite (drift), nên giao diện có dữ liệu ngay khi khởi động, kể cả lúc mất mạng (\nfr{NFR08}, \nfr{NFR11}). Thao tác ghi thuộc bốn nhóm ngoại tuyến của \nfr{NFR11} là một giao dịch cục bộ gồm bản ghi và lệnh chờ trong \texttt{pending\_ops}; Bộ đồng bộ (ứng dụng) phát lại lệnh qua ApiClient và áp thay đổi kéo về \emph{thông qua Repository}, nên chỉ một thành phần ghi SQLite đúng như SSOT. Với backend, điểm then chốt là hợp đồng chỉ chạm tới tầng Service: ApiClient sinh từ tệp OpenAPI (mục~\ref{sec:api}) gom các mối quan tâm xuyên suốt vào interceptor của dio, gồm gắn \texttt{Authorization}, \texttt{X-App-Version}, \texttt{X-Platform}, sinh \texttt{Idempotency-Key}, làm mới phiên khi gặp mã 3002 và tôn trọng \texttt{Retry-After}. Repository không biết tới HTTP, nên thay đổi bổ sung của hợp đồng chỉ cần sinh lại ApiClient.
+
+% =====================================================================
+\subsection{Đối chiếu khuyến nghị ưu tiên ngoại tuyến với hợp đồng backend}\label{ssec:doi-chieu-offline-first}
+
+Tài liệu \emph{Build an offline-first app}~\cite{androidoffline} coi nguồn cục bộ là “canonical source of truth for the app”, nguồn mạng là “actual state of the application” và, khi xung đột, là “absolute source of truth”. Phần lớn khuyến nghị của tài liệu này và của hướng dẫn ngoại tuyến Flutter~\cite{flutteroffline} đặt yêu cầu trực tiếp lên máy chủ; Bảng~\ref{tab:c3-doi-chieu-offline} đối chiếu từng khuyến nghị với cơ chế backend tương ứng.
+
+{\small
+\begin{longtable}{|L{3.6cm}|C{1.3cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-3.6cm-1.3cm-1.9cm\relax}|L{1.9cm}|}
+\caption{Đối chiếu khuyến nghị ưu tiên ngoại tuyến của nền tảng với cơ chế backend}\label{tab:c3-doi-chieu-offline}\\
+\hline
+\hd{Khuyến nghị nền tảng} & \hd{Trích từ} & \hd{Cơ chế backend tương ứng} & \hd{Mục trình bày}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Khuyến nghị nền tảng} & \hd{Trích từ} & \hd{Cơ chế backend tương ứng} & \hd{Mục trình bày}\\ \hline
+\endhead
+Giao diện chỉ đọc nguồn cục bộ; đọc bằng Stream, cục bộ trước, mạng sau & \cite{androidoffline}, \cite{flutteroffline} & Phản hồi ghi và phần tử \texttt{/changes} đều mang ảnh chụp thực thể kèm \texttt{version} để Repository hợp nhất & Mục~\ref{ssec:kien-truc-tham-chieu}\\ \hline
+Nguồn mạng là nguồn sự thật tuyệt đối & \cite{androidoffline} & PostgreSQL là nguồn sự thật duy nhất; quy tắc và quyền kiểm tra lại ở mỗi lần phát lại & Mục~\ref{sec:kien-truc}\\ \hline
+Đồng bộ dạng đẩy: máy chủ báo dữ liệu cũ, chỉ cập nhật phần bị đánh dấu & \cite{androidoffline} & Gợi ý \texttt{\{seq, entityTypes\}} qua WebSocket; \path{GET /spaces/{sid}/changes?since=} theo \texttt{change\_seq} riêng từng không gian & Hình~\ref{fig:seq-thoi-gian-thuc}\\ \hline
+Nguồn mạng phải hỗ trợ đồng bộ & \cite{androidoffline} & Nhật ký \path{sync.space_changes} có bia mộ, giữ 90 ngày; con trỏ quá cũ nhận 410 (4100); áp lại vô hại & Hình~\ref{fig:seq-dong-bo-ngoai-tuyen}\\ \hline
+Ghi theo hàng đợi, xả với backoff lũy thừa (WorkManager) & \cite{androidoffline}, \cite{androidwork} & \texttt{Idempotency-Key}, UUIDv7 do thiết bị sinh, \texttt{Retry-After}, \texttt{X-Client-Time} & Mục~\ref{sec:api}\\ \hline
+Xung đột cần đánh phiên bản; “last write wins” phổ biến trên di động & \cite{androidoffline} & \texttt{version}, \texttt{If-Match}; LWW theo trường kèm \texttt{overwrittenFields}; máy chủ ghi nhận trước thắng khi đánh dấu đã mua (409, 4002 kèm \texttt{current}); không LWW cho lượng còn của lô và M06 & Hình~\ref{fig:seq-dong-bo-ngoai-tuyen}\\ \hline
+\end{longtable}
+}
+
+Tài liệu Android so sánh đồng bộ dạng kéo (pull-based), tải dữ liệu theo màn hình người dùng mở, với đồng bộ dạng đẩy (push-based), giữ bản sao cục bộ và “relies on notifications from the server to alert it when that data is stale”. Dạng kéo tốn dữ liệu và không hợp dữ liệu quan hệ; dạng đẩy cho phép ngoại tuyến vô thời hạn và tốn ít dữ liệu nhất, đổi lại cần đánh phiên bản và nguồn mạng phải hỗ trợ đồng bộ. Nhóm chọn dạng đẩy cho dữ liệu không gian vì dữ liệu quan hệ chặt, người dùng có thể mất sóng suốt buổi đi chợ, và mỗi không gian chỉ vài trăm bản ghi nên delta rẻ hơn nhiều so với tải lại; hai nhược điểm của nó chính là phần việc backend đã nhận (\texttt{change\_seq}, bia mộ, \texttt{version}, khóa lũy đẳng). Phần còn lại là đồng bộ lai (hybrid): danh mục dùng kéo có điều kiện với \texttt{ETag} (Q03); tìm kiếm, báo cáo và lệnh về thành viên nhóm chỉ trực tuyến vì dữ liệu lớn, mang tính dẫn xuất hoặc cần máy chủ quyết định ngay (\br{BR04}, \br{BR06}). Khi hợp nhất, ứng dụng chỉ thay bản cục bộ nếu phiên bản máy chủ không nhỏ hơn và thực thể không còn lệnh chờ, nên giao diện không nhấp nháy giá trị cũ.
+
+% =====================================================================
+\subsection{Vòng đời ứng dụng và kênh đồng bộ trên hai nền tảng}\label{ssec:vong-doi-dong-bo}
+
+Vòng đời ứng dụng là ràng buộc lớn nhất lên kênh đồng bộ. Trên Android, tác vụ bền vững chạy qua WorkManager~\cite{androidwork}: tác vụ được lưu, vẫn chạy sau khi tiến trình bị tắt, có ràng buộc “có mạng”, backoff lũy thừa và chu kỳ định kỳ tối thiểu 15 phút. iOS tạm dừng ứng dụng vài giây sau khi chuyển nền; khung BackgroundTasks~\cite{applebgtasks} cho xin \texttt{BGApp\allowbreak RefreshTask} nhưng hệ điều hành chọn thời điểm theo cơ hội, không bảo đảm sẽ chạy. Hình~\ref{fig:vong-doi-dong-bo} mô hình hóa vòng đời từ góc nhìn đồng bộ; sự kiện chuyển trạng thái là sự kiện vòng đời của Flutter (\texttt{resumed}, \texttt{paused}), sự kiện mạng và lịch của hệ điều hành.
+
+\diagram{c3-42-vong-doi-dong-bo}{Biểu đồ trạng thái vòng đời ứng dụng và kênh đồng bộ trên Android và iOS}{fig:vong-doi-dong-bo}
+
+Bắt kịp là điểm vào chung của khởi động nguội, trở lại từ nền và chạm thông báo: hiển thị ngay dữ liệu SQLite, làm mới phiên nếu cần, xả hàng đợi rồi kéo \texttt{/changes} từ con trỏ của từng không gian. Thứ tự “ghi trước, đọc sau” bảo đảm phản hồi của lệnh vừa phát lại không bị ảnh chụp cũ ghi đè; do \br{BR04}, mỗi người chỉ có hai không gian nên chỉ có hai chuỗi kéo. Gặp 410, ứng dụng đọc \texttt{changeSeq} từ G03 \emph{trước} rồi mới tải lại, nên thay đổi trong lúc tải chỉ bị áp lại chứ không bị sót; gặp 426, ứng dụng mở trang cập nhật. Khi vào Nền, ứng dụng chủ động đóng WebSocket thay vì để hệ điều hành cắt ngang. Bảng~\ref{tab:c3-kenh-dong-bo} tổng hợp kênh dùng trong từng tình huống.
+
+{\small
+\begin{longtable}{|L{2.5cm}|L{3.4cm}|L{3.8cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-2.5cm-3.4cm-3.8cm\relax}|}
+\caption{Kênh đồng bộ và thông báo theo tình huống trên Android và iOS}\label{tab:c3-kenh-dong-bo}\\
+\hline
+\hd{Tình huống} & \hd{Android} & \hd{iOS} & \hd{Backend hỗ trợ}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Tình huống} & \hd{Android} & \hd{iOS} & \hd{Backend hỗ trợ}\\ \hline
+\endhead
+Ở tiền cảnh & \multicolumn{2}{L{\dimexpr7.2cm+2\tabcolsep+\arrayrulewidth\relax}|}{WebSocket \path{/ws}; gom gợi ý 200 ms rồi kéo \texttt{/changes}} & Redis Pub/Sub, \texttt{ping} 25 s\\ \hline
+Vừa chuyển nền & Đóng socket; mạng bị hoãn khi máy vào Doze & Đóng socket, xin thêm ít thời gian để xả hàng đợi rồi bị tạm dừng & Socket mất \texttt{pong} 10 s bị dọn\\ \hline
+Lệnh ghi chờ do mất mạng & WorkManager một lần, ràng buộc có mạng, chạy cả khi ứng dụng đã bị tắt & Xả khi trở lại tiền cảnh hoặc trong \path{BGAppRefreshTask} & \texttt{Idempotency-Key}, \texttt{Retry-After}\\ \hline
+Ở nền lâu, cần dữ liệu tươi khi ra chợ & WorkManager định kỳ (thiết kế 1 giờ) & \path{BGAppRefreshTask} theo cơ hội & \texttt{/changes} rỗng rất rẻ\\ \hline
+Phân công, nhắc hạn dùng; hoạt động nhóm & Hiển thị, ưu tiên \texttt{high}; nhóm: \texttt{normal}; \path{collapse_key} & \texttt{alert}, \path{apns-priority} 10; nhóm: 5; \path{apns-collapse-id} & NotifyWorker, \path{dedupe_key}\\ \hline
+Đồng bộ im lặng & Không dùng & Không dùng (dữ liệu phải ở mức 5) & Không gửi\\ \hline
+Cấp quyền, mã mới, đăng xuất & A14 khi được cấp \path{POST_NOTIFICATIONS} (từ Android 13) hoặc có mã mới; A15 khi đăng xuất & Như Android; SDK FCM tự gắn mã APNs & Upsert theo \path{fcm_token}\\ \hline
+\end{longtable}
+}
+
+Thông báo đẩy tuân theo tài liệu FCM~\cite{fcmpriority} và APNs~\cite{appleapns}. Vì “high priority messages are for time-sensitive, user visible content”, phân công mua (\uc{UC19}) và nhắc hạn dùng (\uc{UC31}) là thông báo hiển thị mức high (\texttt{android.priority}; \texttt{apns-priority: 10} trên iOS), còn hoạt động nhóm dùng mức normal. Mỗi loại có một khóa gộp cố định (\texttt{collapse\_key}, \texttt{apns-collapse-id}), nên thiết bị ngoại tuyến lâu chỉ nhận bản mới nhất; nội dung đầy đủ vẫn nằm trong danh sách thông báo (A17). Thời hạn sống (\texttt{android.ttl}, \texttt{apns-expiration}) là giá trị thiết kế: 12 giờ cho phân công và nhắc hạn dùng, vì quá hạn đó thông tin đã lỗi thời và lần nhắc hôm sau sẽ thay thế; 24 giờ cho hoạt động nhóm. Trường \texttt{data} chỉ mang \texttt{type}, \texttt{notificationId} và \texttt{route}; tiêu đề, nội dung được dựng ở máy chủ theo \texttt{users.locale} (\nfr{NFR07}).
+
+Tài liệu FCM còn nêu “when sending data messages to Apple devices, the priority must be set to 5, or normal priority”, tức thông điệp dữ liệu im lặng tới iOS có thể bị hoãn. Vì vậy thiết kế không dùng thông điệp im lặng làm kênh đồng bộ trên cả hai nền tảng; thông báo chỉ để báo người dùng, dữ liệu luôn được kéo. Ứng dụng gọi A14 khi người dùng cấp quyền thông báo vào lúc có ngữ cảnh (\nfr{NFR18}), khi SDK báo mã mới và tối đa một lần mỗi ngày khi khởi động, với \texttt{deviceId} sinh một lần khi cài, \texttt{fcmToken}, \texttt{platform}, \texttt{appVersion}. Máy chủ upsert theo \texttt{fcm\_token} và chuyển dòng sang người gọi nếu mã đang gắn với tài khoản khác, nên máy dùng chung không nhận thông báo của tài khoản đã đăng xuất; A15 được gọi trước A06 vì cần phiên còn hiệu lực; mã bị FCM báo không hợp lệ bị NotifyWorker xóa, thiết bị không cập nhật quá 60 ngày (giá trị thiết kế) bị tác vụ bảo trì dọn.
+
+% =====================================================================
+\subsection{Tối ưu giao tiếp trên mạng di động}\label{ssec:toi-uu-mang}
+
+Trên mạng di động, backend tối ưu theo hướng ít lượt đi–về, ít byte và không đánh thức thiết bị khi không cần. Caddy phục vụ HTTP/2 để mọi yêu cầu ghép kênh trên một kết nối TLS và nén gzip phản hồi JSON bằng chỉ thị \texttt{encode} (bản Caddy chuẩn chỉ nén động gzip, zstd; gzip được mọi thư viện HTTP trên thiết bị tự giải nén). Q03 trả \texttt{ETag} để lần sau nhận 304 không thân; dữ liệu không gian đi qua delta; danh sách dùng phân trang con trỏ; S12, S14 gom nhiều mặt hàng trong một yêu cầu. Ảnh được thiết bị thu nhỏ rồi tải thẳng lên MinIO bằng URL ký sẵn, worker sinh biến thể WebP. Vì khóa đối tượng không bao giờ bị ghi đè, mục này bổ sung một tinh chỉnh để bộ đệm ảnh trên thiết bị có tác dụng: URL \texttt{GET} được ký với thời điểm ký làm tròn về đầu ngày và hạn 48 giờ, nên cùng ảnh có cùng URL suốt ngày; Caddy gắn \texttt{Cache-Control: private, max-age=86400, immutable} cho tên miền \texttt{media.}.
+
+Ứng dụng không thăm dò định kỳ; ở nền, việc làm tươi giao cho WorkManager và BGTaskScheduler, vốn gom công việc của nhiều ứng dụng vào một lần bật sóng. Chỉ khi WebSocket không thiết lập được, chẳng hạn mạng doanh nghiệp chặn nâng cấp kết nối, ứng dụng mới kéo \texttt{/changes} mỗi 60 giây trong lúc ở tiền cảnh (giá trị thiết kế). ApiClient đặt thời hạn kết nối 10 giây, chờ phản hồi 20 giây (giá trị thiết kế), chỉ tự thử lại yêu cầu lũy đẳng theo RFC 9110~\cite{rfc9110} và \texttt{POST} có \texttt{Idempotency-Key}, với backoff lũy thừa có nhiễu ngẫu nhiên từ 1 đến 30 giây; \texttt{Retry-After}, nếu có, thay cho backoff.
+
+% =====================================================================
+\subsection{Tương thích phiên bản và liên kết sâu}\label{ssec:phien-ban-lien-ket}
+
+Bản cập nhật phải qua xét duyệt của hai kho rồi tùy người dùng cài, nên máy chủ luôn phục vụ nhiều thế hệ ứng dụng. Ngoài cơ chế chung ở mục~\ref{sec:api} (phân đoạn \texttt{v1}, chỉ thay đổi bổ sung, \texttt{Deprecation}, \texttt{Sunset}, mã 426), mục này thêm ba tinh chỉnh. Mức phiên bản tối thiểu được đặt riêng theo \texttt{X-Platform}, vì bản vá có thể được duyệt ở kho này sớm hơn kho kia, và nằm trong cấu hình triển khai chứ không thuộc tham số nghiệp vụ của quản trị viên. Bộ sinh \texttt{dart-dio} bật \texttt{enumUnknownDefaultCase} để giá trị liệt kê mới, như một loại thông báo mới, thành giá trị “không xác định” thay vì làm hỏng việc giải mã ở bản cũ. Di trú mở rộng–thu hẹp gắn với phiên bản ứng dụng: trường mới khởi đầu là tùy chọn, máy chủ tự điền mặc định cho bản chưa gửi trường đó, và bước thu hẹp chỉ chạy khi thống kê \texttt{X-App-Version} cho thấy không còn bản nào không biết trường mới.
+
+Liên kết mời \path{https://dicho.example/join/{code}} (\uc{UC10}) mở thẳng ứng dụng qua Universal Links~\cite{appleuniversallinks} và App Links~\cite{androidapplinks}. Hai cơ chế xác minh quyền sở hữu tên miền bằng tệp do Caddy phục vụ qua HTTPS, kiểu \texttt{application/json}, không chuyển hướng: \path{/.well-known/apple-app-site-association} (mã nhóm phát triển, bundle id, mẫu \path{/join/*}) và \path{/.well-known/assetlinks.json} (tên gói, vân tay SHA-256 của chứng chỉ ký). Khi chưa cài ứng dụng, cùng đường dẫn trả trang tĩnh hiển thị mã để nhập tay (\uc{UC11}) kèm liên kết tới hai kho; Caddy che mã trong nhật ký vì đó là bí mật ngắn hạn. Ứng dụng gọi G07 với \texttt{dryRun} sau khi đăng nhập. Thông báo đẩy dùng chung cơ chế điều hướng: \texttt{data.route} chỉ chứa đường dẫn nội bộ cùng định danh, ứng dụng chỉ chấp nhận tuyến thuộc danh sách cho phép, và đối tượng đã bị xóa hay mất quyền thì API trả 404 (4001).
+
+% =====================================================================
+\subsection{An toàn đặc thù di động}\label{ssec:an-toan-di-dong}
+
+Theo OWASP MASVS~\cite{masvs} (mục~\ref{sec:bao-mat}), ứng dụng có thể bị dịch ngược nên không nhúng bí mật nào: khóa ký JWT, khóa MinIO, khóa tài khoản dịch vụ FCM chỉ ở máy chủ; tệp cấu hình Firebase trong ứng dụng chỉ chứa định danh dự án, không cho phép gửi thông báo. Caddy chỉ nhận TLS từ 1.2; App Transport Security của iOS mặc định đòi HTTPS, còn ứng dụng Android khai báo tường minh cấu hình bảo mật mạng cấm HTTP rõ thay vì dựa vào mặc định thay đổi theo phiên bản, vì vẫn hỗ trợ Android 8 (\nfr{NFR19}).
+
+Ghim chứng chỉ (certificate pinning) chặn tấn công xen giữa bằng chứng chỉ giả, nhưng không áp dụng ở giai đoạn 1 vì rủi ro khóa chết ứng dụng: Caddy tự gia hạn chứng chỉ Let's Encrypt vốn có hiệu lực ngắn, nếu khóa được ghim đổi khi gia hạn hay phải thu hồi khẩn cấp thì mọi bản đã cài mất kết nối cho tới khi người dùng cập nhật qua kho. Nếu cần về sau, nhóm sẽ ghim khóa công khai (SPKI) kèm một khóa dự phòng cất ngoài máy chủ và tự quản lý khóa riêng khi gia hạn. Chứng thực ứng dụng bằng Play Integrity~\cite{playintegrity} và App Attest~\cite{appattest} xác nhận yêu cầu đến từ bản ứng dụng thật, là lựa chọn của giai đoạn sau cho các API dễ bị lạm dụng tự động: A01, A03 (mỗi lần là một thư điện tử) và G07. Đánh đổi gồm phụ thuộc dịch vụ của Google, Apple trên đường đăng ký, thiết bị không có Google Play không lấy được mã chứng thực, và App Attest chỉ có từ iOS 14 trong khi ứng dụng hỗ trợ iOS 13; vì vậy chứng thực chỉ là tín hiệu rủi ro làm giới hạn tần suất chặt hơn, còn giới hạn tần suất vẫn là lớp chính.
+
+Mẫu Backends for Frontends~\cite{bff} đề xuất backend riêng cho mỗi loại giao diện khi nhu cầu khác biệt lớn. Nhóm giữ một backend chung vì Android và iOS chạy cùng một ứng dụng Flutter với nhu cầu dữ liệu như nhau; khác biệt nền tảng chỉ là mức phiên bản tối thiểu và phần \texttt{android}, \texttt{apns} của thông điệp FCM, xử lý theo \texttt{X-Platform} và \texttt{devices.platform}; trang quản trị dùng nhóm tuyến \path{/admin} trên cùng API. Quyết định được xem lại nếu xuất hiện giao diện có nhu cầu dữ liệu khác hẳn.
+
+Tóm lại, các cơ chế cốt lõi của backend (PostgreSQL làm nguồn sự thật, nhật ký thay đổi theo không gian, khóa lũy đẳng, phiên bản thực thể, WebSocket chỉ mang gợi ý) khớp kiến trúc tham chiếu của Android và Flutter mà không phải đổi thiết kế. Các tinh chỉnh mục này bổ sung (quy tắc theo loại thông báo, vòng đời mã thiết bị, phiên bản tối thiểu theo nền tảng, URL ảnh ổn định, kéo dự phòng, trang dự phòng cho liên kết mời) không đổi lược đồ hay danh sách API, chỉ làm rõ hành vi của A14, NotifyWorker, Caddy và ApiClient.

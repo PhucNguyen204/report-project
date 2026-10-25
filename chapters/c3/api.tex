@@ -1,0 +1,362 @@
+% ---------------------------------------------------------------------
+%  3.6. Thiết kế API Backend
+% ---------------------------------------------------------------------
+\section{Thiết kế API Backend}\label{sec:api}
+
+Giao diện lập trình ứng dụng (API) là hợp đồng duy nhất giữa ứng dụng Flutter và backend: mọi nghiệp vụ ở Chương~\ref{chap:dac-ta}, kể cả thao tác được phát lại sau khi mất mạng, đều đi qua đây. Thiết kế phải thỏa bốn ràng buộc: REST/JSON với đường dẫn \texttt{/it4788/} và bộ mã phản hồi thống nhất (\nfr{NFR21}), kiểm tra không gian và vai trò ở mọi API (\nfr{NFR16}), gửi lại yêu cầu không gây ghi trùng (\nfr{NFR11}) và có tài liệu OpenAPI (\nfr{NFR20}).
+
+% =====================================================================
+\subsection{Quy ước thiết kế API}\label{ssec:quy-uoc-api}
+
+API được thiết kế theo tài nguyên (resource-oriented), tên tài nguyên là danh từ số nhiều nối bằng dấu gạch ngang. Dữ liệu của một không gian (\br{BR04}) nằm dưới \path{/spaces/{sid}}: một middleware xác nhận tư cách thành viên cho mọi API bên dưới và repository luôn lọc theo \texttt{space\_id} lấy từ đường dẫn, chặn lỗi truy cập đối tượng trái phép (BOLA) đứng đầu danh sách rủi ro của OWASP~\cite{owaspapi}. Phương thức giữ ngữ nghĩa của RFC 9110~\cite{rfc9110}: \texttt{GET} an toàn, \texttt{PUT} thay thế toàn bộ, \texttt{PATCH} sửa một phần theo JSON Merge Patch, \texttt{DELETE} xóa mềm và để lại bản ghi bia mộ (tombstone) cho đồng bộ. Chuyển trạng thái có điều kiện như đánh dấu đã mua hay xác nhận đã nấu được mô hình hóa thành tài nguyên lệnh với \texttt{POST} (\path{.../purchase}, \path{.../cook}) thay vì \texttt{PATCH} một trường trạng thái, để mỗi điều kiện bảo vệ có một điểm vào và được kiểm thử riêng. Lệnh mà use case có bước xem trước để người dùng xác nhận (G07, S15) nhận cờ \texttt{dryRun}: lần gọi \texttt{true} chỉ đọc và trả kết quả dự kiến, lần gọi xác nhận kiểm tra lại toàn bộ trong giao dịch ghi.
+
+API được phục vụ tại \path{https://api.dicho.example/it4788/v1} (tên miền ví dụ; local, staging, production chỉ khác tên máy chủ), chỉ qua HTTPS với TLS từ 1.2 (\nfr{NFR14}), thân yêu cầu là JSON UTF-8 tối đa 1~MB (vượt nhận 413, mã 2002); ảnh được tải thẳng lên kho đối tượng bằng URL ký sẵn. Phân đoạn \texttt{v1} tồn tại vì ứng dụng trên kho ứng dụng được cập nhật chậm, máy chủ phải phục vụ nhiều thế hệ ứng dụng cùng lúc. Thay đổi bổ sung như API mới hay trường tùy chọn được giữ trong \texttt{v1} với điều kiện ứng dụng bỏ qua trường lạ; chỉ thay đổi phá vỡ hợp đồng mới sinh \texttt{v2} (mục~\ref{ssec:openapi}). Bảng~\ref{tab:c3-header} liệt kê các header dùng chung.
+
+{\scriptsize\renewcommand{\arraystretch}{1.05}
+\begin{longtable}{|L{3.3cm}|C{1.25cm}|L{3.2cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-3.3cm-1.25cm-3.2cm\relax}|}
+\caption{Các header HTTP dùng chung}\label{tab:c3-header}\\
+\hline
+\hd{Header} & \hd{Bắt buộc} & \hd{Áp dụng} & \hd{Ý nghĩa}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Header} & \hd{Bắt buộc} & \hd{Áp dụng} & \hd{Ý nghĩa}\\ \hline
+\endhead
+\multicolumn{4}{|l|}{\hs{Header của yêu cầu}}\\ \hline
+\texttt{Authorization} & Có & Trừ A01--A05, A07, A08 & \texttt{Bearer <JWT>} sống 30 phút; sai trả 3001, hết hạn trả 3002\\ \hline
+\texttt{Accept-Language} & Không & Mọi API & \texttt{vi} hoặc \texttt{en}, chọn ngôn ngữ của thông điệp\\ \hline
+\texttt{X-App-Version}, \texttt{X-Platform} & Có & Mọi API & Phiên bản (\texttt{1.4.2}) và nền tảng (\texttt{android}, \texttt{ios}) của ứng dụng\\ \hline
+\texttt{Idempotency-Key} & Có & \texttt{POST} ghi, trừ A01--A05, A07, A08 & UUID của một thao tác, giữ nguyên khi gửi lại; G07, S15 chỉ cần khi \texttt{dryRun = false}\\ \hline
+\texttt{If-Match} & Có & \texttt{PATCH}, \texttt{PUT} trên thực thể có cột \texttt{version}; M06 & \texttt{"<version>"} của thực thể mà ứng dụng đã thấy; không dùng cho R06, A13, D09\\ \hline
+\texttt{X-Client-Time} & Không & Lệnh tạo, sửa phát lại từ hàng đợi ngoại tuyến & Thời điểm thao tác trên thiết bị (RFC 3339); trong 7 ngày và không sau giờ máy chủ thì BR08, BR11, BR18 được xét theo ngày của giá trị này, ngoài khoảng đó trả 422, mã 4004\\ \hline
+\texttt{X-Request-Id} & Không & Mọi API & Mã đối chiếu nhật ký, được trả lại trong phản hồi\\ \hline
+\multicolumn{4}{|l|}{\hs{Header của phản hồi}}\\ \hline
+\texttt{ETag} & -- & \texttt{GET} một thực thể; Q03 & \texttt{"<version>"}; Q03 dùng với \texttt{If-None-Match} để trả 304\\ \hline
+\texttt{Idempotent-Replayed} & -- & Phản hồi phát lại & \texttt{true} khi phản hồi lấy từ bản đã lưu\\ \hline
+\texttt{Retry-After} & -- & 423, 429, 503; 409 của khóa lũy đẳng đang xử lý & Số giây cần chờ trước khi gửi lại\\ \hline
+\texttt{Deprecation}, \texttt{Sunset} & -- & Phiên bản sắp ngừng & Báo phiên bản lỗi thời và thời điểm ngừng\\ \hline
+\texttt{Content-Language} & -- & Phản hồi có thông điệp & Ngôn ngữ thực tế của \texttt{message}\\ \hline
+\end{longtable}
+}
+
+Ứng dụng có phiên bản thấp hơn mức tối thiểu của nền tảng nhận 426, mã 4260, trước cả bước xác thực; đây là van an toàn khi một bản đã phát hành có lỗi nghiêm trọng, vì máy chủ không sửa được mã đã cài trên điện thoại. Mọi phản hồi dùng cấu trúc bao (envelope) ở Mã nguồn~\ref{code:c3-json-envelope}: mã HTTP phục vụ hạ tầng và chính sách thử lại, còn \texttt{code} bốn chữ số mang ngữ nghĩa nghiệp vụ để ứng dụng rẽ nhánh.
+
+\apiNeed{3.4cm}\codecaption{Cấu trúc bao của phản hồi thành công và phản hồi lỗi}{code:c3-json-envelope}
+\begin{Verbatim}[fontsize=\scriptsize]
+HTTP/1.1 200 OK
+{ "code": 1000, "message": "Thành công",
+  "data": { "items": [ { "id": "0192f3c4...", "name": "Đi chợ tuần này" } ] },
+  "meta": { "nextCursor": "eyJkIjoiMjAyNi0xMC0yNiJ9",
+            "serverTime": "2026-10-25T03:15:42Z" } }
+HTTP/1.1 400 Bad Request
+{ "code": 2002, "message": "Số lượng phải là số dương, tối đa hai chữ số...",
+  "errors": [ { "field": "items[1].quantity", "rule": "BR14", ... } ],
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736" }
+\end{Verbatim}
+
+Mảng \texttt{errors} liệt kê lỗi theo trường với đường dẫn JSON để hiển thị ngay dưới ô nhập (\nfr{NFR03}), \texttt{rule} ghi mã quy tắc bị vi phạm; với xung đột 4002, phần tử có thêm \texttt{current} là trạng thái hiện tại trên máy chủ. \texttt{traceId} là mã vết OpenTelemetry~\cite{opentelemetry}, \texttt{serverTime} giúp ứng dụng hiệu chỉnh lệch đồng hồ khi tính hạn dùng. Thông điệp được chọn theo \texttt{Accept-Language} từ bộ thông điệp Việt, Anh của Phụ lục~\ref{pl:thong-diep}, nên không có chuỗi viết cứng (\nfr{NFR07}).
+
+Danh sách phân trang theo con trỏ (keyset): \texttt{limit} mặc định 20, tối đa 100; \texttt{cursor} mã hóa khóa sắp xếp và \texttt{id} của phần tử cuối, nên không lặp hay sót khi thành viên khác chèn dữ liệu và chi phí không tăng theo số trang như \texttt{OFFSET}. Khóa JSON viết camelCase; \texttt{id} là UUIDv7~\cite{rfc9562}, có thể do thiết bị sinh khi ngoại tuyến, id trùng bản ghi đã có nhận 409, mã 4003. Thời điểm theo RFC 3339 ở UTC; ngày nghiệp vụ dạng \texttt{YYYY-MM-DD} theo múi giờ Asia/Ho\_Chi\_Minh. Số lượng là số JSON tối đa hai chữ số thập phân (\br{BR14}), được đọc nguyên văn thành kiểu thập phân thay vì \texttt{float64}; tiền là số nguyên tính bằng đồng.
+
+Mọi \texttt{POST} ghi của người dùng đã đăng nhập mang \texttt{Idempotency-Key}~\cite{idempotencykey}, một UUID cho mỗi thao tác, giữ nguyên qua mọi lần gửi lại. API công khai A01--A05, A07, A08 không dùng khóa này: chúng đã được giới hạn tần suất theo IP, được bảo vệ bằng OTP hoặc cửa sổ ân hạn của A05, và việc lưu phản hồi của chúng đồng nghĩa lưu mã phiên ở dạng rõ. Câu lệnh đầu tiên của giao dịch ghi là \texttt{INSERT} vào \path{sync.idempotency_keys} một dòng \texttt{status = 'in\_progress'} kèm băm yêu cầu, với \texttt{ON CONFLICT DO NOTHING}. Nếu khóa đã tồn tại, yêu cầu khác băm nhận 400, mã 2002; khóa \texttt{completed} được phát lại đúng phản hồi đã lưu kèm \texttt{Idempotent-Replayed: true}; khóa \texttt{in\_progress}, tức lần gửi trước chưa kết thúc, nhận 409, mã 4002 kèm \texttt{Retry-After} để thử lại sau. Ngay trước \texttt{COMMIT}, dòng khóa được cập nhật thành \texttt{completed} cùng phản hồi; lỗi nghiệp vụ dẫn tới \texttt{ROLLBACK} nên khóa biến mất theo giao dịch, nghĩa là chỉ kết quả thành công được lưu (7 ngày).
+
+Kiểm soát đồng thời dùng khóa lạc quan theo \texttt{version} qua \texttt{ETag} và \texttt{If-Match}, chỉ cho \texttt{PUT}, \texttt{PATCH} trên thực thể có cột \texttt{version} và cho lệnh M06; R06, A13 đặt trạng thái riêng của người gọi còn D09 lưu giá trị cũ, mới trong nhật ký quản trị, nên không cần. Khi không khớp, \texttt{PATCH} thuộc tính vẫn ghi theo hợp nhất từng trường, lệnh đến sau thắng (LWW), và trả \texttt{overwrittenFields}; \texttt{PUT} vốn thay thế toàn bộ như phân công S10 và lệnh phụ thuộc dữ liệu đã xem như M06 nhận 409, mã 4002 (mục~\ref{sec:thiet-ke-chi-tiet}). Lượng còn lại của lô trong P04 là ngoại lệ của LWW: ghi đè sẽ xóa âm thầm một lần dùng thực phẩm của thành viên khác, nên lệch \texttt{If-Match} khi thân có \texttt{remainingQty} trả 409, mã 4002. Nhóm dùng 409 thay cho 412 để mọi xung đột chỉ có một nhánh xử lý ở ứng dụng. Yêu cầu vượt giới hạn tần suất (mục~\ref{sec:bao-mat}) nhận 429, mã 4290, kèm \texttt{Retry-After} và \msg{MSG36}; riêng gửi lại OTP dùng \msg{MSG30}.
+
+Mọi phép so sánh ngày dùng ngày hiện tại theo múi giờ Asia/Ho\_Chi\_Minh do \texttt{platform/clock} cấp và truyền vào câu SQL như tham số \texttt{\$today}, không dùng \texttt{current\_date} của phiên CSDL chạy UTC, vốn lệch một ngày từ 0 giờ đến 7 giờ sáng. Lệnh tạo, sửa phát lại từ hàng đợi ngoại tuyến mang thêm \texttt{X-Client-Time}: nếu giá trị nằm trong 7 ngày và không sau giờ máy chủ, các quy tắc phụ thuộc ngày hiện tại (\br{BR08}, \br{BR11}, \br{BR18}) được xét theo ngày thao tác thật trên thiết bị, để thao tác hợp lệ lúc ngoại tuyến không bị từ chối chỉ vì được đồng bộ sang ngày hôm sau; ngoài khoảng đó máy chủ trả 422, mã 4004 và ứng dụng giữ bản nháp cho người dùng sửa.
+
+% =====================================================================
+\subsection{Danh sách mã phản hồi}\label{ssec:ma-phan-hoi}
+
+Bảng~\ref{tab:c3-ma-phan-hoi} liệt kê bộ mã phản hồi dùng chung, mỗi mã gắn cố định với một mã HTTP và với thông điệp ở Phụ lục~\ref{pl:thong-diep}. Với mã không có thông điệp, ứng dụng tự xử lý và \texttt{message} chỉ mang mô tả kỹ thuật cho nhật ký.
+
+{\scriptsize\renewcommand{\arraystretch}{1.05}
+\begin{longtable}{|C{1.1cm}|C{1.3cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-1.1cm-1.3cm-5.6cm\relax}|L{5.6cm}|}
+\caption{Danh sách mã phản hồi của API}\label{tab:c3-ma-phan-hoi}\\
+\hline
+\hd{Mã} & \hd{HTTP} & \hd{Ý nghĩa} & \hd{Thông điệp}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Mã} & \hd{HTTP} & \hd{Ý nghĩa} & \hd{Thông điệp}\\ \hline
+\endhead
+\multicolumn{4}{|l|}{\hs{1xxx -- Thành công}}\\ \hline
+1000 & 200, 201 & Thành công & MSG10 (thao tác ghi); MSG11, MSG15, MSG26, MSG31 (thông tin)\\ \hline
+1001 & 202 & Đã tiếp nhận, xử lý nền (xuất báo cáo) & --\\ \hline
+\multicolumn{4}{|l|}{\hs{2xxx -- Dữ liệu vào}}\\ \hline
+2001 & 400 & Thiếu trường bắt buộc & MSG01\\ \hline
+2002 & 400, 413 & Giá trị không hợp lệ; thân yêu cầu quá 1~MB (413) & MSG02, MSG14, MSG16, MSG25, MSG27--MSG29\\ \hline
+2003 & 422 & Lượng gửi lên vượt lượng còn lại & MSG17\\ \hline
+\multicolumn{4}{|l|}{\hs{3xxx -- Xác thực và phân quyền}}\\ \hline
+3001 & 401 & Chưa xác thực hoặc mã không hợp lệ & --\\ \hline
+3002 & 401 & Mã truy cập hết hạn, ứng dụng làm mới phiên & --\\ \hline
+3003 & 401 & Sai email hoặc mật khẩu & MSG05\\ \hline
+3004 & 423 & Tài khoản bị khóa tạm do đăng nhập sai & MSG06\\ \hline
+3005 & 403 & Tài khoản bị quản trị viên khóa & MSG21\\ \hline
+3006 & 400 & OTP sai hoặc hết hạn & MSG04\\ \hline
+3007 & 403 & Không có quyền thực hiện & MSG13\\ \hline
+3008 & 401 & Mã làm mới bị dùng lại, đã thu hồi họ phiên & --\\ \hline
+3009 & 403 & Tài khoản chưa xác thực email; máy chủ gửi lại OTP trong giới hạn BR02 & MSG34\\ \hline
+\multicolumn{4}{|l|}{\hs{4xxx -- Tài nguyên và quy tắc nghiệp vụ}}\\ \hline
+4001 & 404 & Không tìm thấy tài nguyên & --\\ \hline
+4002 & 409 & Xung đột phiên bản, đã được người khác xử lý, hoặc khóa lũy đẳng đang xử lý & MSG35\\ \hline
+4003 & 409 & Dữ liệu đã tồn tại & MSG02, MSG03\\ \hline
+4004 & 422 & Vi phạm quy tắc nghiệp vụ, kèm mã BR & MSG07--MSG09, MSG12, MSG22, MSG24, MSG32\\ \hline
+4100 & 410 & Con trỏ đồng bộ quá cũ, cần tải lại toàn bộ & --\\ \hline
+4260 & 426 & Phiên bản ứng dụng quá cũ & --\\ \hline
+4290 & 429 & Quá nhiều yêu cầu & MSG36; MSG30 (gửi lại OTP)\\ \hline
+\multicolumn{4}{|l|}{\hs{5xxx -- Hệ thống}}\\ \hline
+5000 & 500 & Lỗi hệ thống & MSG33\\ \hline
+5003 & 503 & Dịch vụ tạm thời không khả dụng, kể cả khi hết lượt thử lại do khóa chết & MSG33\\ \hline
+5004 & 504 & Dịch vụ bên ngoài quá thời gian & MSG23 (tra mã vạch)\\ \hline
+\end{longtable}
+}
+
+Chữ số đầu xác định nhóm và bên cần hành động: 1xxx thành công, trong đó 1001 dành cho xuất báo cáo (B04 trả \texttt{exportId}, ứng dụng hỏi B05 đến khi tệp sẵn sàng), còn các thông điệp thông tin như \msg{MSG15} hay \msg{MSG31} đi cùng mã 1000 vì không phải lỗi; 2xxx là lỗi người dùng sửa được bằng cách đổi dữ liệu vào; 3xxx là danh tính và quyền, phần lớn được ứng dụng xử lý tự động; 4xxx là dữ liệu đúng nhưng không thực hiện được ở trạng thái hiện tại, với 4004 thì \texttt{rule} chỉ rõ quy tắc bị vi phạm; 5xxx là lỗi phía hệ thống, riêng 5004 chỉ dùng cho P08 khi Open Food Facts không trả lời trong 3 giây hoặc bộ ngắt mạch đang mở (sau 5 lỗi liên tiếp, mở 30 giây).
+
+Hai ranh giới được giữ nhất quán. Ranh giới thứ nhất phân 2xxx với 4xxx theo cách người dùng sửa lỗi. Mã 2001, 2002 phát hiện được chỉ từ nội dung yêu cầu; mã 2003 phải đọc lượng còn lại trong cơ sở dữ liệu nhưng vẫn thuộc nhóm 2xxx, vì lượng gửi lên vượt trạng thái mà người dùng đang thấy và chỉ cần nhập lượng nhỏ hơn trên cùng biểu mẫu (P05, P06). M06 cũng có thể thiếu lượng nhưng trả 4002, vì lượng xác nhận được tính từ bản xem trước và tồn kho đã bị thành viên khác đổi sau đó, nên người dùng phải xem lại cả bản xem trước. Ranh giới thứ hai phân 409 với 422: 409 báo yêu cầu đụng độ một thay đổi khác và có thể hợp lệ sau khi tải lại (\msg{MSG35} nêu tên người vừa thay đổi), còn 422 báo yêu cầu sai quy tắc dù gửi bao nhiêu lần.
+
+Tầng dịch vụ kiểm tra trước để trả lỗi theo từng trường, nhưng khi hai yêu cầu tranh nhau thì ràng buộc của PostgreSQL mới là chốt chặn cuối. Vì vậy mọi ràng buộc được đặt tên, và repository dịch lỗi \texttt{pgconn.PgError} theo SQLSTATE và tên ràng buộc thành lỗi miền có mã cố định như Bảng~\ref{tab:c3-anh-xa-loi}. Nhờ đó cùng một vi phạm luôn cho cùng một phản hồi, dù bị chặn ở bước kiểm tra trước hay ở ràng buộc; lỗi CSDL không có trong bảng trả 500, mã 5000, kèm \texttt{traceId} để đối chiếu nhật ký.
+
+{\scriptsize\renewcommand{\arraystretch}{1.05}
+\begin{longtable}{|L{4.45cm}|C{1.6cm}|C{1.45cm}|L{2.15cm}|L{\dimexpr\textwidth-10\tabcolsep-6\arrayrulewidth-4.45cm-1.6cm-1.45cm-2.15cm\relax}|}
+\caption{Ánh xạ vi phạm ràng buộc cơ sở dữ liệu sang mã phản hồi}\label{tab:c3-anh-xa-loi}\\
+\hline
+\hd{Ràng buộc, tình huống} & \hd{SQLSTATE} & \hd{HTTP, mã} & \hd{Thông điệp, quy tắc} & \hd{API điển hình}\\ \hline
+\endfirsthead
+\multicolumn{5}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Ràng buộc, tình huống} & \hd{SQLSTATE} & \hd{HTTP, mã} & \hd{Thông điệp, quy tắc} & \hd{API điển hình}\\ \hline
+\endhead
+\texttt{uq\_users\_email}: email đã được đăng ký & 23505 & 409, 4003 & MSG03, BR01 & A01\\ \hline
+Khóa chính \texttt{id} do thiết bị sinh đã tồn tại & 23505 & 409, 4003 & -- & P02, S02, S07, M02\\ \hline
+Tên trùng trong danh mục (loại, ký hiệu đơn vị, tên thực phẩm trong cùng loại), mã vạch trùng trong cùng phạm vi & 23505 & 409, 4003 & MSG02, BR22 & D03--D06, D11\\ \hline
+\texttt{uq\_member\_family}: đã thuộc một nhóm gia đình & 23505 & 422, 4004 & MSG08, BR04 & G02, G07\\ \hline
+\texttt{uq\_space\_leader}: nhóm đã có trưởng nhóm khác & 23505 & 409, 4002 & MSG35, BR05 & G09\\ \hline
+\texttt{ck\_lot\_dates}: ngày hết hạn trước ngày mua & 23514 & 400, 2002 & MSG14, BR11 & P02, P04, S14\\ \hline
+\texttt{ck\_lot\_remaining}: lượng còn lại âm, tức lượng dùng hoặc bỏ vượt lượng còn & 23514 & 422, 2003 & MSG17, BR14 & P05, P06\\ \hline
+Khóa ngoại tới mục danh mục đang được tham chiếu khi xóa & 23503 & 422, 4004 & MSG22, BR22 & D05, D06\\ \hline
+Chờ khóa quá \texttt{lock\_timeout} hoặc khóa chết, sau ba lần chạy lại giao dịch & 55P03, 40P01 & 503, 5003 & MSG33 & P05, S14, M06\\ \hline
+\end{longtable}
+}
+
+Bảng~\ref{tab:c3-anh-xa-loi} cho thấy cùng mã 23505 có thể thành ba mã phản hồi tùy ý nghĩa nghiệp vụ. Trùng email hay trùng tên là dữ liệu đã tồn tại (4003); trùng chỉ mục một nhóm gia đình là vi phạm \br{BR04} mà gửi lại bao nhiêu lần vẫn sai (4004); còn trùng chỉ mục một trưởng nhóm chỉ xảy ra khi hai yêu cầu chuyển quyền chạy đồng thời, nên là xung đột (4002). Khóa chính trùng thường do thiết bị gửi lại một lệnh tạo mà mất khóa lũy đẳng, nên ứng dụng xử lý 4003 trên lệnh tạo như đã thành công và tải lại thực thể.
+
+Phía ứng dụng, bộ chặn (interceptor) của dio xử lý mã theo một bảng quyết định. Gặp 3002, ứng dụng gọi A05 (các yêu cầu song song chờ chung một lần làm mới) rồi gửi lại yêu cầu gốc đúng một lần; nhận tiếp 3002, 3001 hoặc 3008 thì xóa phiên; gặp 3009 ở A04 thì chuyển sang màn hình nhập OTP (\uc{UC02}). Gặp 4290, 5003, 5004, 4002 của khóa lũy đẳng đang xử lý hay lỗi mạng, yêu cầu được thử lại theo \texttt{Retry-After} hoặc độ trễ lũy thừa có nhiễu, giữ nguyên \texttt{Idempotency-Key}. Gặp 4002 khác khi phát lại hàng đợi ngoại tuyến, ứng dụng áp trạng thái \texttt{current} và báo người dùng bằng \msg{MSG35}; mã 2xxx và 4004 không bao giờ được thử lại tự động.
+
+% =====================================================================
+\subsection{Danh sách API}\label{ssec:danh-sach-api}
+
+Backend cung cấp 89 mã API chia thành mười nhóm theo module; một số mã quản trị gom nhiều phương thức trên cùng tài nguyên. Mã API được ghi vào tài liệu OpenAPI và làm tiền tố mã test case. Bảng~\ref{tab:c3-danh-sach-api} liệt kê toàn bộ API. Đường dẫn ghi sau tiền tố \path{/it4788/v1}; dấu “\ldots” đứng đầu thay cho \path{/spaces/{sid}}, với \texttt{\{sid\}} là định danh không gian; \texttt{[/\{id\}]} là phần dùng khi thao tác trên một phần tử. Cột UC ghi use case mà API hiện thực; năm API hỗ trợ không gắn use case cụ thể (A05, A16, G01, Y01, Y02) ghi quy tắc hoặc yêu cầu phi chức năng mà chúng phục vụ.
+
+{\scriptsize\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.0}
+\begin{longtable}{|C{0.8cm}|C{1.8cm}|L{5.4cm}|L{\dimexpr\textwidth-10\tabcolsep-6\arrayrulewidth-0.8cm-1.8cm-5.4cm-1.85cm\relax}|C{1.85cm}|}
+\caption{Danh sách API của hệ thống}\label{tab:c3-danh-sach-api}\\
+\hline
+\hd{Mã} & \hd{Method} & \hd{Đường dẫn} & \hd{Chức năng} & \hd{UC}\\ \hline
+\endfirsthead
+\multicolumn{5}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Mã} & \hd{Method} & \hd{Đường dẫn} & \hd{Chức năng} & \hd{UC}\\ \hline
+\endhead
+\multicolumn{5}{|l|}{\hs{Xác thực và tài khoản (module identity)}}\\ \hline
+A01 & POST & \apiPath{/auth/register} & Đăng ký, gửi OTP & UC01\\ \hline
+A02 & POST & \apiPath{/auth/otp/verify} & Xác thực OTP; trả \texttt{resetToken} khi khôi phục & UC02, UC04\\ \hline
+A03 & POST & \apiPath{/auth/otp/resend} & Gửi lại OTP & UC02\\ \hline
+A04 & POST & \apiPath{/auth/login} & Đăng nhập, cấp phiên & UC03\\ \hline
+A05 & POST & \apiPath{/auth/refresh} & Làm mới phiên & BR03\\ \hline
+A06 & POST & \apiPath{/auth/logout} & Đăng xuất, thu hồi phiên & UC05\\ \hline
+A07 & POST & \apiPath{/auth/password/forgot} & Yêu cầu OTP khôi phục & UC04\\ \hline
+A08 & POST & \apiPath{/auth/password/reset} & Đặt lại mật khẩu bằng \texttt{resetToken} & UC04\\ \hline
+A09 & GET & \apiPath{/me} & Xem hồ sơ & UC06\\ \hline
+A10 & PATCH & \apiPath{/me} & Cập nhật hồ sơ & UC06\\ \hline
+A11 & PUT & \apiPath{/me/password} & Đổi mật khẩu, cấp phiên mới & UC07\\ \hline
+A12 & GET & \apiPath{/me/settings} & Xem thiết lập, khung giờ nhắc & UC08\\ \hline
+A13 & PUT & \apiPath{/me/settings} & Lưu thiết lập nhắc nhở & UC08\\ \hline
+A14 & POST & \apiPath{/me/devices} & Đăng ký mã thiết bị FCM & UC31\\ \hline
+A15 & DELETE & \apiPath{/me/devices/{deviceId}} & Hủy đăng ký thiết bị & UC05\\ \hline
+A16 & DELETE & \apiPath{/me} & Xóa tài khoản và dữ liệu & NFR18\\ \hline
+A17 & GET & \apiPath{/me/notifications} & Hộp thư thông báo & UC31\\ \hline
+A18 & POST & \apiPath{/me/notifications/read} & Đánh dấu đã đọc & UC31\\ \hline
+\multicolumn{5}{|l|}{\hs{Không gian và nhóm gia đình (module household)}}\\ \hline
+G01 & GET & \apiPath{/spaces} & Các không gian của người dùng & BR04\\ \hline
+G02 & POST & \apiPath{/spaces} & Tạo nhóm, sao chép dữ liệu cá nhân & UC09\\ \hline
+G03 & GET & \ldots & Nhóm, thành viên, hoạt động gần đây & UC12\\ \hline
+G04 & PATCH & \ldots & Đổi tên, ảnh nhóm & UC12\\ \hline
+G05 & POST & \ldots\apiPath{/invites} & Tạo mã mời mới & UC10\\ \hline
+G06 & DELETE & \ldots\apiPath{/invites/current} & Thu hồi mã mời & UC10\\ \hline
+G07 & POST & \apiPath{/spaces/join} & Tham gia nhóm bằng mã mời & UC11\\ \hline
+G08 & DELETE & \ldots\apiPath{/members/{userId}} & Xóa thành viên & UC13\\ \hline
+G09 & POST & \ldots\apiPath{/leader-transfer} & Chuyển quyền trưởng nhóm & UC14\\ \hline
+G10 & POST & \ldots\apiPath{/leave} & Rời nhóm & UC15\\ \hline
+\multicolumn{5}{|l|}{\hs{Mua sắm (module shopping)}}\\ \hline
+S01 & GET & \ldots\apiPath{/shopping-lists} & Danh sách, lịch sử theo tháng & UC16, UC22, UC23\\ \hline
+S02 & POST & \ldots\apiPath{/shopping-lists} & Tạo danh sách & UC16\\ \hline
+S03 & GET & \ldots\apiPath{/shopping-lists/{listId}} & Chi tiết danh sách & UC16, UC23\\ \hline
+S04 & PATCH & \ldots\apiPath{/shopping-lists/{listId}} & Sửa tên, ngày, ghi chú & UC16\\ \hline
+S05 & DELETE & \ldots\apiPath{/shopping-lists/{listId}} & Xóa danh sách & UC16\\ \hline
+S06 & POST & \ldots\apiPath{/shopping-lists/{listId}/copy} & Sao chép danh sách & UC18\\ \hline
+S07 & POST & \ldots\apiPath{/shopping-lists/{listId}/items} & Thêm mặt hàng, gộp trùng & UC17\\ \hline
+S08 & PATCH & \ldots\apiPath{/shopping-items/{itemId}} & Sửa mặt hàng & UC17\\ \hline
+S09 & DELETE & \ldots\apiPath{/shopping-items/{itemId}} & Xóa mặt hàng & UC17\\ \hline
+S10 & PUT & \ldots\apiPath{/shopping-items/{itemId}/assignee} & Phân công người mua & UC19\\ \hline
+S11 & DELETE & \ldots\apiPath{/shopping-items/{itemId}/assignee} & Bỏ phân công & UC19\\ \hline
+S12 & POST & \ldots\apiPath{/shopping-items/purchase} & Đánh dấu đã mua & UC20\\ \hline
+S13 & POST & \ldots\apiPath{/shopping-items/{itemId}/undo-purchase} & Hoàn tác đã mua & UC20\\ \hline
+S14 & POST & \ldots\apiPath{/shopping-items/stock} & Chuyển vào tủ lạnh & UC21\\ \hline
+S15 & POST & \ldots\apiPath{/shopping-lists/generate} & Sinh danh sách từ kế hoạch & UC22\\ \hline
+\multicolumn{5}{|l|}{\hs{Tủ lạnh (module pantry, catalog)}}\\ \hline
+P01 & GET & \ldots\apiPath{/lots} & Danh sách lô, bộ lọc, đếm theo loại & UC24, UC43\\ \hline
+P02 & POST & \ldots\apiPath{/lots} & Thêm thực phẩm & UC25\\ \hline
+P03 & GET & \ldots\apiPath{/lots/{lotId}} & Chi tiết lô, biến động & UC24\\ \hline
+P04 & PATCH & \ldots\apiPath{/lots/{lotId}} & Cập nhật lô & UC27\\ \hline
+P05 & POST & \ldots\apiPath{/lots/{lotId}/consume} & Ghi nhận sử dụng (FEFO) & UC28\\ \hline
+P06 & POST & \ldots\apiPath{/lots/{lotId}/discard} & Loại bỏ thực phẩm & UC29\\ \hline
+P07 & GET & \ldots\apiPath{/lots/expiring} & Lô sắp hoặc đã hết hạn & UC30\\ \hline
+P08 & GET & \apiPath{/barcodes/{code}} & Tra cứu mã vạch & UC26\\ \hline
+\multicolumn{5}{|l|}{\hs{Công thức nấu ăn (module recipe)}}\\ \hline
+R01 & GET & \ldots\apiPath{/recipes} & Bộ sưu tập, công thức mẫu & UC34, UC37\\ \hline
+R02 & POST & \ldots\apiPath{/recipes} & Thêm công thức & UC32\\ \hline
+R03 & GET & \ldots\apiPath{/recipes/{recipeId}} & Chi tiết, đối chiếu tủ lạnh & UC34\\ \hline
+R04 & PUT & \ldots\apiPath{/recipes/{recipeId}} & Cập nhật công thức & UC33\\ \hline
+R05 & DELETE & \ldots\apiPath{/recipes/{recipeId}} & Xóa công thức & UC33\\ \hline
+R06 & PUT & \apiPath{/me/favorite-recipes/{recipeId}} & Đánh dấu yêu thích & UC35\\ \hline
+R07 & DELETE & \apiPath{/me/favorite-recipes/{recipeId}} & Bỏ yêu thích & UC35\\ \hline
+R08 & POST & \ldots\apiPath{/recipes/{recipeId}/missing-to-list} & Bổ sung nguyên liệu thiếu & UC36\\ \hline
+R09 & POST & \ldots\apiPath{/recipes/{recipeId}/copy} & Sao chép công thức mẫu vào không gian & UC32, UC52\\ \hline
+\multicolumn{5}{|l|}{\hs{Kế hoạch bữa ăn (module mealplan)}}\\ \hline
+M01 & GET & \ldots\apiPath{/meals} & Lịch bữa ăn theo khoảng ngày & UC38\\ \hline
+M02 & POST & \ldots\apiPath{/meals} & Thêm món vào bữa & UC37\\ \hline
+M03 & PATCH & \ldots\apiPath{/meals/{mealId}} & Sửa món trong lịch & UC39\\ \hline
+M04 & DELETE & \ldots\apiPath{/meals/{mealId}} & Xóa món khỏi lịch & UC39\\ \hline
+M05 & GET & \ldots\apiPath{/recipe-suggestions} & Gợi ý món ăn & UC30, UC40\\ \hline
+M06 & POST & \ldots\apiPath{/meals/{mealId}/cook} & Xác nhận đã nấu & UC41\\ \hline
+\multicolumn{5}{|l|}{\hs{Tìm kiếm và danh mục (module search, catalog)}}\\ \hline
+Q01 & GET & \ldots\apiPath{/search} & Tìm thực phẩm, món ăn, bộ lọc & UC42, UC43\\ \hline
+Q02 & GET & \ldots\apiPath{/foods/suggest} & Gợi ý tên khi gõ & UC25, UC42\\ \hline
+Q03 & GET & \apiPath{/catalog} & Loại, đơn vị, vị trí lưu trữ & UC25, UC43\\ \hline
+\multicolumn{5}{|l|}{\hs{Báo cáo (module report)}}\\ \hline
+B01 & GET & \ldots\apiPath{/reports/spending} & Báo cáo chi tiêu & UC44\\ \hline
+B02 & GET & \ldots\apiPath{/reports/consumption} & Báo cáo tiêu thụ & UC45\\ \hline
+B03 & GET & \ldots\apiPath{/reports/waste} & Báo cáo lãng phí & UC46\\ \hline
+B04 & POST & \ldots\apiPath{/reports/exports} & Yêu cầu xuất PDF, CSV (202) & UC47\\ \hline
+B05 & GET & \ldots\apiPath{/reports/exports/{exportId}} & Trạng thái, URL ký sẵn của tệp & UC47\\ \hline
+\multicolumn{5}{|l|}{\hs{Đồng bộ và tệp (module sync, media)}}\\ \hline
+Y01 & GET & \ldots\apiPath{/changes} & Kéo thay đổi theo \texttt{seq} & NFR11\\ \hline
+Y02 & GET & \apiPath{/ws} & WebSocket gợi ý thay đổi & NFR10\\ \hline
+Y03 & POST & \apiPath{/media/upload-urls} & Cấp URL ký sẵn tải ảnh & UC06, UC25, UC32\\ \hline
+Y04 & POST & \apiPath{/media/{objectId}/complete} & Xác nhận tải ảnh xong & UC06, UC25, UC32\\ \hline
+\multicolumn{5}{|l|}{\hs{Quản trị hệ thống (module admin, catalog, recipe)}}\\ \hline
+D01 & GET & \apiPath{/admin/users} & Tra cứu tài khoản & UC48\\ \hline
+D02 & PATCH & \apiPath{/admin/users/{userId}} & Khóa, mở khóa; cấp, thu hồi quyền quản trị & UC48\\ \hline
+D03 & GET, POST & \apiPath{/admin/foods} & Xem, thêm thực phẩm & UC49\\ \hline
+D04 & PUT, DELETE & \apiPath{/admin/foods/{foodId}} & Sửa, ngừng thực phẩm & UC49\\ \hline
+D05 & GET, POST, PUT, DELETE & \apiPath{/admin/food-categories[/{id}]} & Quản lý loại mặt hàng & UC50\\ \hline
+D06 & GET, POST, PUT, DELETE & \apiPath{/admin/units[/{id}]} & Quản lý đơn vị đo & UC51\\ \hline
+D07 & GET, POST, PUT, DELETE & \apiPath{/admin/recipe-templates[/{id}]} & Quản lý công thức mẫu & UC52\\ \hline
+D08 & GET & \apiPath{/admin/configs} & Xem tham số hệ thống & UC53\\ \hline
+D09 & PUT & \apiPath{/admin/configs} & Cập nhật nhiều tham số trong một giao dịch & UC53\\ \hline
+D10 & GET & \apiPath{/admin/audit-logs} & Nhật ký quản trị & UC48, UC53\\ \hline
+D11 & POST & \apiPath{/admin/foods/{foodId}/review} & Duyệt hoặc gộp thực phẩm riêng & UC49\\ \hline
+\end{longtable}
+}
+
+Quyền truy cập được gắn theo nhóm đường dẫn ngay ở bộ định tuyến, với năm mức. API công khai A01--A05, A07, A08 chỉ chịu giới hạn tần suất theo địa chỉ IP. API của người dùng đã đăng nhập gồm phần còn lại của nhóm A cùng G01, G02, G07, R06, R07, P08, Q03, Y02--Y04, chỉ chạm tới dữ liệu của chính người gọi hoặc danh mục dùng chung; R06 và Y03 kiểm tra thêm quyền trên đối tượng đích. API của thành viên không gian là mọi đường dẫn chứa \texttt{\{sid\}}, kể cả Q02 vì gợi ý gồm thực phẩm riêng của không gian; người không phải thành viên nhận 404, mã 4001, thay vì 403 để không xác nhận không gian có tồn tại (\br{BR23}). API của trưởng nhóm gồm G04--G06, G08, G09, S10, S11, còn R04, R05 cho phép người tạo công thức hoặc trưởng nhóm; người thiếu vai trò nhận 403, mã 3007 (\msg{MSG13}). API quản trị D01--D11 yêu cầu \texttt{system\_role = admin}. Quản trị viên vẫn là người dùng nên dùng được không gian của chính mình, nhưng vai trò hệ thống không thay cho tư cách thành viên nên không đọc được dữ liệu của nhóm khác. Y02 nâng cấp lên WebSocket sau khi xác thực; máy chủ gửi \texttt{ping} mỗi 25 giây, đóng kết nối nếu không có \texttt{pong} sau 10 giây và đóng với mã 4401 khi mã truy cập hết hạn. Các điểm cuối vận hành \path{/healthz}, \path{/readyz}, \path{/metrics} chỉ mở trong mạng nội bộ Docker.
+
+
+\subsection{Đặc tả chi tiết API}\label{ssec:dac-ta-api}
+
+Mục này đặc tả chi tiết hai API tiêu biểu theo đúng mẫu của học phần: A04 Đăng nhập đại diện cho nhóm API an toàn phiên, M06 Xác nhận đã nấu đại diện cho nhóm giao dịch trải nhiều module với trừ kho theo FEFO, lũy đẳng và kiểm soát đồng thời. Mỗi API có một bảng gồm phần đặc tả và phần test case dự kiến, kèm ví dụ yêu cầu, phản hồi. Đặc tả chi tiết của các API có rủi ro thiết kế cao khác, gồm A05, G07, S12 và S14, S15, P05, M05, Y01, cùng bảng tham số và hành vi bổ sung của các API còn lại được trình bày ở Phụ lục~\ref{pl:dac-ta-api}.
+
+% ---------------------------------------------------------------------
+\subsubsection{A04 – Đăng nhập}\label{sssec:api-a04}
+
+A04 hiện thực \uc{UC03} (Bảng~\ref{tab:c3-api-a04}, Mã nguồn~\ref{code:c3-api-a04}). Email không tồn tại vẫn được xác minh trên một chuỗi băm giả, còn trạng thái bị quản trị viên khóa (\texttt{disabled}) hay chưa xác thực (\texttt{pending}) chỉ lộ ra sau khi mật khẩu đúng, nên người không biết mật khẩu không dò được tình trạng tài khoản. Ngược lại, khóa tạm do sai mật khẩu (\texttt{locked}) trả 423 trước cả bước xác minh: nếu vẫn so mật khẩu, khác biệt giữa 401 và 423 sẽ cho kẻ dò biết mật khẩu đúng ngay trong thời gian khóa. Mỗi lần đăng nhập thu hồi họ phiên cũ của cùng thiết bị, nên đăng nhập lại sau khi mất phản hồi là vô hại.
+
+\begin{apispec}{Đặc tả và test case dự kiến của API A04 -- Đăng nhập}{tab:c3-api-a04}{tab:c3-tc-a04}
+\apirow{URL, quyền}{\texttt{POST} \path{/it4788/v1/auth/login}; công khai, 10 yêu cầu/phút/IP; không dùng \texttt{Idempotency-Key}.}
+\apirow{Yêu cầu}{\texttt{email}: chuỗi, bắt buộc, đúng định dạng, $\le$ 100 ký tự; \texttt{password}: chuỗi, bắt buộc, 1--128 ký tự; \texttt{deviceId}: UUID, bắt buộc, sinh khi cài ứng dụng.}
+\apirow{Phản hồi}{200, 1000: \texttt{accessToken}, \texttt{tokenType}, \texttt{expiresIn = 1800}, \texttt{refreshToken}, \texttt{refreshExpiresAt}, \texttt{user}, \texttt{lastSpaceId} (không gian mở khi vào ứng dụng).}
+\apirow{Mã lỗi}{2001 (MSG01); 2002 (MSG02); 3003 sai email hoặc mật khẩu (MSG05); 3004 với HTTP 423 khi \texttt{locked}, kèm \texttt{Retry-After} (MSG06); 3005 khi \texttt{disabled} (MSG21); 3009 khi \texttt{pending} (MSG34), máy chủ gửi OTP mới nếu còn trong giới hạn của BR02.}
+\tchead
+\tcrow{TC-A04-01}{Đăng nhập hợp lệ}{Tài khoản \texttt{active}, bộ đếm sai bằng 2, email khác hoa thường}{200, 1000; bộ đếm về 0; thêm một phiên với \texttt{family\_id} mới}
+\tcrow{TC-A04-02}{Thiếu trường}{Không có \texttt{password}}{400, 2001, \texttt{field = "password"}; CSDL không đổi}
+\tcrow{TC-A04-03}{Biên ngưỡng khóa}{Bộ đếm bằng 3 rồi 4, mật khẩu sai; ngay sau đó mật khẩu đúng}{Lần thứ tư: 401, 3003. Lần thứ năm: 423, 3004, \texttt{locked\_until} được đặt. Mật khẩu đúng sau đó vẫn nhận 423, không tạo phiên}
+\tcrow{TC-A04-04}{Không lộ thông tin}{(a) Email chưa đăng ký; (b) tài khoản \texttt{disabled} hoặc \texttt{pending}, mật khẩu sai}{Cả hai: 401, 3003, thân phản hồi giống hệt ca sai mật khẩu thông thường}
+\tcrow{TC-A04-05}{Trạng thái tài khoản}{Mật khẩu đúng; (a) \texttt{locked}, \texttt{locked\_until} còn 10 phút; (b) \texttt{disabled}; (c) \texttt{pending}}{(a) 423, 3004 (MSG06), \texttt{Retry-After} 600; (b) 403, 3005 (MSG21); (c) 403, 3009 (MSG34), thêm một dòng \texttt{otp\_challenges}; cả ba không tạo phiên}
+\end{apispec}
+
+\apiNeed{3.4cm}\codecaption{Ví dụ yêu cầu và phản hồi của A04}{code:c3-api-a04}
+\begin{Verbatim}[fontsize=\scriptsize]
+POST /it4788/v1/auth/login                               X-Platform: android
+{ "email": "lan.nguyen@example.com", "password": "Bep@2026an",
+  "deviceId": "0192f3a1-7c2e-7b10-9a4f-1d2e3f405162" }
+HTTP/1.1 200 OK
+{ "code": 1000, "message": "Thành công",
+  "data": { "accessToken": "eyJhbGciOiJFZERTQSIs...", "expiresIn": 1800,
+    "refreshToken": "q3v9Xb7tLk2...wYc8", "lastSpaceId": "0192f0ab-...",
+    "user": { "id": "0192f0aa-...", "fullName": "Nguyễn Thị Lan" } } }
+\end{Verbatim}
+
+% ---------------------------------------------------------------------
+\subsubsection{M06 – Xác nhận đã nấu}\label{sssec:api-m06}
+
+M06 hiện thực \uc{UC41} theo Hình~\ref{fig:seq-xac-nhan-nau} (Bảng~\ref{tab:c3-api-m06}). Bản xem trước do ứng dụng tính từ bản sao cục bộ, nên yêu cầu mang lượng trừ đã xác nhận cho từng nguyên liệu: 0 là lấy ngoài tủ, \texttt{lotIds} chọn rõ lô quá hạn. Nếu tồn kho đã giảm, máy chủ trả 409, mã 4002, kèm lượng mới chứ không phải 2003 như P05, vì lượng xác nhận được tính từ bản xem trước mà tồn kho đã bị người khác đổi sau đó (Mã nguồn~\ref{code:c3-api-m06}). Món đã \texttt{cooked} được xét trước \texttt{If-Match} và nhận 200 với \texttt{alreadyCooked = true}, không trừ kho lần hai. Giao dịch theo thứ tự khóa toàn cục: khóa lũy đẳng, món, các lô theo \texttt{food\_id} rồi \texttt{(expires\_on, id)}, cuối cùng mới tăng \texttt{change\_seq}. Giao dịch đặt \texttt{lock\_timeout} 3 giây và tự chạy lại tối đa ba lần khi gặp khóa chết (40P01) hoặc chờ khóa quá hạn (55P03), hết lượt thì trả 503, mã 5003. Mức cô lập là READ COMMITTED với khóa dòng tường minh, nên lỗi tuần tự hóa 40001 không phát sinh.
+
+\begin{apispec}{Đặc tả và test case dự kiến của API M06 -- Xác nhận đã nấu}{tab:c3-api-m06}{tab:c3-tc-m06}
+\apirow{URL, quyền}{\texttt{POST} \path{/it4788/v1/spaces/{sid}/meals/{mealId}/cook}; thành viên không gian; \texttt{Idempotency-Key}, \texttt{If-Match: "<version>"}.}
+\apirow{Yêu cầu}{\texttt{servings}: 1--20; \texttt{skipStock}: mặc định \texttt{false}; \texttt{lines} (bắt buộc khi trừ kho), mỗi dòng một nguyên liệu: \texttt{foodId}, \texttt{quantity} ($\ge$ 0, tối đa hai chữ số thập phân), \texttt{unitId}, \texttt{lotIds} (tùy chọn).}
+\apirow{Phản hồi}{200, 1000: \texttt{meal} (\texttt{status = cooked}, \texttt{cookedAt}, \texttt{cookedBy}, \texttt{version}), \texttt{deductions} (\texttt{foodId}, \texttt{lotId}, \texttt{quantity}), \texttt{alreadyCooked}.}
+\apirow{Mã lỗi}{2001; 2002 (MSG16); 4001; 4002 \texttt{If-Match} không khớp hoặc tồn kho không đủ (MSG35, \texttt{current} chứa lượng tồn mới); 4004 \texttt{rule = "BR18"} khi món chưa đến ngày nấu hoặc không gắn công thức; 5003 hết ba lần chạy lại.}
+\tchead
+\tcrow{TC-M06-01}{Hợp lệ, một nguyên liệu lấy ngoài}{4 khẩu phần, công thức chuẩn 2; lượng theo bản xem trước, me bằng 0}{200; mỗi lô bị trừ có một dòng \texttt{cook}, không có dòng nào cho me; món \texttt{cooked}, \texttt{version} tăng 1}
+\tcrow{TC-M06-02}{Dữ liệu sai, biên ngày}{(a) \texttt{quantity} bằng $-$0,5 hoặc 0,125; (b) \texttt{meal\_date} là ngày mai, đối chứng hôm nay}{(a) 400, 2002; (b) 422, 4004, \texttt{rule = "BR18"}; đối chứng: 200}
+\tcrow{TC-M06-03}{Tồn kho giảm đồng thời}{Giữa xem trước và xác nhận, thành viên khác dùng bớt cá lóc}{409, 4002 kèm \texttt{current}; không lô nào bị trừ, món vẫn \texttt{planned}}
+\tcrow{TC-M06-04}{Bỏ qua trừ kho}{\texttt{skipStock = true}}{200; món \texttt{cooked}; \texttt{food\_lots}, \texttt{stock\_movements} không đổi}
+\tcrow{TC-M06-05}{Món đã thay đổi}{(a) Đã \texttt{cooked} trên thiết bị khác, khóa lũy đẳng mới; (b) \texttt{If-Match: "3"}, món đã ở \texttt{version} 4}{(a) 200, \texttt{alreadyCooked = true}, không trừ kho lần hai; (b) 409, 4002, không ghi}
+\end{apispec}
+
+\apiNeed{3.4cm}\codecaption{Ví dụ yêu cầu và phản hồi xung đột của M06}{code:c3-api-m06}
+\begin{Verbatim}[fontsize=\scriptsize]
+POST /it4788/v1/spaces/0192e8b1-.../meals/0192f5b0-.../cook    If-Match: "3"
+{ "servings": 4, "skipStock": false, "lines": [
+    { "foodId": "0192a0c2-...", "quantity": 0.8, "unitId": "<kg>" },
+    { "foodId": "0192a0f1-...", "quantity": 0, "unitId": "<g>" } ] }
+HTTP/1.1 409 Conflict
+{ "code": 4002,
+  "message": "Dữ liệu vừa được Minh thay đổi. Vui lòng xem lại trước...",
+  "errors": [ { "field": "lines[0].quantity", "rule": "BR14",
+    "message": "Tồn kho hiện chỉ còn 0,5 kg.",
+    "current": { "available": 0.5, "unitId": "<kg>" } } ] }
+\end{Verbatim}
+
+\subsection{Tài liệu OpenAPI và sinh mã client}\label{ssec:openapi}
+
+Tệp \path{api/openapi.yaml} theo OpenAPI 3.1~\cite{openapi} là nguồn sự thật của hợp đồng, được viết và duyệt trước khi có mã nguồn (contract-first). Mã máy chủ, mã ứng dụng và tài liệu đều sinh từ tệp này, nên hai phía không thể lệch nhau âm thầm, và phía ứng dụng làm việc được với máy chủ giả lập (mock) sinh từ cùng tệp ngay từ đầu. Mỗi thao tác có \texttt{operationId} mô tả hành động, phần mở rộng \texttt{x-api-id} ghi mã API của Bảng~\ref{tab:c3-danh-sach-api}, và tham chiếu thành phần dùng chung như cấu trúc bao, header \texttt{Idempotency-Key}, kiểu \texttt{Quantity}, như đoạn đặc tả P05 ở Mã nguồn~\ref{code:c3-openapi}.
+
+\apiNeed{3.4cm}\codecaption{Đoạn đặc tả OpenAPI của API P05}{code:c3-openapi}
+\begin{Verbatim}[fontsize=\scriptsize]
+/spaces/{sid}/lots/{lotId}/consume:
+  post:
+    operationId: consumeLot
+    x-api-id: P05                      # UC28; BR14, BR15, BR16
+    security: [ { bearerAuth: [] } ]
+    parameters:
+      - $ref: '#/components/parameters/SpaceId'
+      - $ref: '#/components/parameters/LotId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [quantity, unitId]
+            additionalProperties: false
+            properties:
+              quantity: { $ref: '#/components/schemas/Quantity' }
+              unitId: { type: string, format: uuid }
+              strategy: { type: string, enum: [fefo, lot], default: fefo }
+    responses:
+      '200': { $ref: '#/components/responses/ConsumeResult' }
+      '4XX': { $ref: '#/components/responses/Error' }
+\end{Verbatim}
+
+Công cụ oapi-codegen sinh cho Go kiểu dữ liệu và giao diện máy chủ dạng chặt (strict) gắn với chi, nên thiếu một API hay trả sai kiểu là lỗi biên dịch; \texttt{additionalProperties: false} chặn gán hàng loạt các trường như \texttt{spaceId}. Phía ứng dụng, openapi-generator với bộ sinh \texttt{dart-dio} tạo gói Dart cho ứng dụng Flutter, trên đó các interceptor ở mục~\ref{ssec:ma-phan-hoi} được cấu hình một lần. Ở stage verify của GitLab CI (mục~\ref{sec:trien-khai}), mã được sinh lại và so với bản đã commit; Spectral kiểm tra các luật riêng như mọi \texttt{POST} ghi ngoài nhóm công khai khai báo \texttt{Idempotency-Key}, mọi \texttt{If-Match} chỉ xuất hiện trên thao tác có trong danh sách thực thể có \texttt{version}, mọi đường dẫn chứa \texttt{\{sid\}} khai báo 404, mọi lỗi dùng cấu trúc bao chung; tệp còn được so với nhánh chính để chặn thay đổi phá vỡ hợp đồng trong \texttt{v1}. Vì các bộ sinh mã chưa hỗ trợ đều mọi cấu trúc riêng của OpenAPI 3.1, nhóm chỉ dùng tập cấu trúc mà cả hai bộ sinh xử lý được.
+
+Khi \texttt{v2} phát hành, \texttt{v1} được giữ song song ít nhất sáu tháng: phản hồi của \texttt{v1} mang \texttt{Deprecation} và \texttt{Sunset}, giám sát thống kê lưu lượng theo phiên bản API và \texttt{X-App-Version}, rồi mức phiên bản ứng dụng tối thiểu được nâng để bản cũ nhận 426 trước ngày gỡ \texttt{v1}. Kiểm kê đầy đủ phiên bản đang mở cũng là biện pháp cho rủi ro API9 của OWASP~\cite{owaspapi}. Tài liệu tương tác Swagger UI sinh từ cùng tệp chỉ mở trên staging trong mạng nội bộ của nhóm, không công bố ở production; như vậy một tệp duy nhất vừa là hợp đồng, vừa sinh mã hai phía và tài liệu, đáp ứng \nfr{NFR20}.

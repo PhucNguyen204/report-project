@@ -7,7 +7,7 @@
 \documentclass[a4paper,12pt,oneside]{report}
 \input{config/preamble}
 
-% Mặc định không biên dịch Chương 3–6 và phần kết luận vì đây vẫn là bản khung.
+% Mặc định không biên dịch Chương 4–6 và phần kết luận vì đây vẫn là bản khung.
 \newif\ifshowpending
 \showpendingfalse
 
@@ -37,9 +37,9 @@
 
 \input{chapters/chuong1}
 \input{chapters/chuong2}
+\input{chapters/chuong3}
 
 \ifshowpending
-  \input{chapters/chuong3}
   \input{chapters/chuong4}
   \input{chapters/chuong5}
   \input{chapters/chuong6}

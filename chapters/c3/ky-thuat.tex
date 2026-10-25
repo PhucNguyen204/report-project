@@ -1,0 +1,258 @@
+% ---------------------------------------------------------------------
+%  3.4.5. Các kỹ thuật nổi bật trong thiết kế (nối tiếp mục 3.4)
+% ---------------------------------------------------------------------
+\subsection{Các kỹ thuật nổi bật trong thiết kế}\label{ssec:ky-thuat}
+
+Phần này trình bày tám kỹ thuật cho những tình huống dễ làm hệ thống sai lệch: ghi đồng thời, mất mạng, tiến trình dừng giữa chừng và dịch vụ ngoài gặp sự cố. Mỗi kỹ thuật đi theo trình tự vấn đề, giải pháp và đánh đổi, dựa trên ba nguyên tắc chung: PostgreSQL là nguồn dữ liệu gốc duy nhất; Redis, Elasticsearch, kênh WebSocket và thông báo đẩy được phép mất dữ liệu tạm thời mà không làm mất dữ liệu nghiệp vụ; mọi thao tác có thể bị lặp lại đều phải lũy đẳng (idempotent).
+
+% ---------------------------------------------------------------------
+\subsubsection{Giao dịch nguyên tử và khóa dòng khi trừ kho theo FEFO}\label{sssec:kt-fefo}
+
+\uc{UC41} và \uc{UC28} trừ nhiều lô trong một lần thao tác, trong khi nhiều thành viên dùng chung một tủ lạnh. Nếu dịch vụ đọc lượng còn lại rồi ghi giá trị mới, hai giao dịch có thể cùng đọc 0,5 kg và cùng trừ 0,4 kg, làm mất một lần cập nhật (lost update) và vi phạm \br{BR14}. Nhóm dùng một giao dịch duy nhất ở mức cô lập READ COMMITTED kết hợp khóa dòng tường minh \texttt{SELECT ... FOR UPDATE}~\cite{postgresql}, đáp ứng yêu cầu cập nhật nguyên tử của \nfr{NFR11} và \nfr{NFR13}. Hình~\ref{fig:seq-xac-nhan-nau} thể hiện trình tự xác nhận đã nấu theo đúng ranh giới module: mealplan điều phối, pantry sở hữu dữ liệu tồn kho.
+
+\diagram[\textwidth]{c3-14-seq-xac-nhan-nau}{Biểu đồ tuần tự xác nhận đã nấu với giao dịch nguyên tử và khóa dòng}{fig:seq-xac-nhan-nau}
+
+\texttt{MealHandler} chỉ giải mã thân yêu cầu \texttt{\{servings, lines[], skipStock\}}, trong đó \texttt{lines[]} là lượng người dùng đã xác nhận ở bước 5 của \uc{UC41}, có thể kèm lô chọn đích danh, rồi gọi \texttt{MealPlanService.Cook(ctx, CookCmd)}. Câu đầu tiên của giao dịch là chèn khóa lũy đẳng (bước 3, xem mục~\ref{sssec:kt-ngoai-tuyen}); món ăn bị khóa ngay sau đó (bước 4), nên yêu cầu lặp lại hoặc yêu cầu từ thiết bị khác thấy trạng thái \texttt{cooked} và nhận kết quả cũ mà không trừ kho lần hai (bước 6b của use case, bước 5--7 của hình). Khi người dùng chọn “Bỏ qua trừ kho” (bước 5a), khối \texttt{opt} bị bỏ qua và món chỉ đổi trạng thái. Ngược lại, \texttt{MealPlanService} lấy định lượng qua cổng \texttt{RecipeQuery.Ingredients}, nhân theo tỷ lệ khẩu phần, điều chỉnh theo \texttt{lines[]}, sắp theo \texttt{food\_id} rồi giao cho cổng \texttt{StockConsumer.ConsumeForMeal}. Module mealplan không đọc hay ghi bảng nào của pantry: \texttt{PantryService} hiện thực cổng này và chạy trong chính \texttt{pgx.Tx} mà \texttt{TxManager} truyền qua \texttt{context}. \texttt{FEFOAllocator} là hàm thuần của tầng miền pantry: quy đổi lượng về đơn vị cơ sở (\br{BR16}), rồi trừ dần từ lô hết hạn sớm nhất theo \br{BR15}, sau khi sắp lại thứ tự trong bộ nhớ vì \texttt{ORDER BY} kèm \texttt{FOR UPDATE} có thể trả thứ tự lệch khi cột sắp xếp vừa bị sửa đồng thời. Lô quá hạn không bao giờ lọt vào truy vấn ở bước 10, trừ lô người dùng chọn đích danh (bước 4b). Bảng xem trước ở bước 4 của use case được ứng dụng tính từ bản sao cục bộ nên có thể đã cũ; nếu lượng còn lại sau khi khóa nhỏ hơn lượng đã xác nhận, cả giao dịch bị hủy và trả 409 mã 4002 kèm tồn kho mới để ứng dụng báo \msg{MSG35} (bước 6a). Sau commit, API xóa bộ đệm gợi ý \texttt{suggest:\{sid\}} và phát gợi ý thời gian thực (bước 21); mỗi lô bị trừ còn có một dòng \texttt{stock\_movements} gắn với món ăn để phục vụ \uc{UC45}.
+
+Mọi phép so sánh ngày nghiệp vụ dùng tham số \texttt{\$today}, là ngày theo múi giờ Asia/Ho\_Chi\_Minh do gói \texttt{platform/clock} cấp, thay cho hàm \texttt{current\_date}. Phiên CSDL chạy theo UTC, nên trong khoảng 00:00--07:00 giờ Việt Nam \texttt{current\_date} vẫn là ngày hôm trước và lô vừa hết hạn hôm qua sẽ bị coi là còn hạn, vi phạm \br{BR15}; tham số hóa ngày còn cho phép kiểm thử tất định bằng đồng hồ giả. Mã nguồn~\ref{code:c3-sql-fefo} trình bày các câu lệnh cốt lõi do sqlc sinh thành hàm Go.
+
+\codecaption{Các câu lệnh SQL cốt lõi của giao dịch trừ kho theo FEFO}{code:c3-sql-fefo}
+\begin{Verbatim}
+-- $3 = $today: ngày Asia/Ho_Chi_Minh do platform/clock cấp
+-- Mỗi nguyên liệu, theo food_id tăng dần: khóa các lô còn hạn (BR15)
+SELECT id, remaining_qty, unit_factor, expires_on
+  FROM pantry.food_lots
+ WHERE space_id = $1 AND food_id = $2 AND lifecycle = 'active'
+   AND deleted_at IS NULL AND remaining_qty > 0
+   AND expires_on >= $3          -- lô quá hạn không trừ tự động
+ ORDER BY expires_on, id FOR UPDATE;
+
+-- Trừ từng lô theo kết quả phân bổ; về 0 thì chuyển consumed (BR14)
+UPDATE pantry.food_lots
+   SET remaining_qty = remaining_qty - $2, version = version + 1,
+       lifecycle = CASE WHEN remaining_qty = $2
+                        THEN 'consumed' ELSE lifecycle END
+ WHERE id = $1 AND remaining_qty >= $2;
+
+-- Nhật ký tiêu thụ gắn với món ăn (UC45); bảng chỉ ghi thêm
+INSERT INTO pantry.stock_movements (id, lot_id, space_id, kind,
+       quantity, unit_id, meal_entry_id, actor_id, occurred_at)
+VALUES ($1, $2, $3, 'cook', $4, $5, $6, $7, now());
+
+-- Cấp số thứ tự thay đổi: luôn là câu khóa cuối cùng trước COMMIT
+UPDATE household.spaces SET change_seq = change_seq + 1
+ WHERE id = $1 RETURNING change_seq;
+\end{Verbatim}
+
+READ COMMITTED đủ an toàn vì khi \texttt{FOR UPDATE} phải chờ, PostgreSQL đánh giá lại điều kiện \texttt{WHERE} trên phiên bản mới nhất của dòng, nên lô vừa bị trừ về 0 tự rơi khỏi kết quả; SERIALIZABLE chỉ phát hiện xung đột lúc commit và buộc chạy lại cả giao dịch. Rủi ro còn lại là bế tắc (deadlock) khi hai giao dịch khóa cùng tập dòng theo thứ tự ngược nhau. Bảng~\ref{tab:c3-thu-tu-khoa} quy định thứ tự khóa toàn cục mà mọi giao dịch ghi trong hệ thống phải tuân theo, không riêng giao dịch trừ kho.
+
+{\small
+\begin{longtable}{|C{1.0cm}|L{2.7cm}|L{6.0cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-1.0cm-2.7cm-6.0cm\relax}|}
+\caption{Thứ tự khóa toàn cục trong giao dịch ghi}\label{tab:c3-thu-tu-khoa}\\
+\hline
+\hd{Bậc} & \hd{Đối tượng khóa} & \hd{Cách lấy khóa, thứ tự trong bậc} & \hd{Thao tác áp dụng}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Bậc} & \hd{Đối tượng khóa} & \hd{Cách lấy khóa, thứ tự trong bậc} & \hd{Thao tác áp dụng}\\ \hline
+\endhead
+1 & Khóa lũy đẳng & \texttt{INSERT INTO sync.idempotency\_keys ... ON CONFLICT DO NOTHING}, câu đầu tiên của giao dịch & Mọi lệnh ghi có \texttt{Idempotency-Key}\\ \hline
+2 & Khóa tư vấn theo không gian & \texttt{pg\_advisory\_xact\_lock(}\linebreak\texttt{hashtext(space\_id::text))}, tự nhả khi giao dịch kết thúc & G05--G10: mã mời, xóa thành viên, chuyển quyền, rời nhóm; G07 tra mã mời trước để biết \texttt{space\_id}\\ \hline
+3 & Dòng thành viên & \texttt{space\_members} theo \texttt{user\_id} tăng dần; \texttt{FOR SHARE} khi chỉ kiểm vai trò, \texttt{FOR UPDATE} khi đổi vai trò hoặc xóa & G08--G10, S10, S11\\ \hline
+4 & Thực thể nghiệp vụ & Danh sách trước mặt hàng, công thức trước món ăn; cùng loại theo \texttt{id} tăng dần; \texttt{SELECT ... FOR UPDATE} hoặc \texttt{UPDATE ... WHERE id} & S04--S14, R04, R05, M02--M04, M06\\ \hline
+5 & Lô thực phẩm & Theo \texttt{(food\_id, expires\_on, id)}, \texttt{FOR UPDATE} & P04--P06, M06; S14 chỉ chèn lô mới\\ \hline
+6 & Bộ đếm thay đổi & \texttt{UPDATE household.spaces SET change\_seq = change\_seq + 1 ... RETURNING}, câu khóa cuối cùng trước \texttt{COMMIT} & Mọi giao dịch ghi thực thể đồng bộ\\ \hline
+\end{longtable}
+}
+
+Mọi giao dịch chỉ xin khóa theo chiều tăng của cột Bậc, và trong cùng bậc theo thứ tự ghi ở cột thứ ba, nên không thể hình thành chu trình chờ: một chu trình đòi hỏi ít nhất một giao dịch đang giữ khóa đứng sau lại chờ khóa đứng trước, điều mà thứ tự toàn phần này loại trừ. Dòng \texttt{household.spaces} chỉ bị khóa ở bậc 6, sau mọi khóa khác; mọi giao dịch ghi của không gian đều cần dòng này, nhưng không giao dịch nào giữ nó trong lúc chờ khóa khác, nên nó không thể nằm trong chu trình. Thời gian giữ ngắn chỉ giảm tranh chấp chứ không phải lý do loại trừ bế tắc, và đó cũng là lý do thiết kế không khóa dòng không gian \texttt{FOR UPDATE} ở đầu giao dịch. Các thao tác đổi thành viên, vai trò và mã mời cần tuần tự hóa theo không gian suốt giao dịch nên dùng khóa tư vấn ở bậc 2; G07 tra mã mời không khóa để lấy \texttt{space\_id} rồi mới xin khóa này. Hai nguồn khóa ngầm cũng đã được xét: kiểm tra khóa ngoại lấy \texttt{FOR KEY SHARE} trên dòng được tham chiếu, không xung đột với \texttt{FOR NO KEY UPDATE} của câu cấp \texttt{change\_seq} vì cột này không thuộc khóa; chèn trùng chỉ mục duy nhất phải chờ giao dịch đang chèn cùng khóa, điều chỉ xảy ra ở bậc 1. Dù vậy, \texttt{TxManager} vẫn đặt \texttt{lock\_timeout} 3 giây và tự chạy lại tối đa ba lần khi gặp mã lỗi 40P01 (\texttt{deadlock\_detected}) hoặc 55P03 (\texttt{lock\_not\_available}, khi vượt \texttt{lock\_timeout}) để phòng lỗi lập trình làm sai thứ tự; ở READ COMMITTED không phát sinh 40001 nên mã này không nằm trong danh sách thử lại. Chạy lại an toàn vì giao dịch bị hủy không để lại dấu vết, kể cả khóa lũy đẳng; hết ba lần, API trả 503 mã 5003 (\msg{MSG33}). Đánh đổi là các thao tác ghi trong cùng một không gian bị tuần tự hóa trong thời gian rất ngắn, không đáng kể với nhóm tối đa 10 người (\br{BR05}).
+
+% ---------------------------------------------------------------------
+\subsubsection{Hộp thư đi giao dịch (transactional outbox) với River}\label{sssec:kt-outbox}
+
+Khi một thành viên mua thay người được giao (bước 2a của \uc{UC20}), hệ thống phải vừa cập nhật CSDL vừa gửi thông báo đẩy. Gửi sau commit thì tiến trình có thể dừng giữa chừng làm mất thông báo, gửi trước commit thì giao dịch có thể bị hủy sau khi đã báo: bài toán ghi kép (dual write)~\cite{kleppmann}. Theo mẫu hộp thư đi giao dịch~\cite{richardson}, giao dịch nghiệp vụ chỉ ghi “ý định gửi” vào CSDL, một tiến trình khác thực hiện việc gửi; với River~\cite{river}, bảng \texttt{river\_job} là hộp thư đi và worker là bộ chuyển tiếp, như Hình~\ref{fig:seq-outbox-mua-hang}.
+
+\diagram[\textwidth]{c3-15-seq-outbox-mua-hang}{Biểu đồ tuần tự đánh dấu đã mua với hộp thư đi giao dịch}{fig:seq-outbox-mua-hang}
+
+Sau khóa lũy đẳng, \texttt{ShoppingService.MarkPurchased} khóa danh sách trước rồi lần lượt từng mặt hàng theo \texttt{id}, đúng bậc 4 của Bảng~\ref{tab:c3-thu-tu-khoa}. Mỗi mặt hàng được chuyển bằng một câu \texttt{UPDATE} có điều kiện \texttt{status IN ('to\_buy', 'assigned')} kèm \texttt{RETURNING} (bước 3): khi hai thiết bị cùng đánh dấu, câu của giao dịch đến sau phải chờ, đánh giá lại điều kiện trên dòng mới và không cập nhật được dòng nào. Đây là cách hiện thực quy tắc “giữ bản ghi sớm hơn” ở bước 6a của \uc{UC20}: lệnh được máy chủ ghi nhận trước thắng, vì đồng hồ thiết bị không đáng tin, còn \texttt{purchasedAt} do ứng dụng gửi chỉ dùng để hiển thị và báo cáo. Với yêu cầu chỉ có một mặt hàng, trường hợp của thao tác chạm ô đánh dấu và của phát lại ngoại tuyến, lệnh thua nhận 409 mã 4002 kèm \texttt{current.purchasedBy} để ứng dụng báo \msg{MSG35} (bước 4--5); với yêu cầu nhiều mặt hàng, mặt hàng đó nhận \texttt{outcome = already\_purchased} kèm \texttt{current} trong phản hồi 200 và các mặt hàng khác vẫn được ghi. Mặt hàng đang giao cho người khác mà thiếu cờ \texttt{onBehalf} lại là lỗi dữ liệu vào: cả yêu cầu bị hủy với 422 mã 4004 (\br{BR10}, \msg{MSG12}) để ứng dụng hỏi xác nhận mua thay (bước 6--7), vì mọi lỗi nhóm 2xxx và 4004 đều theo nguyên tắc tất cả hoặc không. Trạng thái danh sách theo \br{BR08} được tính lại trong cùng giao dịch (bước 9).
+
+\texttt{InsertTx} ở bước 8 dùng chính \texttt{pgx.Tx} của giao dịch nghiệp vụ, nên tác vụ \texttt{PushNotification} tồn tại khi và chỉ khi mặt hàng đã sang \texttt{purchased}; \texttt{PUBLISH} nằm ngoài giao dịch vì chỉ là gợi ý thời gian thực (mục~\ref{sssec:kt-thoi-gian-thuc}). \texttt{NotifyWorker} lấy tác vụ bằng \texttt{SKIP LOCKED} nên nhiều goroutine cùng quét hàng đợi \texttt{notify} mà không lấy trùng; nó đọc \texttt{assignment\_notify\_on} của người nhận, nếu người này tắt loại thông báo thì tác vụ hoàn tất mà không gửi, rồi đọc danh sách thiết bị (bước 12). Đánh đổi của mẫu là giao nhận \emph{ít nhất một lần} (at-least-once): worker có thể gửi xong rồi dừng trước khi đánh dấu \texttt{completed}, và River chạy lại tác vụ theo vòng đời ở Hình~\ref{fig:trang-thai-tac-vu}. Vì vậy \texttt{dedupe\_key} duy nhất biến lần chèn thông báo thứ hai thành thao tác rỗng (bước 13), bảng \texttt{deliveries} chỉ cho gửi lại thiết bị chưa \texttt{sent} (bước 14--15), và mã thông báo được đặt vào khóa gộp (\texttt{collapse\_key} và \texttt{tag} trên Android, \texttt{apns-collapse-id} trên iOS) để bản gửi trùng thay thế bản cũ trên khay thông báo. Đổi lại, hệ thống không phải vận hành thêm message broker.
+
+Nhập tủ (\uc{UC21}) dùng cùng khuôn giao dịch nhưng đi qua cổng \texttt{StockIn} của module pantry, như Hình~\ref{fig:seq-nhap-tu}.
+
+\diagram[0.85\textwidth]{c3-15b-seq-nhap-tu}{Biểu đồ tuần tự chuyển mặt hàng đã mua vào tủ lạnh qua cổng StockIn}{fig:seq-nhap-tu}
+
+\texttt{ShoppingService.StockItems} không ghi bảng \texttt{food\_lots}: với mỗi mặt hàng đã khóa, nó gọi \texttt{StockIn.AddLots} (bước 7) với \texttt{source\_item\_id}, ngày hết hạn người dùng xác nhận hoặc mặc định bằng ngày mua cộng hạn dùng gợi ý tại vị trí lưu trữ (\br{BR11}), và \texttt{total\_cost} bằng lượng thực tế nhân đơn giá. Lưu tổng tiền thay cho đơn giá giúp giá trị lãng phí ở \uc{UC46} vẫn đúng khi người dùng đổi đơn vị lúc nhập tủ. \texttt{PantryService} chèn lô và biến động \texttt{stock\_in} (bước 8), rồi mặt hàng chuyển \texttt{stocked} kèm \texttt{lot\_id} (bước 10); mọi việc nằm trong một giao dịch nên lỗi giữa chừng hoàn tác cả việc tạo lô lẫn đổi trạng thái. Mặt hàng đã \texttt{stocked} không phải lỗi mà là kết quả \texttt{already\_stocked} kèm \texttt{lotId} (bước 6), nên yêu cầu lặp lại hay thiết bị thứ hai chỉ nhận lại lô đã có (bước 5b của \uc{UC21}); mặt hàng tên tự do chưa gắn thực phẩm là lỗi dữ liệu vào, hủy cả yêu cầu với 422 mã 4004 để ứng dụng yêu cầu chọn thực phẩm (bước 2a). \br{BR08} chặn sửa nội dung danh sách Hoàn tất (422, mã 4004) với ba ngoại lệ có chủ đích: S08 sửa lượng thực tế và đơn giá của mặt hàng đã mua, S13 hoàn tác (danh sách trở về Đang mua) và S14 nhập tủ, vì người dùng thường nhập giá và cất đồ sau khi đã mua xong cả danh sách.
+
+% ---------------------------------------------------------------------
+\subsubsection{Đồng bộ ngoại tuyến và giải quyết xung đột}\label{sssec:kt-ngoai-tuyen}
+
+\nfr{NFR11} yêu cầu bốn nhóm thao tác dùng được khi mất mạng mà không mất hay ghi trùng dữ liệu. Ứng dụng theo hướng ưu tiên ngoại tuyến (offline-first): mỗi thao tác ghi cập nhật bản sao SQLite (drift) và chèn vào hàng đợi \texttt{pending\_ops} trong cùng một giao dịch cục bộ, kèm \texttt{Idempotency-Key}, phiên bản gốc, ảnh chụp các trường trước khi sửa và thời điểm thao tác, đồng thời hiển thị \msg{MSG20}. Khi có mạng, bộ đồng bộ của ứng dụng phát lại hàng đợi bằng đúng các API REST thông thường, nên quy tắc nghiệp vụ và phân quyền chỉ cài đặt một nơi (Hình~\ref{fig:seq-dong-bo-ngoai-tuyen}); phía máy chủ không có thành phần đồng bộ riêng ngoài nhật ký thay đổi và bảng khóa lũy đẳng.
+
+\diagram[\textwidth]{c3-16-seq-dong-bo-ngoai-tuyen}{Biểu đồ tuần tự đồng bộ ngoại tuyến với phát lại lũy đẳng}{fig:seq-dong-bo-ngoai-tuyen}
+
+Câu đầu tiên của mọi giao dịch ghi có \texttt{Idempotency-Key} chèn \texttt{(user\_id, key)} cùng băm SHA-256 của yêu cầu vào \path{sync.idempotency_keys} với \texttt{status = 'in\_progress'} và \texttt{ON CONFLICT DO NOTHING}~\cite{idempotencykey} (bước 5). Nếu không chèn được dòng nào thì khóa đã tồn tại: cùng băm và đã \texttt{completed}, máy chủ phát lại phản hồi đã lưu kèm header \texttt{Idempotent-Replayed: true} (bước 6); khác băm nghĩa là ứng dụng dùng lại khóa cho một yêu cầu khác và bị từ chối với 400 mã 2002 (bước 7). Ngay trước \texttt{COMMIT}, dòng khóa được cập nhật thành \texttt{completed} cùng mã trạng thái và thân phản hồi; khi có lỗi, \texttt{ROLLBACK} xóa luôn dòng khóa, nên bảng chỉ lưu kết quả thành công và một lệnh bị từ chối có thể gửi lại sau khi sửa. Hai bản phát lại đồng thời tự xếp hàng ở chỉ mục khóa chính: bản sau chờ bản đầu kết thúc rồi thấy dòng \texttt{completed}, hoặc chèn được nếu bản đầu đã rollback. Vì dòng \texttt{in\_progress} chưa commit là vô hình với giao dịch khác, bản sau không đọc được trạng thái này mà chỉ có thể chờ quá \texttt{lock\_timeout}; khi đó máy chủ trả 409 mã 4002 để ứng dụng thử lại sau. Các API công khai A01--A05, A07, A08 không dùng khóa lũy đẳng vì đã được bảo vệ bằng giới hạn tần suất và OTP. Xung đột nghiệp vụ được xử lý theo Bảng~\ref{tab:c3-xung-dot}.
+
+{\small
+\begin{longtable}{|L{2.4cm}|L{4.3cm}|L{3.3cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-2.4cm-4.3cm-3.3cm\relax}|}
+\caption{Quy tắc giải quyết xung đột khi đồng bộ}\label{tab:c3-xung-dot}\\
+\hline
+\hd{Loại thao tác} & \hd{Quy tắc giải quyết} & \hd{Phản hồi máy chủ} & \hd{Ứng dụng xử lý}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Loại thao tác} & \hd{Quy tắc giải quyết} & \hd{Phản hồi máy chủ} & \hd{Ứng dụng xử lý}\\ \hline
+\endhead
+Tạo danh sách, mặt hàng, lô & Id UUIDv7 do thiết bị sinh; mặt hàng trùng thực phẩm được gộp theo \br{BR09} & 201, hoặc phản hồi đã lưu khi phát lại & Thay bản cục bộ bằng bản máy chủ, báo \msg{MSG11} nếu đã gộp\\ \hline
+Đánh dấu đã mua & Lệnh được máy chủ ghi nhận trước thắng, không dựa vào đồng hồ thiết bị; \texttt{purchasedAt} của thiết bị chỉ để hiển thị và báo cáo & 409, mã 4002 (\msg{MSG35}) kèm \texttt{current.}\-\texttt{purchasedBy}; trong yêu cầu nhiều mặt hàng: 200, \texttt{already\_}\-\texttt{purchased} & Áp trạng thái máy chủ, bỏ lệnh cục bộ, báo người đã mua\\ \hline
+Sửa thuộc tính (kể cả vị trí, ngày hết hạn, ghi chú của lô) & Hợp nhất theo trường; trường bị sửa ở cả hai phía thì lệnh đến sau thắng (LWW) & 200 kèm \texttt{overwritten}\-\texttt{Fields} & So với ảnh chụp gốc, báo trường đã ghi đè lên thay đổi của người khác\\ \hline
+Sửa lượng còn lại của lô (P04) & Không áp LWW: \texttt{If-Match} phải khớp; chênh lệch được ghi thành biến động \texttt{adjust}, lượng bằng 0 thì lô chuyển \texttt{consumed} & 409, mã 4002 (\msg{MSG35}) khi lệch phiên bản; 400, mã 2002 khi vượt lượng ban đầu & Tải lô mới nhất, mở lại ô nhập để người dùng nhập theo tồn kho mới\\ \hline
+Sửa mặt hàng đã xóa, đã nhập tủ hoặc thuộc danh sách Hoàn tất & Xóa mềm và trạng thái \texttt{stocked} là trạng thái cuối, luôn thắng; danh sách Hoàn tất chỉ nhận S08 (lượng thực tế, đơn giá), S13 và S14 (\br{BR08}) & 404 mã 4001, hoặc 422 mã 4004 (\msg{MSG32}) & Áp tombstone hoặc trạng thái máy chủ, báo người dùng\\ \hline
+Lệnh có quy tắc theo ngày (\br{BR08}, \br{BR11}, \br{BR18}) & Kiểm theo ngày của \texttt{X-Client-Time} nếu thời điểm này trong vòng 7 ngày và không vượt giờ máy chủ; ngoài khoảng đó dùng ngày máy chủ & 422, mã 4004 khi vi phạm & Giữ bản nháp, mở lại biểu mẫu cho người dùng sửa\\ \hline
+\end{longtable}
+}
+
+Với sửa thuộc tính, \texttt{PATCH} chỉ chứa các trường đã sửa; khi \texttt{If-Match} không khớp, máy chủ vẫn ghi và trả giá trị trước khi ghi của các trường đó, còn ứng dụng so với ảnh chụp gốc để chỉ báo những trường thực sự bị người khác sửa. Lượng còn lại của lô là ngoại lệ có chủ đích: nó bị \uc{UC28}, \uc{UC29}, \uc{UC41} thay đổi liên tục, nên một giá trị tuyệt đối tính từ bản cũ sẽ xóa mất lần tiêu thụ của người khác; P04 vì vậy đòi phiên bản khớp và ghi chênh lệch vào \texttt{stock\_movements} để báo cáo tiêu thụ luôn khớp nhật ký. Lệnh phát lại mang header \texttt{X-Client-Time} là thời điểm thao tác trên thiết bị, để danh sách tạo ngoại tuyến tối qua cho ngày hôm qua vẫn hợp lệ khi đồng bộ sáng nay; giới hạn 7 ngày và điều kiện không vượt giờ máy chủ ngăn việc chỉnh đồng hồ thiết bị để lách quy tắc (bước 10--11). Khi hàng đợi rỗng, ứng dụng kéo \texttt{GET .../changes?since=<seq>} lặp lại đến khi \texttt{hasMore} bằng \texttt{false}, tối đa 500 phần tử mỗi lần, với phản hồi như Mã nguồn~\ref{code:c3-json-changes}; mỗi phần tử mang trạng thái thực thể thay vì thao tác nên áp lại nhiều lần vẫn cho cùng kết quả.
+
+\codecaption{Phản hồi mẫu của API kéo thay đổi (ảnh chụp thực thể đã rút gọn)}{code:c3-json-changes}
+\begin{Verbatim}
+{ "code": 1000, "message": "Thành công",
+  "data": { "nextSince": 1845, "hasMore": false, "changes": [
+    { "seq": 1843, "entityType": "shopping_item", "op": "upsert",
+      "entityId": "01929f4e-6c1a-7d3e-9b2f-4a5c8e7d1f20", "version": 4,
+      "entity": { "status": "purchased", "actualQuantity": 1.5 } },
+    { "seq": 1844, "entityType": "food_lot", "op": "upsert",
+      "entityId": "01929f4e-7d02-7a11-8c3e-0b6d2f9a4e51", "version": 1,
+      "entity": { "remainingQty": 1.5, "expiresOn": "2026-10-28" } },
+    { "seq": 1845, "entityType": "shopping_item", "op": "delete",
+      "entityId": "01929f4e-80b4-7f62-a1d7-5e3c9b0f2a88" } ] },
+  "meta": { "serverTime": "2026-10-25T03:15:03Z" } }
+\end{Verbatim}
+
+Số \texttt{seq} là bộ đếm riêng từng không gian, không phải sequence toàn cục. Sequence được cấp lúc chèn nhưng dòng chỉ hiện ra lúc commit: nếu giao dịch T1 nhận số 101, T2 nhận 102 và commit trước, thiết bị kéo đúng lúc đó lưu \texttt{since = 102} và bỏ sót vĩnh viễn thay đổi 101. Bộ đếm \texttt{change\_seq} tăng bằng \texttt{UPDATE ... RETURNING} ở cuối giao dịch (bậc 6 của Bảng~\ref{tab:c3-thu-tu-khoa}) nên T2 phải chờ T1 commit mới được cấp số, và thứ tự số trùng thứ tự commit; bộ đếm phải riêng từng không gian để không tuần tự hóa mọi giao dịch của hệ thống. Con trỏ cũ hơn 90 ngày nhận 410 mã 4100 và ứng dụng tải lại toàn bộ. Khóa chính UUIDv7~\cite{rfc9562} cho phép tạo thực thể khi ngoại tuyến với id không đổi sau đồng bộ, và nhờ tiền tố thời gian, bản ghi mới được chèn vào cuối chỉ mục B-tree; máy chủ chỉ nhận id đúng phiên bản 7 và trả mã 4003 khi trùng. Cái giá là ứng dụng phức tạp hơn và LWW có thể ghi đè một chỉnh sửa có chủ ý, được chấp nhận vì người dùng luôn được báo.
+
+% ---------------------------------------------------------------------
+\subsubsection{Đồng bộ thời gian thực đa thiết bị trên Android và iOS}\label{sssec:kt-thoi-gian-thuc}
+
+\nfr{NFR10} yêu cầu thay đổi hiển thị trên thiết bị khác trong 3 giây. Hỏi vòng (polling) tốn pin; iOS đóng kết nối vài giây sau khi ứng dụng vào nền, Android áp dụng chế độ Doze; thiết bị ghi và thiết bị nhận lại thường gắn với hai bản API khác nhau. Thiết kế dùng WebSocket~\cite{rfc6455} khi ứng dụng ở tiền cảnh, FCM khi chạy nền và Redis Pub/Sub làm cầu nối giữa các bản API. Hình~\ref{fig:seq-thoi-gian-thuc} minh họa trưởng nhóm phân công trên thiết bị A, thiết bị B đang mở ứng dụng, còn thiết bị C của người được giao đang chạy nền.
+
+\diagram[\textwidth]{c3-17-seq-thoi-gian-thuc}{Biểu đồ tuần tự đồng bộ thời gian thực qua WebSocket, Redis Pub/Sub và FCM}{fig:seq-thoi-gian-thuc}
+
+Khi mở socket, bản API xác thực JWT, nạp các không gian mà người dùng là thành viên rồi đăng ký các kênh \texttt{space:\{sid\}} tương ứng cùng kênh riêng \texttt{user:\{uid\}} (bước 1--3). Giao dịch phân công không tạo thông báo trực tiếp mà chèn tác vụ \texttt{AssignmentDigest} của module shopping (bước 6), duy nhất theo cặp (người được giao, danh sách) với lịch chạy lùi 5 giây, nên các phân công liên tiếp cho cùng người trong cùng danh sách chỉ sinh một tác vụ. Khi chạy, tác vụ này đếm $k$ mặt hàng đang giao trong bảng của chính shopping rồi chèn \texttt{PushNotification} mang sự kiện \texttt{item.assigned} gồm $k$ và mốc đợt giao trong cùng giao dịch (bước 14); nhờ vậy module notification không phải đọc bảng của shopping. \texttt{NotifyWorker} tôn trọng thiết lập \texttt{assignment\_notify\_on} của người nhận và dùng \texttt{dedupe\_key} chứa mốc đợt, nên mỗi đợt chỉ sinh một thông báo “Bạn được giao mua $k$ mặt hàng” dù tác vụ bị chạy lại (bước 15--16).
+
+WebSocket chỉ mang \emph{gợi ý thay đổi}, dữ liệu luôn được kéo qua \texttt{/changes}. Nhờ vậy thời gian thực và bắt kịp sau ngoại tuyến dùng chung một đường dữ liệu, quyền được kiểm tra lại ở mỗi lần kéo, và việc Redis Pub/Sub có thể mất thông điệp trở nên vô hại vì lần kéo sau sẽ bù theo \texttt{seq}. Máy chủ gửi \texttt{ping} mỗi 25 giây và đóng kết nối nếu không có \texttt{pong} sau 10 giây; ứng dụng nối lại với độ trễ tăng theo hàm mũ có nhiễu ngẫu nhiên (1–30 giây). Sau mỗi lần làm mới access token, ứng dụng gửi token mới trên socket, quá hạn thì máy chủ đóng với mã 4401; khi người dùng đăng xuất hoặc bị xóa khỏi nhóm, sự kiện trên kênh \texttt{user:\{userId\}} khiến bản API đóng socket hoặc hủy theo dõi không gian, giữ \br{BR23} cả trên kênh thời gian thực. Thiết kế không dựa vào thông báo nền im lặng vì iOS có thể trì hoãn hoặc bỏ qua chúng~\cite{apns}; chỉ sự kiện cần biết ngay (phân công, nhắc hạn dùng, hoạt động nhóm) được gửi thành thông báo hiển thị qua FCM, chuyển tiếp qua APNs với iOS. Bảng~\ref{tab:c3-ngan-sach-do-tre} phân bổ ngân sách 3 giây cho từng chặng; các con số là mục tiêu thiết kế, không phải số đo.
+
+{\small
+\begin{longtable}{|L{4.4cm}|L{2.9cm}|C{1.6cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-4.4cm-2.9cm-1.6cm\relax}|}
+\caption{Phân bổ ngân sách độ trễ đồng bộ thời gian thực (mục tiêu thiết kế)}\label{tab:c3-ngan-sach-do-tre}\\
+\hline
+\hd{Chặng} & \hd{Thành phần} & \hd{Mục tiêu} & \hd{Biện pháp giữ ngân sách}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Chặng} & \hd{Thành phần} & \hd{Mục tiêu} & \hd{Biện pháp giữ ngân sách}\\ \hline
+\endhead
+Thiết bị A gửi yêu cầu ghi & Mạng 4G, Caddy & 400 ms & HTTP/2 giữ kết nối, không bắt tay TLS lại\\ \hline
+Xử lý và commit giao dịch & API, PostgreSQL & 250 ms & Truy vấn theo chỉ mục, khóa ngắn\\ \hline
+Phát tán tới bản API giữ socket & Redis Pub/Sub & 50 ms & Cùng mạng Docker nội bộ\\ \hline
+Gửi gợi ý xuống thiết bị B & WebSocket & 300 ms & Socket mở sẵn, khung dữ liệu nhỏ\\ \hline
+Gom gợi ý và kéo \texttt{/changes} & Thiết bị B, API & 800 ms & Gom 200 ms; truy vấn theo khóa \texttt{(space\_id, seq)}\\ \hline
+Áp vào SQLite, vẽ lại giao diện & drift, Riverpod & 300 ms & Áp theo lô trong một giao dịch SQLite\\ \hline
+\textbf{Tổng} & & \textbf{2,1 s} & Dự trữ 0,9 s cho dao động mạng di động\\ \hline
+\end{longtable}
+}
+
+% ---------------------------------------------------------------------
+\subsubsection{Nhắc hạn dùng bảo đảm không gửi trùng}\label{sssec:kt-nhac-han}
+
+\uc{UC31} và \br{BR13} yêu cầu mỗi người nhận tối đa một thông báo tổng hợp mỗi ngày, gộp các lô sắp hoặc vừa hết hạn trong mọi không gian mà người đó là thành viên; \nfr{NFR12} yêu cầu lỗi tạm thời được thử lại ba lần và ít nhất 99\% thông báo được tạo trong 15 phút kể từ giờ chạy. Hình~\ref{fig:seq-nhac-nho} ở Chương~\ref{chap:dac-ta} là góc nhìn nghiệp vụ; Hình~\ref{fig:seq-nhac-han-dung-be} là góc nhìn bên trong backend, gồm ba tác vụ River nối tiếp nhau.
+
+\diagram[\textwidth]{c3-18-seq-nhac-han-dung-be}{Biểu đồ tuần tự nhắc hạn dùng phía backend với ba lớp chống trùng}{fig:seq-nhac-han-dung-be}
+
+\texttt{ReminderDispatcher} là tác vụ định kỳ do bản worker giữ vai trò leader chèn mỗi phút một lần. Nó đọc \texttt{reminder.runAt} từ bộ đệm \texttt{cfg:all} (sống 5 phút và bị xóa ngay qua kênh Pub/Sub \texttt{cfg} khi \uc{UC53} đổi cấu hình), rồi chỉ làm việc khi giờ Việt Nam đã đến hoặc vượt \texttt{runAt} và hôm nay chưa chạy (bước 2--5). Điều kiện “đã đến hoặc vượt” thay cho “đúng 08:00” giúp tự chạy bù khi worker ngừng đúng giờ hẹn (bước 1a của \uc{UC31}), còn chu kỳ một phút giới hạn độ trễ khởi động ở mức một phút, để dành gần trọn ngân sách 15 phút cho việc tạo thông báo. Dấu “hôm nay đã chạy” là một tác vụ duy nhất theo ngày được chèn bằng \texttt{InsertTx} ở đầu giao dịch; cùng giao dịch đó, một truy vấn tìm người dùng có lô \texttt{active} với $-1 \le \texttt{expires\_on} - \texttt{\$today} \le 7$ ở bất kỳ không gian nào họ là thành viên, rồi chèn hàng loạt tác vụ \texttt{UserReminder} duy nhất theo cặp (người dùng, ngày) (bước 6). Nếu tiến trình chết giữa chừng, giao dịch rollback làm mất cả dấu ngày, và lượt chạy phút sau làm lại từ đầu.
+
+Mỗi tác vụ \texttt{UserReminder} đọc thiết lập của người dùng và tính các lô theo ngưỡng $N$ riêng (\texttt{reminder\_days}, hoặc \texttt{reminder.defaultDays} khi để trống) trên mọi không gian của người đó, với $-1 \le d \le N$ để bao gồm cả lô vừa quá hạn hôm qua theo \br{BR13} (bước 7). Người tắt nhắc hạn dùng (bước 4a) hoặc không còn lô nào trong ngưỡng (bước 5a) được kết thúc tác vụ mà không tạo thông báo (bước 8). Ngược lại, thông báo nêu tên tối đa \texttt{reminder.maxLotsPerNotice} lô gần hạn nhất (tham số cấu hình của \uc{UC53}, mặc định 5, miền 1--10) để nội dung vừa màn hình khóa, phần còn lại ghi “và $k$ lô khác”; câu \texttt{INSERT} dùng \texttt{dedupe\_key = userId:ngày} với \texttt{ON CONFLICT DO NOTHING RETURNING} (bước 9), và chỉ khi thực sự chèn dòng mới thì \texttt{PushNotification} mới được chèn vào hàng đợi \texttt{notify} trong cùng giao dịch (bước 10). Chống trùng vì vậy gồm ba lớp: dấu ngày của bộ điều phối, tác vụ \texttt{UserReminder} duy nhất theo người và ngày, và \texttt{dedupe\_key} duy nhất trong \texttt{notifications}; hai lớp đầu tiết kiệm công việc, lớp cuối bảo đảm tính đúng kể cả khi quản trị viên chạy lại tác vụ bằng tay. Bước 2 của \uc{UC31} không cần ghi gì vì trạng thái hạn dùng được suy diễn lúc truy vấn theo ngưỡng của người xem, và thông báo chỉ chứa lô thuộc không gian người nhận là thành viên nên không vi phạm \br{BR23}.
+
+\texttt{NotifyWorker} gửi tới từng thiết bị chưa có bản giao \texttt{sent}, với khóa gộp là mã thông báo (bước 12--13). Gửi thành công ghi \texttt{sent}; FCM báo mã không hợp lệ (\texttt{UNREGISTERED}) thì thiết bị bị xóa khỏi tài khoản (bước 7a); lỗi tạm thời được ghi \texttt{failed} và tác vụ trả lỗi ở cuối vòng lặp để River thử lại tối đa ba lần với độ trễ tăng theo hàm mũ, mỗi lần chỉ gửi tiếp các thiết bị chưa \texttt{sent} (bước 7b); thông báo vẫn nằm trong hộp thư trong ứng dụng dù đẩy thất bại. Tiêu chí của \nfr{NFR12} được tách thành hai chỉ số mức dịch vụ đo trực tiếp từ dữ liệu: chỉ số \emph{tạo} là khoảng cách từ \texttt{runAt} tới \texttt{notifications.created\_at}, với mục tiêu 99\% trong 15 phút; chỉ số \emph{gửi} là khoảng cách từ \texttt{created\_at} tới \texttt{deliveries.sent\_at}, theo dõi riêng vì phụ thuộc FCM nằm ngoài quyền kiểm soát của hệ thống. Với giả định thiết kế 5.000 tài khoản, mỗi ngày có tối đa 5.000 thông báo nhắc, một con số nhỏ so với năng lực chèn hàng loạt của PostgreSQL và hạn mức của FCM.
+
+% ---------------------------------------------------------------------
+\subsubsection{Gợi ý món và sinh danh sách mua sắm}\label{sssec:kt-goi-y}
+
+\uc{UC40} phải xếp hạng 500 công thức theo 200 lô trong 2 giây (\nfr{NFR09}). Pha lọc dùng ba truy vấn SQL: tồn kho còn hạn gộp theo thực phẩm và nhóm đại lượng; công thức ứng viên (mẫu đã công bố và công thức của không gian, lọc theo bữa \texttt{mealSlot}) có ít nhất một nguyên liệu trong tồn kho; nguyên liệu của ứng viên cùng danh sách yêu thích. Khi người dùng mở từ màn hình thực phẩm sắp hết hạn (\uc{UC30}), tham số \texttt{expiringOnly} chỉ giữ ứng viên có dùng lô sắp hết hạn. Pha chấm điểm theo \br{BR19} chạy trong bộ nhớ như Mã nguồn~\ref{code:c3-goi-y}, với trọng số, $\theta$ và $K$ đọc từ cấu hình của \uc{UC53} (\nfr{NFR20}).
+
+\codecaption{Mã giả Go của bước chấm điểm gợi ý món}{code:c3-goi-y}
+\begin{Verbatim}
+// Suggest chấm điểm theo BR19; trọng số, θ, K đọc từ system_configs.
+func Suggest(inv map[FoodKey]Stock, cands []Recipe, fav map[ID]bool,
+    n, servings int, cfg Config) (top, near []Scored) {
+    best, alt := NewMinHeap(cfg.MaxResults), NewMinHeap(3)
+    for _, c := range cands {
+        k := float64(servings) / float64(c.Servings)
+        ok, req, e := 0, 0, 0.0
+        for _, ing := range c.Ingredients {
+            st, has := inv[ing.Key()] // cùng thực phẩm, cùng đại lượng
+            if ing.Required {
+                req++
+                if has && st.BaseQty >= ing.BaseQty*k { ok++ }
+            }
+            if has && st.DaysLeft >= 0 && st.DaysLeft <= n {
+                e += float64(n+1-st.DaysLeft) / float64(n+1)
+            }
+        }
+        r := float64(ok) / float64(max(req, 1))
+        s := cfg.WR*r + cfg.WE*min(1, e) + cfg.WF*b2f(fav[c.ID])
+        alt.Push(Scored{c, r, s}, r) // dự phòng MSG31: R cao nhất
+        if r >= cfg.Theta { best.Push(Scored{c, r, s}, s) }
+    }
+    return best.SortedDesc(), alt.SortedDesc()
+}
+\end{Verbatim}
+
+\texttt{DaysLeft} là số ngày còn lại của lô gần hết hạn nhất như trong công thức~\eqref{eq:diem-han-dung}; nguyên liệu khác nhóm đại lượng với tồn kho được coi là không đáp ứng (\br{BR16}). Độ phức tạp là $O(C \cdot I + C \log K)$ với $C$ công thức, mỗi công thức $I$ nguyên liệu, tức vài nghìn phép tra bảng băm; thời gian bị chi phối bởi ba truy vấn có chỉ mục. Đống thứ hai giữ ba món có $R$ cao nhất để trả kèm \msg{MSG31}. Kết quả được lưu đệm 10 phút trong Redis hash \texttt{suggest:\{sid\}}, trường theo người dùng, bữa và số khẩu phần vì $N$, $F$ thuộc từng người. Bộ đệm bị xóa bởi móc sau commit của mọi giao dịch phát sinh \texttt{lot.changed} hoặc \texttt{recipe.changed}, bởi sự kiện \texttt{config.changed} khi khóa \texttt{suggest.*} đổi, và khi người dùng đổi ngưỡng $N$ qua A13 (xóa cho mọi không gian của người đó); cấu hình chính nó nằm trong \texttt{cfg:all}, sống 5 phút và bị xóa ngay qua kênh \texttt{cfg}, nên trọng số mới có hiệu lực ở lần gợi ý kế tiếp.
+
+Sinh danh sách (\uc{UC22}, \br{BR20}) là bài toán ghép nhu cầu với nguồn cung có khoảng hiệu lực: nhu cầu là cặp (ngày nấu, thực phẩm) đã quy về đơn vị cơ sở; lô còn hạn dùng được đến \texttt{expires\_on}, mặt hàng chờ mua dùng được từ \texttt{planned\_date}. Thuật toán duyệt nhu cầu theo ngày nấu tăng dần, lấy từ nguồn hợp lệ có hạn kết thúc sớm nhất trước (lô theo FEFO, hàng chờ mua sau cùng), phần còn lại là lượng thiếu. Chiến lược tham lam “kết thúc sớm nhất trước” này cho tổng lượng thiếu nhỏ nhất, không tính một lượng hai lần và tái tạo đúng kết quả 0,3 kg trong ví dụ ở Chương~\ref{chap:dac-ta}; với hàng đợi ưu tiên theo từng thực phẩm, độ phức tạp là $O((D + L + P)\log(L + P))$ cho $D$ nhu cầu, $L$ lô và $P$ mặt hàng chờ mua.
+
+% ---------------------------------------------------------------------
+\subsubsection{Tìm kiếm tiếng Việt với Elasticsearch}\label{sssec:kt-tim-kiem}
+
+Người dùng thường gõ không dấu (“thit ba chi”), dùng từ địa phương (heo và lợn), gõ sai và chờ gợi ý trong 500 ms (\nfr{NFR09}), điều truy vấn \texttt{LIKE} không đáp ứng được. Elasticsearch~\cite{elasticsearch} vì vậy phục vụ \uc{UC42}, \uc{UC43} cho hai loại dữ liệu: danh mục thực phẩm chung cùng thực phẩm riêng của các không gian, và công thức mẫu cùng công thức của các không gian. Lô trong tủ và mặt hàng chỉ vài trăm bản ghi mỗi không gian nên được tìm trực tiếp bằng PostgreSQL qua cổng \texttt{StockQuery.SearchLots} của pantry. Mã nguồn~\ref{code:c3-es-mapping} là thiết lập của chỉ mục \texttt{foods\_v1}.
+
+\codecaption{Bộ phân tích và ánh xạ của chỉ mục thực phẩm}{code:c3-es-mapping}
+\begin{Verbatim}
+PUT /foods_v1
+{ "settings": { "analysis": {
+    "filter": {
+      "vi_syn": { "type": "synonym_graph", "updateable": true,
+                  "synonyms": ["heo, lợn", "ngô, bắp", "dứa, thơm"] },
+      "pfx": { "type": "edge_ngram", "min_gram": 2, "max_gram": 15 } },
+    "analyzer": {
+      "vi_base": { "tokenizer": "standard",
+        "filter": ["lowercase", "asciifolding"] },
+      "vi_fold": { "tokenizer": "standard",
+        "filter": ["lowercase", "asciifolding", "vi_syn"] },
+      "vi_pfx": { "tokenizer": "standard",
+        "filter": ["lowercase", "asciifolding", "pfx"] } } } },
+  "mappings": { "properties": {
+    "name": { "type": "text", "analyzer": "vi_base",
+      "search_analyzer": "vi_fold", "fields": {
+        "prefix": { "type": "text", "analyzer": "vi_pfx",
+                    "search_analyzer": "vi_base" },
+        "exact": { "type": "text", "analyzer": "standard" } } },
+    "aliases": { "type": "text", "analyzer": "vi_base",
+                 "search_analyzer": "vi_fold" },
+    "scope": { "type": "keyword" }, "status": { "type": "keyword" },
+    "owner_space_id": { "type": "keyword" },
+    "category_id": { "type": "keyword" } } } }
+\end{Verbatim}
+
+\texttt{asciifolding} bỏ dấu và chuyển “đ” thành “d”, nên “thịt” và “thit” cho cùng từ tố. \texttt{vi\_fold} thêm \texttt{synonym\_graph} và chỉ dùng lúc truy vấn, đúng phạm vi thiết kế của bộ lọc đồng nghĩa dạng đồ thị; nhờ cờ \texttt{updateable}, danh sách đồng nghĩa được nạp lại mà không đánh lại chỉ mục. Trường \texttt{name.prefix} với \texttt{edge\_ngram} 2–15 phục vụ gợi ý khi gõ; vì bỏ dấu làm “cá” và “cà” trùng nhau, trường \texttt{name.exact} giữ dấu để cộng điểm khi người dùng gõ có dấu. Vì một chỉ mục chứa dữ liệu của nhiều không gian, mọi truy vấn bắt buộc kèm bộ lọc phạm vi (\br{BR23}): với thực phẩm là \texttt{scope = global} $\lor$ \texttt{owner\_space\_id = sid}, với công thức là (\texttt{kind = template} $\land$ \texttt{status = published}) $\lor$ \texttt{space\_id = sid}. Bộ lọc được thêm trong một hàm dựng truy vấn duy nhất của adapter search, không để từng handler tự ghép, và có kiểm thử riêng. Hình~\ref{fig:seq-tim-kiem-chi-muc} thể hiện hai luồng của module search: đánh chỉ mục và truy vấn.
+
+\diagram[\textwidth]{c3-37-seq-tim-kiem-chi-muc}{Biểu đồ tuần tự đánh chỉ mục và truy vấn tìm kiếm có dự phòng}{fig:seq-tim-kiem-chi-muc}
+
+Ở luồng đánh chỉ mục, mọi API ghi thực phẩm hoặc công thức (D04, P02 khi tạo thực phẩm riêng, R02, R04...) chèn tác vụ \texttt{IndexFood} hoặc \texttt{IndexRecipe} vào hàng đợi \texttt{index} trong cùng giao dịch (bước 2), nên chỉ mục không bao giờ bỏ sót một lần ghi đã commit. \texttt{IndexWorker} không dùng dữ liệu trong payload mà đọc bản ghi hiện tại từ PostgreSQL rồi ghi bằng \texttt{\_bulk} với \texttt{version\_type = external} theo cột \texttt{version} (bước 3--4), nên tác vụ đến muộn không ghi đè tài liệu mới hơn. Bản ghi đã xóa, thực phẩm đã gộp vào bản chung, dữ liệu của nhóm đã giải tán hoặc của tài khoản đã xóa đều dẫn tới xóa tài liệu, giữ đúng yêu cầu xóa dữ liệu của \nfr{NFR18}; đối soát hằng tuần so cặp \texttt{id} và \texttt{version} giữa hai kho để nạp lại phần lệch (bước 5). Đổi ánh xạ bằng cách nạp \texttt{foods\_v2} rồi chuyển alias \texttt{foods} trong một lệnh nguyên tử. Ở luồng truy vấn, gợi ý tên Q02 bị giới hạn 20 yêu cầu mỗi giây cho mỗi người dùng bằng khóa \texttt{rl:suggest:\{uid\}}, vượt thì nhận 429 mã 4290 (\msg{MSG36}); truy vấn \texttt{multi\_match} trên \texttt{name} và \texttt{name.prefix} dùng \texttt{fuzziness: AUTO}, lọc \texttt{status = active} cùng bộ lọc phạm vi và đặt thời hạn 300 ms (bước 9). Khi Elasticsearch lỗi hoặc quá hạn, truy vấn chuyển sang so khớp trigram của PostgreSQL trên hàm bao \texttt{f\_unaccent} khai báo \texttt{IMMUTABLE}, vì hàm \texttt{unaccent} gốc chỉ là \texttt{STABLE} nên không dùng được trong chỉ mục (bước 11); chế độ suy giảm này mất đồng nghĩa nhưng vẫn trả kết quả với cùng bộ lọc phạm vi. Q01 còn tìm lô trong tủ qua \texttt{StockQuery.SearchLots} (bước 12) và trả kết quả theo nhóm tủ lạnh, công thức, danh mục; không có kết quả thì ứng dụng hiển thị \msg{MSG18}.
+
+% ---------------------------------------------------------------------
+\subsubsection{Tra cứu mã vạch có bộ đệm và ngắt mạch}\label{sssec:kt-ma-vach}
+
+\uc{UC26} phụ thuộc Open Food Facts~\cite{openfoodfacts}, một dịch vụ cộng đồng có độ trễ khó đoán và giới hạn tần suất, trong khi use case yêu cầu phản hồi trong 5 giây. Hình~\ref{fig:seq-ma-vach} thể hiện chuỗi tra cứu có bộ đệm và bộ ngắt mạch (circuit breaker).
+
+\diagram[0.85\textwidth]{c3-19-seq-ma-vach}{Biểu đồ tuần tự tra cứu mã vạch qua bộ đệm, danh mục và Open Food Facts}{fig:seq-ma-vach}
+
+Ứng dụng kiểm tra chữ số kiểm tra và tra thực phẩm riêng của không gian trong bản sao cục bộ trước, nên \texttt{BarcodeService.Lookup} của API P08 chỉ tra danh mục với điều kiện \texttt{scope = 'global'} (bước 4), và khóa \texttt{barcode:\{code\}} dùng chung được cho mọi người mà không lộ dữ liệu nhóm (\br{BR23}). Ràng buộc duy nhất của mã vạch vì thế cũng tách theo phạm vi: duy nhất toàn cục với bản chung, duy nhất trong từng không gian với thực phẩm riêng. Bộ ngắt mạch được hỏi trạng thái trước khi rẽ nhánh (bước 5--6): thấy trong danh mục thì kết quả được lưu đệm 30 ngày và trả ngay; không thấy mà mạch đang mở thì API trả ngay 504 mã 5004 (\msg{MSG23}) thay vì chiếm giữ goroutine; chỉ khi mạch đóng hoặc nửa mở mới gọi dịch vụ ngoài với thời hạn 3 giây, giữ cả chuỗi trong giới hạn 5 giây. Kết quả “không có” được lưu 1 ngày (bộ đệm phủ định) và trả 404 mã 4001, còn lỗi quá thời gian không được lưu vì chỉ là tạm thời. Bộ ngắt mạch~\cite{nygard} mở sau 5 lỗi liên tiếp; sau 30 giây ở trạng thái mở, nó cho đúng một lời gọi thăm dò ở trạng thái nửa mở. Dữ liệu từ dịch vụ ngoài được coi là không tin cậy~\cite{owaspapi}: chỉ lấy trường cần thiết, cắt tên còn 100 ký tự và không tải ảnh theo URL trả về. Khi người dùng lưu lô ở \uc{UC25}, máy chủ tạo thực phẩm riêng của không gian ở trạng thái \texttt{pending\_review}, nguồn \texttt{open\_food\_facts}, kèm mã vạch trong cùng giao dịch. Khi quản trị viên duyệt (\uc{UC49}), thực phẩm này được nâng thành bản chung, hoặc được gộp vào bản chung nếu danh mục đã có thực phẩm trùng mã vạch; cả hai trường hợp đều phát sự kiện xóa khóa bộ đệm tương ứng.

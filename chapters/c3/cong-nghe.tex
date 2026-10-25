@@ -1,0 +1,121 @@
+% ---------------------------------------------------------------------
+%  3.2. Nền tảng công nghệ sử dụng
+% ---------------------------------------------------------------------
+\section{Nền tảng công nghệ sử dụng}\label{sec:cong-nghe}
+
+Mục này trình bày công nghệ được chọn từ thiết bị tới hạ tầng, tập trung vào đặc tính phục vụ các kịch bản ở mục~\ref{ssec:yeu-to-dan-dat}; mục~\ref{ssec:cn-so-sanh} so sánh các phương án và tổng hợp lựa chọn.
+
+\subsection{Ứng dụng di động đa nền tảng và các yêu cầu đặt lên backend}\label{ssec:cn-di-dong}
+
+Ứng dụng dùng Flutter~\cite{flutter} 3 (Dart 3) cùng Riverpod, go\_router và dio, biên dịch trước thành mã máy và tự vẽ giao diện nên một mã nguồn chạy nhất quán trên Android từ 8.0 và iOS từ 13 (\nfr{NFR19}). Dữ liệu cục bộ nằm trong SQLite qua drift, vừa là bản sao các không gian vừa là hàng đợi lệnh ghi chờ gửi (\nfr{NFR11}, \nfr{NFR23}); refresh token được flutter\_secure\_storage cất trong Keychain của iOS và Keystore của Android (\nfr{NFR15}). Thông báo đẩy dùng Firebase Cloud Messaging HTTP v1~\cite{fcm}: máy chủ gọi một API cho cả hai nền tảng, FCM tự chuyển tiếp qua APNs~\cite{apns} tới thiết bị iOS.
+
+Đặc thù của thiết bị di động đặt lên backend bốn yêu cầu. Thứ nhất, iOS tạm dừng ứng dụng vài giây sau khi chuyển nền và Android hoãn truy cập mạng bằng chế độ Doze, nên WebSocket~\cite{rfc6455} chỉ dùng ở tiền cảnh; khi ứng dụng ở nền, máy chủ đẩy qua FCM thay vì giữ kết nối hay chờ thiết bị thăm dò (polling). Thứ hai, bản cập nhật phải qua xét duyệt của kho ứng dụng và tùy người dùng cài đặt, nên API được phiên bản hóa trong đường dẫn (\path{/it4788/v1}) và chỉ thay đổi theo hướng bổ sung; ứng dụng có \texttt{X-App-Version} thấp hơn mức tối thiểu nhận HTTP 426, mã 4260. Thứ ba, mạng chập chờn làm mất phản hồi của lệnh đã thành công, nên mọi lệnh ghi của người dùng đã đăng nhập mang \texttt{Idempotency-Key}~\cite{idempotencykey} và thực thể dùng UUIDv7~\cite{rfc9562} do thiết bị sinh; lệnh phát lại sau thời gian ngoại tuyến còn kèm \texttt{X-Client-Time} để máy chủ kiểm quy tắc ngày theo thời điểm thao tác thật. Thứ tư, để tiết kiệm pin và dữ liệu, thiết bị chỉ kéo phần thay đổi (delta) qua \path{/spaces/{sid}/changes?since=}.
+
+\subsection{Ngôn ngữ Go và hệ thư viện phía máy chủ}\label{ssec:cn-go}
+
+Backend viết bằng Go~\cite{golang} 1.23, biên dịch thành một tệp thực thi tĩnh chạy ở hai chế độ \texttt{api} và \texttt{worker} trên image distroless nhỏ, khởi động nhanh. Mỗi yêu cầu hay kết nối WebSocket chạy trong một goroutine, luồng nhẹ ánh xạ lên số ít luồng hệ điều hành, nên hàng nghìn kết nối không cần lập trình bất đồng bộ phức tạp; gói \texttt{context} truyền thời hạn và tín hiệu hủy, nên khi thiết bị ngắt kết nối thì truy vấn CSDL và lời gọi ra ngoài cũng dừng theo.
+
+Các thư viện được chọn theo hướng bám sát \texttt{net/http} và sinh mã lúc biên dịch thay vì phản chiếu (reflection) lúc chạy: chi v5 định tuyến, coder/websocket xử lý WebSocket, pgx v5 truy cập PostgreSQL với giao dịch tường minh, \texttt{log/slog} ghi nhật ký JSON. Thay cho ORM, sqlc~\cite{sqlc} kiểm tra các câu SQL viết tay với lược đồ rồi sinh hàm Go an toàn kiểu; goose quản lý di trú bằng tệp SQL có phiên bản theo chiến lược mở rộng–thu hẹp (expand–contract); từ hợp đồng OpenAPI 3.1~\cite{openapi}, oapi-codegen sinh giao diện máy chủ và openapi-generator sinh client Dart, nên lệch hợp đồng thành lỗi biên dịch (\nfr{NFR20}). Mã nguồn~\ref{code:c3-sqlc-vi-du} minh họa sqlc với truy vấn khóa lô theo FEFO (\br{BR15}) của \uc{UC28} và \uc{UC41}.
+
+\codecaption{Truy vấn sqlc khóa các lô theo FEFO, hàm Go được sinh và lời gọi truyền ngày nghiệp vụ}{code:c3-sqlc-vi-du}
+\begin{Verbatim}
+-- name: LockActiveLotsForFood :many
+SELECT id, remaining_qty, unit_id, unit_factor, base_remaining,
+       expires_on, version
+FROM   pantry.food_lots
+WHERE  space_id = @space_id AND food_id = @food_id
+  AND  lifecycle = 'active' AND remaining_qty > 0
+  AND  expires_on >= @today::date   -- ngày VN do platform/clock cấp
+  AND  deleted_at IS NULL
+ORDER  BY expires_on, id      -- thứ tự FEFO, cũng là thứ tự lấy khóa
+FOR UPDATE;
+
+// Do sqlc sinh ra; Params gồm SpaceID, FoodID (uuid.UUID), Today
+func (q *Queries) LockActiveLotsForFood(ctx context.Context,
+    arg LockActiveLotsForFoodParams) ([]LockActiveLotsForFoodRow, error)
+
+// Tầng ứng dụng truyền ngày nghiệp vụ, không dùng current_date
+lots, err := q.LockActiveLotsForFood(ctx, LockActiveLotsForFoodParams{
+    SpaceID: sid, FoodID: fid, Today: clock.Today(), // Asia/Ho_Chi_Minh
+})
+\end{Verbatim}
+
+Chú thích \texttt{-- name: ... :many} đặt tên hàm và báo truy vấn trả nhiều dòng; tham số có tên (\texttt{@space\_id}, \texttt{@food\_id}, \texttt{@today}) trở thành trường của kiểu tham số, sqlc sinh thêm kiểu dòng kết quả và phương thức trên \texttt{Queries}, và bước kiểm tra trong CI phát hiện truy vấn lệch lược đồ trước khi hợp nhất mã. Ngày so sánh với \texttt{expires\_on} được truyền vào thay vì dùng \texttt{current\_date}: phiên CSDL chạy theo UTC, nên từ 00:00 đến 07:00 giờ Việt Nam \texttt{current\_date} vẫn là ngày hôm trước và một lô vừa quá hạn sẽ bị trừ kho, trái \br{BR15}. Vì vậy mọi phép so sánh ngày nghiệp vụ trong hệ thống dùng tham số \texttt{\$today} do gói \texttt{platform/clock} tính theo múi giờ Asia/Ho\_Chi\_Minh, và kiểm thử có thể cố định đồng hồ để tái hiện các mốc nửa đêm. Mệnh đề \texttt{FOR UPDATE}, thứ ORM thường che khuất, được giữ nguyên văn; thứ tự \texttt{expires\_on, id} cố định giúp tránh khóa chết (deadlock).
+
+\subsection{Hệ quản trị cơ sở dữ liệu PostgreSQL}\label{ssec:cn-postgresql}
+
+PostgreSQL~\cite{postgresql} 16 được chọn trước hết vì giao dịch ACID: \uc{UC21} và \uc{UC41} ghi vào bảng của nhiều module và chỉ đúng khi mọi bước cùng thành công (\nfr{NFR13}). Cơ chế đa phiên bản (MVCC) cho phép truy vấn đọc, kể cả báo cáo dài, không chặn lệnh ghi; chỗ cần tuần tự hóa dùng khóa dòng tường minh. Chỉ mục từng phần (partial index) vừa thu nhỏ chỉ mục FEFO vừa biến quy tắc thành ràng buộc, chẳng hạn chỉ mục duy nhất có điều kiện bảo đảm không nhóm nào có hai trưởng nhóm (\br{BR05}) kể cả khi hai yêu cầu chạy đồng thời. Cột sinh (generated column) tính sẵn lượng quy về đơn vị cơ sở, JSONB chứa dữ liệu bán cấu trúc như các bước công thức, extension citext, unaccent và pg\_trgm hỗ trợ so khớp email và tìm kiếm không dấu, mỗi module sở hữu một schema riêng. Cuối cùng, \texttt{FOR UPDATE SKIP LOCKED} cho nhiều tiến trình lấy các dòng chưa bị khóa mà không chờ nhau, nền tảng để dùng chính PostgreSQL làm hàng đợi.
+
+\subsection{Bộ nhớ đệm Redis}\label{ssec:cn-redis}
+
+Redis~\cite{redis} 7 là kho khóa–giá trị trong bộ nhớ, độ trễ dưới mili giây, chỉ giữ dữ liệu tạm có thời hạn sống (TTL) và không là nguồn sự thật: mất Redis chỉ làm hệ thống chậm đi và tạm nới giới hạn tần suất. Redis có bốn vai trò: cache dữ liệu đọc nhiều, ít đổi (cấu hình, danh mục, vai trò thành viên, kết quả tra mã vạch, kết quả gợi ý món); giới hạn tần suất bằng kịch bản Lua chạy nguyên tử nên nhiều bản API không thể cùng để lọt yêu cầu vượt ngưỡng; bộ đếm thời gian chờ và số lần gửi lại OTP (\br{BR02}); và Pub/Sub phát tán thay đổi tới mọi bản API đang giữ WebSocket. Pub/Sub chỉ giao nhiều nhất một lần, chấp nhận được vì thông điệp chỉ là gợi ý để thiết bị kéo dữ liệu.
+
+\subsection{Máy tìm kiếm Elasticsearch}\label{ssec:cn-elasticsearch}
+
+Elasticsearch~\cite{elasticsearch} 8.15 lưu chỉ mục đảo (inverted index) ánh xạ mỗi từ tố tới tài liệu chứa nó. Bộ phân tích (analyzer) dùng asciifolding để bỏ dấu, đổi “đ” thành “d” cho “ca rot” khớp “cà rốt”, bộ lọc đồng nghĩa ghép “heo” với “lợn”, trường con edge n-gram lưu sẵn tiền tố để gợi ý khi đang gõ; fuzziness chấp nhận sai một, hai ký tự và BM25 xếp hạng độ liên quan. PostgreSQL với pg\_trgm cũng tìm không dấu được, nhưng khó cùng lúc chịu lỗi gõ theo tiền tố, xếp hạng có từ đồng nghĩa và đạt gợi ý tên $\le$ 500 ms (\nfr{NFR09}) mà không tăng tải lên CSDL giao dịch. Chỉ mục chứa cả danh mục chung lẫn thực phẩm riêng và công thức của từng không gian, vì người dùng cần gợi ý tên cho cả hai loại; do đó mọi truy vấn bắt buộc kèm bộ lọc “bản chung hoặc thuộc không gian đang thao tác”, tài liệu của nhóm bị xóa khi nhóm giải tán hay chủ tài khoản xóa tài khoản (\nfr{NFR18}). Ngược lại, lô và mặt hàng trong không gian vẫn tìm bằng PostgreSQL vì mỗi không gian chỉ có vài trăm bản ghi đổi liên tục và phải thấy ngay sau khi ghi, còn Elasticsearch chỉ nhất quán sau một khoảng trễ. Chỉ mục là dẫn xuất dựng lại được; khi Elasticsearch lỗi, API chuyển sang truy vấn trigram trên PostgreSQL.
+
+\subsection{Lưu trữ đối tượng MinIO}\label{ssec:cn-minio}
+
+MinIO~\cite{minio} là kho đối tượng mã nguồn mở tương thích API Amazon S3, nên có thể chuyển sang dịch vụ S3 khác mà không sửa mã. Máy chủ cấp URL ký sẵn (presigned URL) có thời hạn, giới hạn kích thước và kiểu nội dung, để thiết bị tải ảnh thẳng lên bucket riêng tư thay vì đi qua API; quy tắc vòng đời (lifecycle) tự xóa tệp báo cáo xuất sau 7 ngày. Ảnh không lưu trong CSDL vì chiếm dung lượng gấp đôi dữ liệu nghiệp vụ (Bảng~\ref{tab:c3-uoc-luong-tai}), sẽ làm phình bản sao lưu, nhật ký WAL và thời gian khôi phục; \nfr{NFR22} cũng yêu cầu dịch vụ lưu tệp riêng.
+
+\subsection{Hàng đợi tác vụ River}\label{ssec:cn-river}
+
+River~\cite{river} là thư viện hàng đợi viết bằng Go, lưu tác vụ trong bảng PostgreSQL và cho phép chèn tác vụ trong cùng giao dịch với dữ liệu nghiệp vụ: commit thì tác vụ chắc chắn tồn tại, rollback thì tác vụ biến mất. Đó là mẫu hộp thư đi giao dịch (transactional outbox)~\cite{richardson} mà không cần bảng outbox và tiến trình chuyển tiếp riêng. River còn có tác vụ duy nhất (unique job) để mỗi người dùng chỉ có một tác vụ nhắc mỗi ngày (\br{BR13}, \nfr{NFR12}), tác vụ định kỳ, thử lại với backoff lũy thừa và bầu chọn tiến trình dẫn đầu (leader election) để chỉ một worker lập lịch tác vụ định kỳ. Hàng đợi trên Redis như Asynq hay BullMQ nhanh, nhưng ghi CSDL và đẩy tác vụ là hai thao tác trên hai hệ thống, không thể nguyên tử: commit xong mà đẩy thất bại thì mất sự kiện, đẩy trước commit thì worker có thể đọc dữ liệu sẽ bị hủy. Kafka hợp với thông lượng rất lớn, nhưng tải giả định chỉ vài chục sự kiện mỗi giây trong khi Kafka đòi vận hành cụm broker và vẫn cần outbox. Đánh đổi của River là thêm tải lên CSDL chính; khi vượt ngưỡng, module notification sẽ được tách ra cùng một message broker (mục~\ref{sec:trien-khai}).
+
+\subsection{Hạ tầng triển khai và vận hành}\label{ssec:cn-ha-tang}
+
+Hệ thống đóng gói bằng Docker, mô tả bằng Docker Compose~\cite{docker} với một tệp khai báo dịch vụ, mạng, volume, kiểm tra sức khỏe và giới hạn tài nguyên. Caddy~\cite{caddy} 2 làm reverse proxy ở biên: tự cấp, gia hạn chứng chỉ Let's Encrypt, chỉ nhận TLS từ 1.2 (\nfr{NFR14}), hỗ trợ HTTP/2, WebSocket và cân bằng tải giữa hai bản API với cấu hình ngắn hơn Nginx. Mã nguồn dự án nằm trên GitLab nên GitLab CI~\cite{gitlabci} đảm nhận kiểm tra, kiểm thử, xây dựng, quét lỗ hổng và triển khai. Prometheus~\cite{prometheus} thu số đo RED (tốc độ, lỗi, thời gian phản hồi theo route) và độ sâu hàng đợi, Grafana hiển thị và cảnh báo, Loki lưu nhật ký do Grafana Alloy thu thập. OpenTelemetry~\cite{opentelemetry} tạo span cho yêu cầu HTTP, truy vấn SQL, lời gọi ra ngoài và gắn mã trace vào nhật ký; vì chuẩn này trung lập nhà cung cấp, thêm kho lưu trace về sau chỉ là đổi cấu hình. pgBackRest~\cite{pgbackrest} sao lưu đầy đủ hằng ngày, giữ 7 bản (\nfr{NFR13}) và lưu liên tục WAL ra bucket ngoài máy chủ để khôi phục về thời điểm bất kỳ.
+
+\subsection{So sánh và tổng hợp lựa chọn công nghệ}\label{ssec:cn-so-sanh}
+
+Bảng~\ref{tab:c3-so-sanh-ngon-ngu} so sánh bốn phương án phía máy chủ theo tám tiêu chí rút từ các kịch bản ở Bảng~\ref{tab:c3-kich-ban-chat-luong}; BaaS (Backend as a Service) gồm Firebase và Supabase.
+
+{\small
+\begin{longtable}{|L{2.1cm}|L{2.95cm}|L{2.95cm}|L{2.95cm}|L{\dimexpr\textwidth-10\tabcolsep-6\arrayrulewidth-2.1cm-8.85cm\relax}|}
+\caption{So sánh các phương án nền tảng phía máy chủ}\label{tab:c3-so-sanh-ngon-ngu}\\
+\hline
+\hd{Tiêu chí} & \hd{Go} & \hd{NestJS (TypeScript)} & \hd{Spring Boot (Java)} & \hd{BaaS}\\ \hline
+\endfirsthead
+\multicolumn{5}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Tiêu chí} & \hd{Go} & \hd{NestJS (TypeScript)} & \hd{Spring Boot (Java)} & \hd{BaaS}\\ \hline
+\endhead
+Hiệu năng, tài nguyên & Mã máy, ít bộ nhớ; goroutine rẻ & Tốt cho I/O; việc nặng CPU chặn vòng lặp sự kiện & Thông lượng cao; tốn bộ nhớ, khởi động chậm & Tự co giãn; ít kiểm soát độ trễ\\ \hline
+Giao dịch, khóa dòng & SQL tường minh, \texttt{FOR UPDATE} trực tiếp & ORM; khóa dòng cần SQL thô & JPA hoàn thiện; ORM che SQL & Firestore không ràng buộc quan hệ; Supabase qua hàm CSDL\\ \hline
+OpenAPI & Sinh giao diện máy chủ từ hợp đồng & Chủ yếu sinh tài liệu từ mã & Sinh khung máy chủ hoàn thiện & Gắn với lược đồ hoặc SDK\\ \hline
+Tiến trình nền & River, chèn tác vụ trong giao dịch & BullMQ trên Redis, ghi kép & Quartz, JobRunr; cấu hình nặng & Hàm đám mây; khó chống trùng\\ \hline
+Độ phức tạp & Tường minh; nhiều mã lặp & Trung bình & Khung lớn, nhiều cơ chế ngầm & Thấp lúc đầu; khó diễn đạt FEFO, \br{BR20}\\ \hline
+Chi phí hạ tầng & Vừa một máy chủ nhỏ & Vừa một máy chủ nhỏ & Cần nhiều bộ nhớ hơn & Theo lượt đọc ghi, khó dự báo\\ \hline
+Phụ thuộc nhà cung cấp & \multicolumn{3}{L{\dimexpr8.85cm+4\tabcolsep+2\arrayrulewidth\relax}|}{Thấp: mã nguồn mở, tự vận hành bằng Docker} & Firebase cao; Supabase vừa\\ \hline
+Kiểm thử & Gói \texttt{testing} chuẩn, phát hiện tranh chấp & Jest, dễ giả lập & JUnit, Testcontainers; khởi tạo chậm & Phụ thuộc bộ giả lập\\ \hline
+\end{longtable}
+}
+
+Nhóm chọn Go vì ưu điểm của nó khớp các kịch bản rủi ro cao nhất: giao dịch và khóa dòng tường minh qua pgx, sqlc cho KB05; goroutine giữ nhiều kết nối với chi phí thấp cho KB03; River gắn tác vụ nền nguyên tử với giao dịch cho KB04, KB06; tệp thực thi nhỏ giúp cả hệ thống vừa một máy chủ. Spring Boot mạnh về giao dịch nhưng nặng hơn mức cần, hàng đợi phổ biến của NestJS vướng ghi kép, còn BaaS đẩy FEFO, \br{BR20} và nhắc nhở chống trùng vào các hàm đám mây rời rạc, kèm phụ thuộc nhà cung cấp. Cái giá của Go là mã dài hơn và ít tiện ích dựng sẵn, được bù bằng sinh mã và quy ước module thống nhất (mục~\ref{sec:thiet-ke-chi-tiet}).
+
+Lưu trữ đa CSDL (polyglot persistence) ở đây theo phân biệt của Kleppmann giữa hệ thống ghi nhận (system of record) và dữ liệu dẫn xuất~\cite{kleppmann}: PostgreSQL là hệ thống ghi nhận duy nhất, mỗi kho khác chỉ làm việc PostgreSQL làm kém, gồm Redis cho bộ đếm và phát tán sự kiện, Elasticsearch cho tìm kiếm có độ liên quan, MinIO cho tệp nhị phân lớn; phân bổ dữ liệu chi tiết nằm ở mục~\ref{sec:csdl}. Vì mỗi kho thêm vào kéo theo chi phí vận hành, nhóm không dùng MongoDB (dữ liệu có tính quan hệ, cần giao dịch nhiều thực thể, phần bán cấu trúc đã có JSONB), ClickHouse (báo cáo chỉ quét một không gian trong tối đa 12 tháng theo \br{BR21}, view vật chất hóa là đủ), Kafka (mục~\ref{ssec:cn-river}) và Kubernetes (khoảng mười lăm container trên một máy chủ được Docker Compose quản lý đủ; xem lộ trình ở mục~\ref{sec:trien-khai}). Bảng~\ref{tab:c3-tong-hop-cong-nghe} tổng hợp các lựa chọn.
+
+{\small
+\begin{longtable}{|L{2.5cm}|L{4.4cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-2.5cm-4.4cm-3.1cm\relax}|L{3.1cm}|}
+\caption{Tổng hợp công nghệ sử dụng}\label{tab:c3-tong-hop-cong-nghe}\\
+\hline
+\hd{Thành phần} & \hd{Công nghệ, phiên bản} & \hd{Vai trò} & \hd{NFR đáp ứng}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Thành phần} & \hd{Công nghệ, phiên bản} & \hd{Vai trò} & \hd{NFR đáp ứng}\\ \hline
+\endhead
+Thiết bị & Flutter 3, drift (SQLite), flutter\_secure\_storage & Đa nền tảng, ngoại tuyến & \nfr{NFR11}, \nfr{NFR15}, \nfr{NFR19}, \nfr{NFR23}\\ \hline
+Thông báo đẩy & FCM HTTP v1, APNs & Nhắc nhở, phân công & \nfr{NFR10}, \nfr{NFR12}, \nfr{NFR22}\\ \hline
+Máy chủ & Go 1.23, chi v5, coder/websocket & API, WebSocket, worker & \nfr{NFR09}, \nfr{NFR10}, \nfr{NFR21}\\ \hline
+Thư viện Go & pgx v5, sqlc, goose, oapi-codegen & Giao dịch, di trú, sinh mã & \nfr{NFR13}, \nfr{NFR20}, \nfr{NFR21}\\ \hline
+Hàng đợi & River & Outbox, định kỳ, thử lại & \nfr{NFR12}, \nfr{NFR22}\\ \hline
+CSDL chính & PostgreSQL 16 (citext, pg\_trgm, unaccent) & Nguồn sự thật, ACID & \nfr{NFR13}, \nfr{NFR16}, \nfr{NFR22}\\ \hline
+Bộ nhớ đệm & Redis 7 & Cache, giới hạn, Pub/Sub & \nfr{NFR09}, \nfr{NFR10}, \nfr{NFR17}\\ \hline
+Tìm kiếm & Elasticsearch 8.15 & Thực phẩm, công thức (chung và riêng) & \nfr{NFR09}, \nfr{NFR18}\\ \hline
+Kho đối tượng & MinIO (API S3) & Ảnh, tệp xuất & \nfr{NFR22}\\ \hline
+Dịch vụ ngoài & SMTP relay, Open Food Facts~\cite{openfoodfacts} & Thư OTP, mã vạch & \br{BR02}, \nfr{NFR09}\\ \hline
+Biên, triển khai & Caddy 2, Docker Compose, GitLab CI & TLS, cân bằng tải, CI/CD & \nfr{NFR13}, \nfr{NFR14}, \nfr{NFR20}\\ \hline
+Vận hành & Prometheus, Grafana, Loki, OpenTelemetry, pgBackRest & Quan sát, sao lưu & \nfr{NFR09}, \nfr{NFR12}, \nfr{NFR13}\\ \hline
+\end{longtable}
+}
+
+Như vậy, mỗi ràng buộc \nfr{NFR21}--\nfr{NFR23} đều có thành phần đáp ứng trong bảng; mục~\ref{sec:kien-truc} dùng bộ công nghệ này để dựng kiến trúc tổng thể.

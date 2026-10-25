@@ -1,0 +1,104 @@
+% ---------------------------------------------------------------------
+%  3.8. Triển khai, tính sẵn sàng và khả năng mở rộng
+% ---------------------------------------------------------------------
+\section{Triển khai, tính sẵn sàng và khả năng mở rộng}\label{sec:trien-khai}
+
+Mục này mô tả hạ tầng giai đoạn đầu, tính sẵn sàng, cách quan sát hệ thống và lộ trình mở rộng, theo nguyên tắc mười hai yếu tố (twelve-factor app)~\cite{twelvefactor}: một image chạy ở mọi môi trường, khác biệt chỉ nằm ở biến môi trường và bí mật.
+
+\subsection{Kiến trúc triển khai}\label{ssec:kien-truc-trien-khai}
+
+Với đỉnh thiết kế 50 yêu cầu mỗi giây (mục~\ref{ssec:uoc-luong-tai}), giai đoạn 1 dùng một VPS Ubuntu 24.04 LTS chạy Docker Compose~\cite{docker}; Kubernetes chưa đáng chi phí vận hành ở quy mô này. Hình~\ref{fig:trien-khai} là sơ đồ triển khai UML: nút thiết bị (\texttt{«device»}) VPS chứa môi trường thực thi (\texttt{«executionEnvironment»}) Docker Engine, trong đó mỗi container là một nút \texttt{«container»}.
+
+\diagram[\textwidth]{c3-26-trien-khai}{Sơ đồ triển khai giai đoạn 1 trên một VPS}{fig:trien-khai}
+
+Container được chia vào ba mạng Docker theo vùng tin cậy, vẽ thành ba dải từ ngoài vào trong; mỗi container nằm ở dải của mạng ngoài cùng mà nó tham gia, dòng chữ nghiêng ghi mạng thứ hai. Mạng \texttt{edge} chỉ có Caddy, nơi duy nhất mở cổng 80, 443 ra Internet. Mạng \texttt{app} nối Caddy với \texttt{api} và MinIO, cùng \texttt{worker} và cụm giám sát. Mạng \texttt{data} là mạng \texttt{internal} của Docker, không có đường ra Internet, chứa PostgreSQL, Redis, Elasticsearch, pgBackRest và được \texttt{api}, \texttt{worker}, MinIO, cụm giám sát cùng tham gia. Caddy định tuyến theo tên miền: \path{api.dicho.example} tới hai bản \texttt{api}; \path{media.dicho.example} tới MinIO, chỉ chấp nhận URL ký sẵn; còn tên miền gốc \path{dicho.example} phục vụ tĩnh hai tệp xác minh \path{/.well-known/apple-app-site-association} và \path{/.well-known/assetlinks.json} (kiểu \texttt{application/json}, không chuyển hướng) để liên kết mời \path{https://dicho.example/join/{code}} của \uc{UC10} mở thẳng ứng dụng qua Universal Links và App Links, kèm trang dự phòng cho thiết bị chưa cài ứng dụng (mục~\ref{sec:tich-hop-di-dong}). \texttt{api} và \texttt{worker} chung một image distroless; cổng vận hành 8081 (\path{/healthz}, \path{/readyz}, \path{/metrics}) không đi qua Caddy, chỉ Prometheus trong mạng nội bộ thu chỉ số qua cổng này. Bảng~\ref{tab:c3-container-trien-khai} đặc tả các container.
+
+{\small
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{|L{1.8cm}|L{2.75cm}|C{0.95cm}|L{1.95cm}|L{2.3cm}|L{2.55cm}|L{\dimexpr\textwidth-14\tabcolsep-8\arrayrulewidth-12.3cm\relax}|}
+\caption{Đặc tả container triển khai giai đoạn 1}\label{tab:c3-container-trien-khai}\\
+\hline
+\hd{Dịch vụ} & \hd{Image} & \hd{Số bản} & \hd{Giới hạn tài nguyên} & \hd{Mạng, cổng} & \hd{Kiểm tra sức khỏe} & \hd{Volume}\\ \hline
+\endfirsthead
+\multicolumn{7}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Dịch vụ} & \hd{Image} & \hd{Số bản} & \hd{Giới hạn tài nguyên} & \hd{Mạng, cổng} & \hd{Kiểm tra sức khỏe} & \hd{Volume}\\ \hline
+\endhead
+caddy & caddy 2 & 1 & 256 MB & edge, app; 80, 443 & Cổng quản trị 2019 & caddy-data; tệp xác minh liên kết (chỉ đọc)\\ \hline
+api & dicho-server, lệnh \texttt{api} & 2 & 512 MB, 1 vCPU & app, data; 8080, 8081 & \texttt{/readyz} & Không\\ \hline
+worker & dicho-server, lệnh \texttt{worker} & 1 & 512 MB, 1 vCPU & app, data; 8081 & \texttt{/healthz} & Không\\ \hline
+postgres & postgres 16, có pgBackRest & 1 & 4 GB, 2 vCPU & data; 5432 & \texttt{pg\_isready} & pgdata\\ \hline
+redis & redis 7 & 1 & 512 MB & data; 6379 & \texttt{redis-cli ping} & Không\\ \hline
+elastic\-search & elasticsearch 8.15, bật xpack & 1 & Heap 1 GB, trần 2 GB & data; 9200 & \path{/_cluster/health} & esdata\\ \hline
+minio & minio & 1 & 1 GB & app, data; 9000 & \path{/minio/health/live} & minio-data\\ \hline
+pgbackrest & Tự dựng, có pgBackRest & 1 & 256 MB & data & \texttt{pgbackrest check} & pgdata (chỉ đọc)\\ \hline
+Giám sát & prometheus, grafana, loki, alloy, hai exporter & 1 mỗi loại & Tổng 2 GB & app, data; 9090, 3000, 3100 & Điểm \texttt{ready} & prom-data, loki-data\\ \hline
+\end{longtable}
+}
+
+Tổng giới hạn bộ nhớ khoảng 11,5 GB nên VPS đề xuất là 4 vCPU, 16 GB RAM, 200 GB SSD, phần dư dành cho bộ đệm trang của PostgreSQL; nếu tách cụm giám sát sang máy khác có thể dùng 8 GB RAM.
+
+\subsection{Môi trường và quy trình CI/CD}\label{ssec:moi-truong-cicd}
+
+Hệ thống có ba môi trường: local (Compose, Mailpit thay SMTP), staging (cùng cấu trúc với production, dùng khóa ký và dự án Firebase riêng) và production. Di trú lược đồ bằng goose chạy trước khi đổi phiên bản theo chiến lược mở rộng -- thu hẹp (expand--contract): bản phát hành đầu chỉ thêm cột, bảng, chỉ mục, cột cũ chỉ bị xóa ở bản sau, nên bản cũ và mới cùng chạy được khi cuốn chiếu và quay lui chỉ cần image trước. Pipeline chạy trên GitLab CI~\cite{gitlabci} như Hình~\ref{fig:cicd}.
+
+\diagram[0.65\textwidth]{c3-27-cicd}{Biểu đồ hoạt động của pipeline CI/CD trên GitLab}{fig:cicd}
+
+Mọi merge request qua bốn stage của vùng tích hợp; có job lỗi hoặc lỗ hổng mức High, Critical thì pipeline dừng và báo lỗi trên merge request. Các hành động xử lý thất bại được tô đỏ và kết thúc bằng nút kết thúc hoạt động, nên mỗi nhánh dừng đều thấy rõ trên sơ đồ. Image được gắn nhãn bằng SHA của commit để truy ngược về mã nguồn. Chỉ nhánh \texttt{main} đi tiếp tới \texttt{publish} và triển khai; staging lỗi smoke test thì chạy lại image trước, production cần phê duyệt thủ công và quay lui về image trước nếu smoke test thất bại, trong khi lược đồ đã mở rộng được giữ nguyên nhờ chiến lược expand--contract. Ứng dụng di động phát hành riêng qua kho ứng dụng, nên máy chủ luôn phát hành trước và tương thích ngược: \texttt{v1} chỉ thêm trường tùy chọn hoặc API mới, ứng dụng dưới phiên bản tối thiểu nhận 426 (mã 4260).
+
+\subsection{Tính sẵn sàng và khả năng phục hồi}\label{ssec:san-sang-phuc-hoi}
+
+\nfr{NFR13} đòi hỏi sẵn sàng 99\% trong khung 06:00--23:00, tức ngân sách lỗi khoảng 5 giờ mỗi tháng, đủ để chấp nhận VPS là điểm lỗi đơn nếu phục hồi nhanh. \texttt{/healthz} báo tiến trình còn sống, \texttt{/readyz} kiểm tra PostgreSQL và Redis để Caddy chỉ gửi yêu cầu tới bản sẵn sàng; riêng mất Redis sau khi khởi động chỉ báo suy giảm, tránh loại mọi bản API vì một phụ thuộc dùng chung. Docker tự khởi động lại container lỗi, tiến trình tắt mềm trong 20 giây, hai bản API cập nhật cuốn chiếu, River tự bầu lãnh đạo để tác vụ định kỳ chỉ chạy một lần. pgBackRest sao lưu đầy đủ hằng ngày, giữ 7 bản, cùng WAL liên tục ra ngoài máy chủ, cho mục tiêu RPO $\le$ 5 phút, RTO $\le$ 1 giờ, được xác nhận qua diễn tập khôi phục hằng tháng; Elasticsearch dựng lại được từ PostgreSQL. Bảng~\ref{tab:c3-che-do-loi} phân tích chế độ lỗi.
+
+{\small
+\begin{longtable}{|L{2.3cm}|L{3.5cm}|L{3.1cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-8.9cm\relax}|}
+\caption{Phân tích chế độ lỗi của các thành phần}\label{tab:c3-che-do-loi}\\
+\hline
+\hd{Thành phần} & \hd{Ảnh hưởng} & \hd{Phát hiện} & \hd{Giảm thiểu, phục hồi}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Thành phần} & \hd{Ảnh hưởng} & \hd{Phát hiện} & \hd{Giảm thiểu, phục hồi}\\ \hline
+\endhead
+Một bản API & Yêu cầu đang chạy lỗi & Caddy kiểm tra \texttt{/readyz} & Dồn tải sang bản còn lại; ứng dụng thử lại cùng \texttt{Idempotency-Key}: giao dịch cũ đã rollback thì chạy lại, đã commit thì nhận phản hồi đã lưu\\ \hline
+Worker & Thông báo, chỉ mục bị trễ & Hàng đợi River dài ra & Tác vụ nằm trong PostgreSQL (outbox), chạy tiếp khi worker sống lại\\ \hline
+PostgreSQL & Mọi API lỗi (5003) & \texttt{/readyz}, exporter & Khởi động lại hoặc khôi phục theo thời điểm; ứng dụng chạy ngoại tuyến\\ \hline
+Redis & Mất bộ đệm, Pub/Sub & Lỗi kết nối trong chỉ số & Đọc thẳng PostgreSQL; ứng dụng kéo \texttt{/changes}, nhận FCM\\ \hline
+Elastic\-search & Tìm kiếm kém chịu lỗi gõ & Bộ ngắt mạch mở & Dự phòng \texttt{pg\_trgm}; dựng lại chỉ mục từ PostgreSQL\\ \hline
+MinIO & Không tải, xem ảnh mới & \path{/minio/health/live} & Ảnh giữ chỗ, ảnh đệm; khôi phục từ bucket sao lưu\\ \hline
+FCM, APNs & Thông báo đẩy trễ & Tỷ lệ gửi lỗi & Thử lại 3 lần (\nfr{NFR12}); thông báo vẫn có trong ứng dụng\\ \hline
+SMTP relay & OTP không đến & Lỗi ở hàng \texttt{notify} & Thử lại; người dùng gửi lại mã (\br{BR02})\\ \hline
+Open Food Facts & Không nhận diện mã mới & Quá thời gian chờ & Bộ đệm, danh mục nội bộ; mã 5004, nhập tay (\msg{MSG23})\\ \hline
+Toàn bộ VPS & Gián đoạn toàn hệ thống & Đầu dò bên ngoài & Hàng đợi ngoại tuyến giữ thay đổi; dựng máy mới theo quy trình RTO\\ \hline
+\end{longtable}
+}
+
+\subsection{Quan sát hệ thống}\label{ssec:quan-sat-he-thong}
+
+Prometheus~\cite{prometheus} thu chỉ số RED (tốc độ, lỗi, độ trễ) cho mỗi tuyến API và hàng đợi River, USE (mức dùng, bão hòa, lỗi) cho CPU, bộ nhớ, đĩa và kết nối cơ sở dữ liệu. Log JSON mang \texttt{request\_id}, \texttt{trace\_id} được Grafana Alloy gửi tới Loki; vết OpenTelemetry~\cite{opentelemetry} theo một yêu cầu qua cả tác vụ River nó sinh ra. Theo SRE~\cite{sre}, ngưỡng NFR được chuyển thành chỉ báo (SLI) và mục tiêu mức dịch vụ (SLO) ở Bảng~\ref{tab:c3-slo}; cảnh báo sẵn sàng dựa trên tốc độ đốt ngân sách lỗi, kèm đầu dò bên ngoài.
+
+{\small
+\begin{longtable}{|L{6.4cm}|L{3.3cm}|L{\dimexpr\textwidth-6\tabcolsep-4\arrayrulewidth-9.7cm\relax}|}
+\caption{Chỉ báo, mục tiêu mức dịch vụ và ngưỡng cảnh báo}\label{tab:c3-slo}\\
+\hline
+\hd{Chỉ báo SLI} & \hd{Mục tiêu SLO} & \hd{Ngưỡng cảnh báo}\\ \hline
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Chỉ báo SLI} & \hd{Mục tiêu SLO} & \hd{Ngưỡng cảnh báo}\\ \hline
+\endhead
+Yêu cầu API hoàn tất trong 1 s (\nfr{NFR09}) & $\ge$ 95\% & p95 > 1 s trong 10 phút\\ \hline
+Độ trễ gợi ý món M05 (\nfr{NFR09}) & p95 $\le$ 2 s & p95 > 2 s trong 15 phút\\ \hline
+Độ trễ gợi ý tên Q02 (\nfr{NFR09}) & p95 $\le$ 500 ms & p95 > 500 ms trong 10 phút\\ \hline
+Commit tới khi gửi qua WebSocket (\nfr{NFR10}) & p95 $\le$ 1 s phía máy chủ & p95 > 1 s; mất Pub/Sub\\ \hline
+Thông báo nhắc được tạo trong 15 phút sau \texttt{reminder.runAt} (\nfr{NFR12}) & $\ge$ 99\% & Còn tác vụ \texttt{UserReminder} chưa xong sau 15 phút\\ \hline
+Thông báo đẩy được FCM chấp nhận sau tối đa 3 lần thử, trừ mã thiết bị không hợp lệ (\nfr{NFR12}) & $\ge$ 99\%/ngày & Tỷ lệ \texttt{deliveries} lỗi > 1\% trong 1 giờ\\ \hline
+Yêu cầu không lỗi 5xx, 06:00--23:00 (\nfr{NFR13}) & $\ge$ 99\%/tháng & Đốt ngân sách > 14 lần trong 1 giờ\\ \hline
+Tuổi WAL lưu trữ, bản sao lưu gần nhất (\nfr{NFR13}) & $\le$ 5 phút; $\le$ 26 giờ & Vượt ngưỡng hoặc sao lưu lỗi\\ \hline
+\end{longtable}
+}
+
+\subsection{Khả năng mở rộng}\label{ssec:lo-trinh-mo-rong}
+
+Ở đỉnh thiết kế, tiến trình Go còn dư nhiều; điểm nghẽn đầu tiên khi tải tăng là PostgreSQL (số kết nối, truy vấn báo cáo, khóa dòng khi trừ kho FEFO), đã được giảm bằng bảng tổng hợp báo cáo, bộ đệm Redis, Elasticsearch và việc đánh số thay đổi theo từng không gian; đợt tải ở giờ nhắc được cô lập bằng hàng đợi \texttt{notify}. Mở rộng ngang đã sẵn sàng vì \texttt{api} không giữ trạng thái phiên, WebSocket phát tán qua Redis Pub/Sub nên không cần phiên dính (sticky session), River cho thêm worker và lưu trữ dùng giao thức S3. Khi CPU vượt 70\% kéo dài ở giờ cao điểm, p95 tiến gần 1 giây hoặc số người dùng tiến tới 50.000, hệ thống chuyển sang giai đoạn 2 như Hình~\ref{fig:mo-rong}.
+
+\diagram[0.9\textwidth]{c3-28-mo-rong}{Sơ đồ triển khai giai đoạn 2 với nhiều nút}{fig:mo-rong}
+
+Giai đoạn 2 hướng tới khoảng 50.000 người dùng: cơ sở dữ liệu tách sang máy riêng với PostgreSQL primary và bản sao chỉ đọc (read replica), ít nhất ba bản API sau bộ cân bằng tải, Redis Sentinel, Elasticsearch ba nút và MinIO phân tán. Worker chạy trên hai nút ứng dụng; River tự bầu leader qua bảng \texttt{river\_leader} nên các tác vụ định kỳ như \texttt{ReminderDispatcher} vẫn chỉ được lập một lần, còn tác vụ thường được mọi worker chia nhau lấy bằng \texttt{SKIP LOCKED}. pgBackRest sao lưu từ primary cả WAL lẫn bản đầy đủ ra kho ngoài máy chủ. Bản sao chỉ đọc phục vụ báo cáo \uc{UC44}--\uc{UC47} vốn chấp nhận trễ vài giây, còn giao dịch ghi và \texttt{GET /changes} đọc primary để giữ thứ tự \texttt{seq}. Giai đoạn 3 chuyển lên Kubernetes với tự động co giãn (Horizontal Pod Autoscaler) và tách module notification thành dịch vụ riêng, vì không module nào gọi trực tiếp nó, tải dồn theo đợt và chủ yếu chờ FCM, SMTP nên cần co giãn, cô lập lỗi riêng. Đánh đổi là ranh giới giao dịch: outbox vẫn ghi trong cơ sở dữ liệu của khối nguyên khối, một tiến trình chuyển tiếp đẩy sự kiện sang message broker, và dịch vụ mới phải xử lý lũy đẳng theo \texttt{dedupe\_key}.
