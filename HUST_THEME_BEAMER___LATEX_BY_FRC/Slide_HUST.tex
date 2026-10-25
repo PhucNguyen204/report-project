@@ -1,4 +1,4 @@
-% 21 slide, trình bày 10 phút. Dùng trực tiếp ảnh PNG của báo cáo.
+% 20 slide, trình bày 10 phút. Dùng trực tiếp ảnh PNG của báo cáo.
 % Hỏi đáp AI là tính năng liên kết với danh sách mua sắm.
 \documentclass[t,aspectratio=169,10pt]{beamer}
 \usepackage{fontspec}
@@ -27,49 +27,38 @@
 \newcommand{\talk}[1]{\note{#1}}
 \title{Xây dựng ứng dụng di động đa nền tảng “Đi chợ tiện lợi”}
 \author{Nhóm 7 - IT4788}
-\hypersetup{pdftitle={Đi chợ tiện lợi - Chương 1 và 2 - 21 slide},pdfauthor={Nhóm 7 - IT4788}}
+\hypersetup{pdftitle={Đi chợ tiện lợi - Chương 1 và 2 - 20 slide},pdfauthor={Nhóm 7 - IT4788}}
 \begin{document}
-% 01. Bìa đề tài.
+% 01
 {\setbeamertemplate{background}{\includegraphics[width=\paperwidth,height=\paperheight]{hust-blue-169-title.png}}
 \begin{frame}[plain]
 \begin{tikzpicture}[remember picture,overlay]
-\node[anchor=north west,text width=10.9cm,inner sep=0,align=left] at ([xshift=0.8cm,yshift=-2.1cm]current page.north west) {
-{\fontsize{10}{12}\selectfont\color{hustprimary}\bfseries BÁO CÁO BÀI TẬP LỚN \textbar\ NHÓM 7\par}
-\vspace{0.28cm}
-{\fontsize{25}{30}\selectfont\bfseries\color{hustprimary} ĐI CHỢ TIỆN LỢI\par}
-\vspace{0.08cm}
-{\fontsize{13}{17}\selectfont Xây dựng ứng dụng di động đa nền tảng\par}
-\vspace{0.28cm}
-{\color{hustprimary}\rule{6.8cm}{0.6pt}\par}
-\vspace{0.28cm}
-{\fontsize{10}{14}\selectfont
-Học phần: Phát triển ứng dụng đa nền tảng (IT4788)\par
-Lớp 172915 \quad Học kỳ 20261\par
-Giảng viên hướng dẫn: Thầy Nguyễn Quốc Tuấn\par}
+\node[anchor=north west,text width=11.4cm,inner sep=0,align=left] at ([xshift=0.8cm,yshift=-1.95cm]current page.north west) {
+{\fontsize{10}{12}\selectfont\bfseries\color{hustprimary} BÁO CÁO CHƯƠNG 1 VÀ CHƯƠNG 2\quad NHÓM 7\par}
+\vspace{0.18cm}
+{\fontsize{25}{29}\selectfont\bfseries\color{hustprimary} ĐI CHỢ TIỆN LỢI\par}
+\vspace{0.10cm}
+{\fontsize{12}{15}\selectfont Xây dựng ứng dụng di động đa nền tảng\par}
+};
+\node[anchor=north west,text width=11.4cm,inner sep=0,align=left,font=\fontsize{9.5}{12}\selectfont] at ([xshift=0.8cm,yshift=-4.55cm]current page.north west) {
+Phát triển ứng dụng đa nền tảng (IT4788)\quad Lớp 172915\par
+Học kỳ 20261\quad GVHD: Thầy Nguyễn Quốc Tuấn\par
+};
+\node[anchor=north west,text width=5.5cm,inner sep=0,align=left,font=\fontsize{9}{13}\selectfont] at ([xshift=0.8cm,yshift=-5.8cm]current page.north west) {
+\textbf{Nguyễn Ngọc Phúc}\quad{\color{black!60}20220041}\par
+\vspace{0.17cm}
+\textbf{Đinh Nhẫn Đức}\quad{\color{black!60}20215350}\par
+};
+\node[anchor=north west,text width=5.3cm,inner sep=0,align=left,font=\fontsize{9}{13}\selectfont] at ([xshift=6.65cm,yshift=-5.8cm]current page.north west) {
+\textbf{Trần Gia Bảo}\quad{\color{black!60}20235019}\par
+\vspace{0.17cm}
+\textbf{Nguyễn Ngọc Tùng}\quad{\color{black!60}20204703}\par
 };
 \end{tikzpicture}
 \end{frame}}
 \useStyleLogoOnly\useThinBar\showPageNumber
-% 02. Thành viên thực hiện.
-\begin{frame}{Thành viên nhóm 7}
-\centering
-\vspace{0.5cm}
-{\small Lớp 172915 \quad|\quad IT4788\par}
-\vspace{0.35cm}
-{\renewcommand{\arraystretch}{1.8}
-\begin{tabular}{@{}P{1.2cm}P{6.2cm}P{3.7cm}@{}}
-\toprule
-\textbf{STT} & \textbf{Họ và tên} & \textbf{Mã sinh viên}\\
-\midrule
-1 & Nguyễn Ngọc Phúc & 20220041\\
-2 & Trần Gia Bảo & 20235019\\
-3 & Đinh Nhẫn Đức & 20215350\\
-4 & Nguyễn Ngọc Tùng & 20204703\\
-\bottomrule
-\end{tabular}\par}
-\end{frame}
 \section{Chương 1. Khảo sát bài toán}
-% 03
+% 02
 \begin{frame}{Quy trình thủ công và các điểm nghẽn}
 \begin{columns}[T,onlytextwidth]
 \column{0.49\textwidth}\centering
@@ -82,17 +71,16 @@ Giảng viên hướng dẫn: Thầy Nguyễn Quốc Tuấn\par}
 \end{columns}
 \source{Chương 1, quy trình thủ công và mục 1.1.1.}
 \end{frame}
-% 04
+% 03
 \begin{frame}{Khảo sát giải pháp và phạm vi đề tài}
-{\small\renewcommand{\arraystretch}{1.3}
+\small\renewcommand{\arraystretch}{1.3}
 \begin{tabular}{@{}P{3.2cm}P{4.3cm}P{5.65cm}@{}}\toprule
 \textbf{Nhóm giải pháp} & \textbf{Điểm mạnh} & \textbf{Hạn chế với bài toán của nhóm}\\\midrule
 Ghi chú, tin nhắn & Dễ dùng, quen thuộc & Thiếu trạng thái mua, tồn kho và hạn dùng\\
 Danh sách mua sắm & Chia sẻ, đánh dấu đã mua & Theo dõi tủ lạnh chưa là trọng tâm\\
 Lập thực đơn & Gợi ý món, tạo nguyên liệu & Chưa xuất phát từ tồn kho của gia đình\\
 Theo dõi hạn dùng & Lưu thực phẩm, nhắc hết hạn & Tách rời mua sắm và kế hoạch bữa ăn\\\bottomrule
-\end{tabular}}
-\gap
+\end{tabular}\par\normalsize\vspace{0.3cm}
 \begin{columns}[T,onlytextwidth]
 \column{0.49\textwidth}\key{Phạm vi chính}\par Nhóm gia đình, danh sách mua sắm, tủ lạnh, công thức, kế hoạch và thống kê.
 \column{0.47\textwidth}\key{Không bao gồm}\par Thanh toán, giao hàng và IoT.
@@ -100,7 +88,7 @@ Theo dõi hạn dùng & Lưu thực phẩm, nhắc hết hạn & Tách rời mua
 \end{columns}
 \source{Chương 1, khảo sát của nhóm và bảng phạm vi.}
 \end{frame}
-% 05
+% 04
 \begin{frame}{Chu trình nghiệp vụ của ứng dụng}
 \centering\fig{c1-02-chu-trinh-nghiep-vu}{4.0cm}
 \gap\raggedright
@@ -111,7 +99,7 @@ Theo dõi hạn dùng & Lưu thực phẩm, nhắc hết hạn & Tách rời mua
 \gap\key{Đối tượng sử dụng:} Cá nhân và các thành viên cùng quản lý thực phẩm gia đình.
 \source{Chương 1, ảnh chu trình nghiệp vụ của hệ thống.}
 \end{frame}
-% 06
+% 05
 \begin{frame}{Sơ đồ phân rã chức năng: 8 phân hệ}
 \centering
 \fig{c1-03-phan-ra-chuc-nang}{5.8cm}
@@ -120,7 +108,7 @@ Theo dõi hạn dùng & Lưu thực phẩm, nhắc hết hạn & Tách rời mua
 \source{Ảnh gốc sơ đồ phân rã chức năng trong Chương 1.}
 \end{frame}
 \section{Chương 2. Đặc tả yêu cầu}
-% 07
+% 06
 \begin{frame}{Tác nhân và quan hệ kế thừa quyền}
 \begin{columns}[T,onlytextwidth]
 \column{0.57\textwidth}\centering\fig{c2-01-quan-he-tac-nhan}{5.65cm}
@@ -132,7 +120,7 @@ Theo dõi hạn dùng & Lưu thực phẩm, nhắc hết hạn & Tách rời mua
 \end{columns}
 \source{Chương 2, quan hệ tác nhân; quy tắc BR23.}
 \end{frame}
-% 08
+% 07
 \begin{frame}{Biểu đồ use case tổng quan}
 \begin{columns}[T,onlytextwidth]
 \column{0.56\textwidth}\centering\fig{c2-02-uc-tong-quan}{5.85cm}
@@ -143,7 +131,7 @@ Theo dõi hạn dùng & Lưu thực phẩm, nhắc hết hạn & Tách rời mua
 \gap\key{Tích hợp dịch vụ}\par OTP qua email, nhắc hạn qua thông báo đẩy, mã vạch qua CSDL sản phẩm.
 \end{columns}
 \end{frame}
-% 09
+% 08
 \begin{frame}{Danh mục 53 use case theo 9 nhóm}
 \small\renewcommand{\arraystretch}{1.13}
 \begin{tabular}{@{}P{3.8cm}P{2.1cm}cP{6.4cm}@{}}\toprule
@@ -159,9 +147,9 @@ Theo dõi hạn dùng & Lưu thực phẩm, nhắc hết hạn & Tách rời mua
 9. Quản trị & UC48--UC53 & 6 & Tài khoản, danh mục, tham số hệ thống\\\bottomrule
 \end{tabular}
 \gap\key{Trọng tâm đặc tả:} 12 use case đầy đủ, 12 mô tả ngắn, 29 ở phụ lục.
-\noteinfo{Tính năng hỏi đáp AI tạo danh sách nguyên liệu và phối hợp với chức năng mua sắm.}
+\noteinfo{UC-AI01 bổ sung luồng hỏi đáp; danh mục gốc trong báo cáo gồm 53 use case.}
 \end{frame}
-% 10
+% 09
 \begin{frame}{Nhóm gia đình và UC11: tham gia bằng mã mời}
 \centering\fig{c2-05-uc-nhom}{4.2cm}
 \gap\raggedright
@@ -171,7 +159,7 @@ Theo dõi hạn dùng & Lưu thực phẩm, nhắc hết hạn & Tách rời mua
 \end{columns}
 \source{Chương 2, ảnh use case nhóm gia đình và đặc tả UC11.}
 \end{frame}
-% 11
+% 10
 \begin{frame}{Nhóm mua sắm: lập danh sách và phân công}
 \begin{columns}[T,onlytextwidth]
 \column{0.58\textwidth}\centering\fig{c2-07-uc-mua-sam}{5.7cm}
@@ -183,29 +171,29 @@ Theo dõi hạn dùng & Lưu thực phẩm, nhắc hết hạn & Tách rời mua
 \end{columns}
 \source{Chương 2, gói mua sắm; BR09--BR10.}
 \end{frame}
-% 12. Chia đôi theo chiều dọc từ cùng ảnh gốc, không vẽ lại.
+% 11
 \begin{frame}{UC20 và UC21: ghi nhận mua hàng, chuyển vào tủ}
 \begin{columns}[T,onlytextwidth]
 \column{0.49\textwidth}\centering\key{1. Ghi nhận mua và đồng bộ}\par
-\includegraphics[height=5.1cm,trim=0 1103bp 0 0,clip]{c2-08-act-danh-dau-da-mua.png}
+\includegraphics[height=5.1cm,trim=0 1000bp 0 0,clip]{c2-08-act-danh-dau-da-mua.png}
 \column{0.49\textwidth}\centering\key{2. Xác nhận nhập tủ và hoàn tất}\par
-\includegraphics[height=5.1cm,trim=0 0 0 1103bp,clip]{c2-08-act-danh-dau-da-mua.png}
+\includegraphics[height=5.1cm,trim=0 0 0 1000bp,clip]{c2-08-act-danh-dau-da-mua.png}
 \end{columns}
 \noteinfo{Mua hộ cần xác nhận. Mỗi mặt hàng chỉ sinh một lô. Yêu cầu gửi lại không tạo lô trùng.}
 \source{Hai phần liên tiếp của ảnh hoạt động UC20--UC21 trong báo cáo.}
 \end{frame}
-% 13
+% 12
 \begin{frame}{UC22: sinh danh sách nguyên liệu còn thiếu}
 \begin{columns}[T,onlytextwidth]
 \column{0.49\textwidth}\centering\key{1. Tính nhu cầu, phân bổ tồn kho}\par
-\includegraphics[height=5.1cm,trim=0 1177bp 0 0,clip]{c2-09-act-sinh-ds-tu-ke-hoach.png}
+\includegraphics[height=5.1cm,trim=0 1077bp 0 0,clip]{c2-09-act-sinh-ds-tu-ke-hoach.png}
 \column{0.49\textwidth}\centering\key{2. Rà soát và tạo danh sách}\par
-\includegraphics[height=5.1cm,trim=0 0 0 1177bp,clip]{c2-09-act-sinh-ds-tu-ke-hoach.png}
+\includegraphics[height=5.1cm,trim=0 0 0 1077bp,clip]{c2-09-act-sinh-ds-tu-ke-hoach.png}
 \end{columns}
 \noteinfo{Xét hạn dùng theo ngày nấu. Phân bổ tồn kho và hàng chờ mua mỗi lượng đúng một lần.}
 \source{Hai phần liên tiếp của ảnh hoạt động UC22 trong báo cáo.}
 \end{frame}
-% 14
+% 13
 \begin{frame}{Ví dụ UC22: vì sao phải xét từng ngày nấu?}
 \begin{columns}[T,onlytextwidth]
 \column{0.48\textwidth}
@@ -230,7 +218,7 @@ Chờ mua & 0,1 kg, đến trước D\\\bottomrule
 \gap\key{Nếu chỉ lấy tổng nhu cầu trừ tổng tồn kho, kết quả sai thành 0,2 kg.}
 \source{Chương 2, ví dụ kiểm chứng UC22. FEFO: ưu tiên lô hết hạn sớm.}
 \end{frame}
-% 15
+% 14
 \begin{frame}{Nhóm tủ lạnh: theo dõi theo từng lô thực phẩm}
 \begin{columns}[T,onlytextwidth]
 \column{0.67\textwidth}\centering\fig{c2-10-uc-tu-lanh}{5.75cm}
@@ -242,7 +230,7 @@ Chờ mua & 0,1 kg, đến trước D\\\bottomrule
 \end{columns}
 \source{Chương 2, gói thực phẩm trong tủ lạnh.}
 \end{frame}
-% 16
+% 15
 \begin{frame}{UC31: nhắc hạn dùng qua thông báo đẩy}
 \begin{columns}[T,onlytextwidth]
 \column{0.74\textwidth}\centering\fig{c2-12-seq-nhac-nho}{5.8cm}
@@ -254,7 +242,7 @@ Chờ mua & 0,1 kg, đến trước D\\\bottomrule
 \end{columns}
 \source{Chương 2, ảnh tuần tự UC31 và đặc tả nhắc hạn dùng.}
 \end{frame}
-% 17
+% 16
 \begin{frame}{Kế hoạch bữa ăn và UC40: gợi ý món}
 \begin{columns}[T,onlytextwidth]
 \column{0.60\textwidth}\centering\fig{c2-14-uc-ke-hoach}{4.6cm}
@@ -269,7 +257,7 @@ R: đáp ứng nguyên liệu.\par E: ưu tiên thực phẩm gần hạn.\par F
 \end{columns}
 \source{Chương 2, gói kế hoạch bữa ăn và ví dụ UC40.}
 \end{frame}
-% 18
+% 17
 \begin{frame}{UC41: xác nhận đã nấu và cập nhật tồn kho}
 \begin{columns}[T,onlytextwidth]
 \column{0.43\textwidth}\centering\fig{c2-16-act-xac-nhan-nau}{5.65cm}
@@ -283,7 +271,7 @@ R: đáp ứng nguyên liệu.\par E: ưu tiên thực phẩm gần hạn.\par F
 \source{Chương 2, ảnh hoạt động và đặc tả UC41.}
 \end{frame}
 \section{Tính năng hỏi đáp AI}
-% 19
+% 18
 \begin{frame}{UC-AI01: hỏi đáp để lập danh sách nguyên liệu}
 \noteinfo{Tính năng hỏi đáp AI liên kết với chức năng sinh danh sách nguyên liệu và mua sắm.}
 \gap
@@ -305,13 +293,13 @@ R: đáp ứng nguyên liệu.\par E: ưu tiên thực phẩm gần hạn.\par F
 \end{columns}
 \gap\noteinfo{Thiếu thông tin thì hỏi lại. Nguyên liệu chưa khớp danh mục cần xác nhận. Dịch vụ lỗi thì giữ bản nháp.}
 \end{frame}
-% 20
+% 19
 \begin{frame}{Ví dụ hội thoại: tối nay cần mua những gì?}
 \begin{columns}[T,onlytextwidth]
 \column{0.49\textwidth}\small
 \key{Người dùng}\par “Tối nay 4 người ăn gà xào nấm và canh rau ngót. Giúp mình lập danh sách đi chợ.”
 \gap\key{Trợ lý AI}\par “Bạn dùng thịt băm cho canh chứ? Có nguyên liệu nào muốn thay không?”
-\gap\key{Người dùng}\par “Có thịt băm, giữ các nguyên liệu còn lại.”
+\gap\key{Người dùng}\par “Dùng thịt băm cho canh nhé, giữ các nguyên liệu còn lại.”
 \gap\key{Trợ lý AI}\par “Mình đã đối chiếu tủ lạnh. Đây là phần còn thiếu. Bạn kiểm tra lượng rồi xác nhận lưu nhé.”
 \column{0.48\textwidth}\small
 \key{Danh sách cần mua sau đối chiếu}
@@ -329,7 +317,7 @@ Thịt băm & 150 & 0 & \textbf{150}\\\bottomrule
 \end{columns}
 \gap\noteinfo{AI giúp làm rõ nhu cầu; hệ thống tính phần thiếu theo quy tắc UC22. Danh sách chỉ lưu sau xác nhận.}
 \end{frame}
-% 21
+% 20
 \begin{frame}{Yêu cầu chất lượng và kết luận}
 \small\renewcommand{\arraystretch}{1.5}
 \begin{tabular}{@{}P{3.15cm}P{10.8cm}@{}}\toprule
