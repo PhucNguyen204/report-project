@@ -1,0 +1,55 @@
+@startuml c3-34-seq-bao-cao-xuat
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Ứng dụng\nFlutter" as APP
+participant "API\n(ReportService)" as API
+participant "Worker\n(ExportReport)" as WK
+database "PostgreSQL" as PG
+database "MinIO" as S3
+
+group B03 – báo cáo lãng phí (UC46)
+  APP -> API : GET .../reports/waste?from&to
+  break from > to hoặc dài hơn 12 tháng (4a)
+    API --> APP : 400 (2002), MSG25
+  end
+  API -> PG : BEGIN REPEATABLE READ READ\nONLY; daily_space_stats (2 kỳ)
+  API -> PG : stock_movements hôm nay, lý do,\ntop 5; total_cost lô; COMMIT
+  API -> API : giá trị = total_cost × lượng\nbỏ / initial_qty; tỷ lệ; kỳ trước
+  API --> APP : 200 (1000): chỉ số, xu hướng, top 5\n(empty = true khi không loại bỏ, 5a)
+end
+
+group B04 – yêu cầu xuất tệp (UC47, bước 1)
+  APP -> API : POST .../reports/exports {type, from, to,\nformat: pdf | csv}, Idempotency-Key
+  API -> PG : BEGIN; khóa lũy đẳng
+  API -> PG : INSERT report.exports (pending);\nInsertTx ExportReport; COMMIT
+  API --> APP : 202 (1001): exportId
+end
+
+group Worker – tác vụ ExportReport (queue report, bước 2)
+  WK -> PG : nhận tác vụ; truy vấn như B01–B03
+  alt kết xuất PDF / CSV lỗi (2a)
+    WK -> PG : thử lại ≤ 3 lần; lần cuối: failed;\nInsertTx PushNotification
+  else kết xuất thành công (UTF-8)
+    WK -> S3 : PUT exports/{sid}/{exportId}.{ext}
+    WK -> PG : status = ready; InsertTx Push-\nNotification (export.completed)
+  end
+end
+
+group B05 – lấy tệp (bước 3)
+  APP -> API : GET .../reports/exports/{exportId}
+  API -> PG : report.exports WHERE id,\nspace_id = sid, requested_by = uid
+  break không tồn tại hoặc không phải người yêu cầu
+    API --> APP : 404 (4001)
+  end
+  alt pending
+    API --> APP : 200 (1000): status = pending
+  else ready
+    API --> APP : 200 (1000): URL GET ký sẵn (15 phút)
+    APP -> S3 : GET tệp, mở bảng chia sẻ
+  else failed
+    API --> APP : 200 (1000): status = failed (thử lại)
+  end
+end
+@enduml

@@ -1,0 +1,61 @@
+@startuml c3-41-kien-truc-ung-dung
+!include _style-c3.iuml
+top to bottom direction
+skinparam nodesep 26
+skinparam ranksep 46
+skinparam defaultTextAlignment center
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #2F5597
+}
+skinparam component<<be>> {
+  BackgroundColor #F2F2F2
+  BorderColor #595959
+}
+hide stereotype
+
+package "Ứng dụng Flutter – một mã nguồn cho Android và iOS" as APP {
+  package "Tầng giao diện (UI layer)" as UI {
+    component "**View**\nwidget, go_router" as V
+    component "**ViewModel**\nRiverpod Notifier" as VM
+  }
+  package "Tầng dữ liệu (data layer)" as DATA {
+    component "**Bộ đồng bộ (ứng dụng)**\nSyncWorker, chạy dưới\nWorkManager (Android),\nBGTaskScheduler (iOS)" as SW
+    component "**Repository**\nnguồn sự thật duy nhất,\nđọc Stream từ SQLite" as R
+    component "**WebSocket-**\n**Service**" as WSS
+    component "**PushService**\nFCM SDK" as PS
+    component "**SecureStorage**\nKeychain (iOS),\nKeystore (Android)" as SS
+    component "**ApiClient**\ndart-dio sinh\ntừ OpenAPI" as API
+    component "**DriftDatabase**\nSQLite: bản sao,\npending_ops" as DB
+  }
+}
+
+package "Backend" as BE {
+  component "WebSocket\n/ws (Y02)" <<be>> as BWS
+  component "FCM HTTP v1\n→ APNs" <<be>> as BFCM
+  component "media. – URL\nký sẵn (MinIO)" <<be>> as BMED
+  component "REST\n/it4788/v1" <<be>> as BREST
+  component "GET /spaces/{sid}\n/changes (Y01)" <<be>> as BCHG
+}
+
+V -right-> VM : sự kiện
+VM -left-> V : trạng thái
+VM -down-> R : lệnh, Stream
+SW -right-> R : đọc hàng đợi,\náp thay đổi
+R -down-> DB : một giao dịch:\nbản ghi + lệnh chờ
+R -down-> API : thao tác\nchỉ trực tuyến
+SW -down-> API : phát lại,\nkéo delta
+WSS -up-> SW : gợi ý {seq}
+PS -up-> SW : chạm\nthông báo
+SS <-right- API : token
+
+WSS -[hidden]right- PS
+PS -[hidden]right- SS
+API -[hidden]right- DB
+
+WSS -down-> BWS : WSS
+BFCM -up-> PS : thông báo\nhiển thị
+API -down-> BMED : PUT ảnh
+API -down-> BREST : HTTPS
+API -down-> BCHG
+@enduml

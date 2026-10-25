@@ -1,0 +1,39 @@
+@startuml c3-27-cicd
+!include _style-c3.iuml
+
+start
+
+partition "Tích hợp (CI)" {
+  :**verify**: gofmt, golangci-lint,\nsqlc vet/diff, spectral lint;
+  :**test**: đơn vị, tích hợp (service\ncontainer PostgreSQL, Redis, ES);
+  :**build**: image distroless đa giai\nđoạn, nhãn = SHA commit;
+  :**scan**: Trivy, govulncheck;
+}
+
+' Nhánh lỗi kết thúc bằng nút kết thúc hoạt động (stop); nhánh thành công
+' mang bước kế tiếp để hai nhánh nằm cạnh nhau.
+if (Có job lỗi hoặc lỗ hổng\nHigh/Critical?) then (có)
+  :Dừng pipeline,\nbáo lỗi trên\nmerge request; <<#FDE2E1>>
+  stop
+(không) elseif (Nhánh main?) then (có)
+  :**publish** lên GitLab\nContainer Registry;
+else (không)
+  :Merge request\nchờ duyệt mã;
+  stop
+endif
+
+:**deploy staging** qua SSH:\ngoose up, cập nhật cuốn chiếu;
+if (Smoke test staging đạt?) then (có)
+  :**deploy production**: phê duyệt\nthủ công, goose up, cập nhật lần\nlượt api-1, api-2 (chờ /readyz),\nrồi worker;
+else (không)
+  :Chạy lại image trước\ntrên staging, dừng\npipeline; <<#FDE2E1>>
+  stop
+endif
+
+if (Smoke test production đạt?) then (có)
+  stop
+else (không)
+  :Quay lui về image trước\n(giữ lược đồ đã mở rộng); <<#FDE2E1>>
+  stop
+endif
+@enduml

@@ -1,0 +1,25 @@
+% ---------------------------------------------------------------------
+% Lệnh và môi trường cho bảng đặc tả API (mục Thiết kế API của Chương 3 và
+% phụ lục đặc tả API bổ sung). Khai báo toàn cục để dùng được ở cả hai nơi.
+% ---------------------------------------------------------------------
+\DeclareUrlCommand\apiPath{\def\UrlFont{\ttfamily\scriptsize}}
+\newlength{\apiTcX}\newlength{\apiSpanW}
+% Bảng gộp đặc tả và test case: \begin{apispec}{chú thích}{nhãn đặc tả}{nhãn test case}
+\newenvironment{apispec}[3]{%
+  \scriptsize\renewcommand{\arraystretch}{1.05}%
+  \setlength{\apiTcX}{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-1.65cm-2.6cm-4.3cm\relax}%
+  \setlength{\apiSpanW}{\dimexpr\apiTcX+6.9cm+4\tabcolsep+2\arrayrulewidth\relax}%
+  \begin{longtable}{|C{1.65cm}|L{2.6cm}|L{4.3cm}|L{\apiTcX}|}
+  \caption{#1}\label{#2}\label{#3}\\ \hline
+  \endfirsthead
+  \multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+  \endhead
+}{\end{longtable}}
+\newcommand{\apirow}[2]{\hd{#1} & \multicolumn{3}{L{\apiSpanW}|}{#2}\\ \hline}
+\newcommand{\apisub}[1]{\multicolumn{4}{|l|}{\hs{#1}}\\ \hline}
+\newcommand{\tchead}{\hd{Mã TC} & \hd{Tình huống} & \hd{Dữ liệu vào} & \hd{Kết quả mong đợi}\\* \cline{1-4}}
+\newcommand{\tcrow}[4]{#1 & #2 & #3 & #4\\ \hline}
+% Ngắt trang trước chú thích mã nguồn nếu chỗ trống còn lại nhỏ hơn #1 (tránh chú thích mồ côi)
+\newcommand{\apiNeed}[1]{\par\begingroup\dimen0=#1\relax\dimen2=\pagegoal
+  \advance\dimen2 by -\pagetotal
+  \ifdim\dimen0>\dimen2 \ifdim\dimen2>0pt\vfil\fi\break\fi\endgroup}

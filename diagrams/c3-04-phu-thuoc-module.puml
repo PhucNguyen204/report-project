@@ -1,0 +1,74 @@
+@startuml c3-04-phu-thuoc-module
+!include _style-c3.iuml
+top to bottom direction
+skinparam nodesep 20
+skinparam ranksep 40
+
+package "D. Dịch vụ dùng chung" as LD {
+  folder "sync" as sync
+  folder "media" as media
+}
+
+package "A. Quản trị và xử lý theo sự kiện" as LA {
+  folder "admin" as admin
+  folder "report" as report
+  folder "notification" as notification
+  folder "search" as search
+}
+
+package "Lõi nghiệp vụ" as CORE {
+  package "B. Nghiệp vụ theo không gian" as LB {
+    folder "mealplan" as mealplan
+    folder "recipe" as recipe
+    folder "shopping" as shopping
+    folder "pantry" as pantry
+  }
+  package "C. Dữ liệu nền" as LC {
+    folder "catalog" as catalog
+    folder "household" as household
+    folder "identity" as identity
+  }
+}
+
+' ---- Phụ thuộc biên dịch trong tầng B, C (qua gói <module>/api)
+mealplan -down-> recipe : <<use>>\nRecipeQuery
+mealplan -down-> shopping : <<use>>\nListComposer
+mealplan -down-> pantry : <<use>>\nStockQuery,\nStockConsumer    
+recipe -left-> shopping : <<use>>\nListComposer
+recipe -down-> pantry : <<use>>\nStockQuery
+shopping -down-> pantry : <<use>>\nStockIn
+catalog -right-> household : <<use>>
+household -right-> identity : <<use>>
+
+' ---- Hiện thực giao diện móc (đảo phụ thuộc)
+mealplan .down.|> recipe : <<hook>>\nRecipeDeleteHook
+shopping .down.|> household : <<hook>>\nMemberLeaveHook\n(BR07)
+household .right.|> identity : <<hook>>\nActivationHook\n
+
+' ---- Giữa các tầng
+LA -down-> CORE : <<use>>   
+search -down-> pantry : <<use>>\nStockQuery.\nSearchLots
+report .down.> CORE : <<read>>\nview report.v_*
+LB -down-> LC : <<use>>
+CORE --> LD : <<use>>
+
+' ---- Luồng thông tin (sự kiện miền)
+LA <.down. CORE :     <<flow>>\n    sự kiện miền
+report .right.> notification : <<flow>>\nexport.completed
+
+' ---- Bố cục
+admin -[hidden]right- report
+notification -[hidden]right- search
+pantry -[hidden]down- household
+sync -[hidden]down- media
+
+legend bottom left
+  Nét liền «use»: phụ thuộc biên dịch qua gói <module>/api;
+  lõi dùng D qua ChangefeedAppender, media/api
+  Nét đứt, tam giác rỗng «hook»: hiện thực giao diện móc <module>/api.<Tên>Hook
+  Nét đứt «flow»: luồng thông tin UML 2.5 (sự kiện miền qua River), không phụ thuộc
+  biên dịch; food.merged (catalog → pantry, shopping, recipe) không vẽ
+  Nét đứt «read»: report SELECT qua view (ngoại lệ có chủ đích)
+  platform, kernel dùng chung cho mọi module, không vẽ
+endlegend
+@enduml

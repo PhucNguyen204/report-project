@@ -1,0 +1,48 @@
+@startuml c3-25-seq-dang-nhap-lam-moi
+!include _style-c3.iuml
+hide footbox
+skinparam BoxPadding 6
+
+participant "Ứng dụng\nFlutter" as APP
+box "Tiến trình api" #F7F9FC
+participant "Middleware\nxác thực" as MW
+participant "Module\nidentity" as ID
+end box
+database "Redis" as R
+database "PostgreSQL" as PG
+
+' thông điệp ẩn chỉ để nới khoảng identity–Redis, tránh nhãn đè đường đời Redis
+ID -[hidden]> R : xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+autonumber "<b>0."
+
+group Đăng nhập (A04)
+  APP -> ID : POST /auth/login\n{email, password, deviceId}
+  ID -> PG : SELECT users WHERE email = $1
+  break đang khóa tạm (locked_until > now)
+    ID --> APP : 423 (3004) MSG06
+  end
+  ID -> ID : xác minh Argon2id\n(băm giả nếu không có email)
+  break sai mật khẩu
+    ID -> PG : failed_login_count + 1\n(lần 5: locked_until = now + 15 phút)
+    ID --> APP : 401 (3003) MSG05\n(lần 5: 423 (3004) MSG06)
+  end
+  break status = disabled | pending
+    ID --> APP : 403 (3005) MSG21 |\n403 (3009) MSG34, gửi lại OTP
+  end
+  ID -> PG : BEGIN; failed_login_count = 0,\nlast_login_at; INSERT refresh_sessions\n(family F, SHA-256(RT1)); COMMIT
+  ID --> APP : 200 {AT1, RT1}
+  note over APP : RT1 vào Keychain/Keystore,\nAT1 chỉ giữ trong bộ nhớ
+end
+
+group Mã truy cập hết hạn, làm mới xoay vòng (A05)
+  APP -> MW : GET /spaces (Bearer AT1)
+  MW --> APP : 401 (3002), exp đã qua
+  APP -> ID : POST /auth/refresh {RT1}
+  ID -> PG : BEGIN; SELECT refresh_sessions\nWHERE token_hash = SHA-256(RT1)\nFOR UPDATE
+  ID -> PG : RT1.rotated_at = now();\nINSERT RT2 (family F); COMMIT
+  ID --> APP : 200 {AT2, RT2}
+  APP -> MW : GET /spaces (Bearer AT2)
+  MW -> R : GET auth:ver:{uid} = ver của AT2
+  MW --> APP : 200
+end
+@enduml

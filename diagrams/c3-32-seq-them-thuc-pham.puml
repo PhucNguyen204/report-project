@@ -1,0 +1,50 @@
+@startuml c3-32-seq-them-thuc-pham
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Ứng dụng\nFlutter" as APP
+participant "API\n(handler)" as API
+participant "PantryService\n(AddLot)" as SVC
+database "PostgreSQL" as PG
+database "Redis" as RD
+database "MinIO" as S3
+
+ref over APP, API : UC26 – quét mã vạch (P08)
+APP -> API : GET .../foods/suggest?q= (Q02)
+API --> APP : ứng viên + đơn vị, vị trí,\nhạn dùng theo vị trí (BR11)
+
+opt Thực phẩm mới có ảnh (3a)
+  APP -> API : POST /media/upload-urls (Y03)\n{purpose: food, targetId}
+  API --> APP : URL PUT ký sẵn (5 phút, ≤ 5 MB)
+  APP -> S3 : PUT ảnh JPEG/PNG
+  APP -> API : POST /media/{id}/complete (Y04)
+  API -> S3 : HEAD đối tượng
+  API -> PG : media.objects; InsertTx\nProcessImage (media.uploaded)
+  note left : MediaWorker nén ảnh,\ntạo ảnh thu nhỏ WebP
+end
+
+group P02 – tạo lô thực phẩm (bước 5–7)
+  APP -> API : POST .../lots {id, foodId | newFood,\nquantity, unitId, storage, ngày\nmua, hạn?}, Idempotency-Key
+  API -> SVC : AddLot(sid, uid, cmd)
+  break trước truy vấn: thiếu trường (6a) |\nBR14 (6b) | hạn < ngày mua (6c)
+    API --> APP : 400: 2001 MSG01 | 2002 MSG16 |\n2002 MSG14
+  end
+  SVC -> PG : BEGIN; khóa lũy đẳng
+  SVC -> PG : phạm vi thực phẩm (global active\n| owner_space_id = sid), đơn vị
+  break thực phẩm của không gian khác
+    SVC -> PG : ROLLBACK
+    API --> APP : 404 (4001)
+  end
+  opt newFood (3a)
+    SVC -> PG : catalog/api.CreateSpaceFood: foods\n(space, pending_review); InsertTx\nIndexFood (food.changed)
+  end
+  opt expiresOn bỏ trống
+    SVC -> PG : food_shelf_lives: expiresOn =\npurchasedOn + days (BR11)
+  end
+  SVC -> PG : INSERT food_lots (unit_factor),\nstock_movements (stock_in)
+  SVC -> PG : space_changes; COMMIT
+  SVC -> RD : DEL suggest:{sid};\nPUBLISH space:{sid}
+  API --> APP : 201 (1000), MSG10: lô + expiry_state\n(expired nếu hạn đã qua, 7a)
+end
+@enduml

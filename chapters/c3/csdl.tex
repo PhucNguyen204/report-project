@@ -1,0 +1,240 @@
+% ---------------------------------------------------------------------
+%  3.5. Thiết kế cơ sở dữ liệu
+% ---------------------------------------------------------------------
+\section{Thiết kế cơ sở dữ liệu}\label{sec:csdl}
+
+Mục này cụ thể hóa tầng dữ liệu của kiến trúc ở mục~\ref{sec:kien-truc}, suy ra từ mô hình khái niệm (Hình~\ref{fig:mo-hinh-khai-niem}) và từ điển dữ liệu (Phụ lục~\ref{pl:tu-dien}). Quy tắc nghiệp vụ nào diễn đạt được bằng ràng buộc khai báo thì được cưỡng chế ngay trong cơ sở dữ liệu (CSDL), quy tắc phụ thuộc ngày hoặc cấu hình được kiểm tra ở ứng dụng trong cùng giao dịch.
+
+\subsection{Chiến lược lưu trữ đa cơ sở dữ liệu}\label{ssec:luu-tru-da-csdl}
+
+Hệ thống lưu trữ đa dạng (polyglot persistence)~\cite{kleppmann}, mỗi kho chọn theo cách truy cập dữ liệu (Bảng~\ref{tab:c3-luu-tru}). Để tránh ghi kép (dual write), PostgreSQL là nguồn sự thật (source of truth) duy nhất; kho khác chỉ chứa dữ liệu dẫn xuất hoặc tạm, cập nhật sau commit qua tác vụ River ghi trong cùng giao dịch (mục~\ref{ssec:ky-thuat}). Bộ đếm bảo mật lâu dài (\br{BR02}, \br{BR03}) cũng nằm trong PostgreSQL để mất Redis không làm mất trạng thái khóa tài khoản.
+
+{\footnotesize\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.1}
+\begin{longtable}{|L{3.5cm}|L{1.8cm}|L{3.8cm}|L{1.8cm}|L{\dimexpr\textwidth-10\tabcolsep-6\arrayrulewidth-3.5cm-1.8cm-3.8cm-1.8cm\relax}|}
+\caption{Phân bổ dữ liệu cho các kho lưu trữ}\label{tab:c3-luu-tru}\\
+\hline
+\hd{Loại dữ liệu} & \hd{Nơi lưu} & \hd{Lý do} & \hd{Vai trò} & \hd{Phục hồi khi mất}\\ \hline
+\endfirsthead
+\multicolumn{5}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Loại dữ liệu} & \hd{Nơi lưu} & \hd{Lý do} & \hd{Vai trò} & \hd{Phục hồi khi mất}\\ \hline
+\endhead
+Dữ liệu nghiệp vụ, nhật ký thay đổi, khóa lũy đẳng, hàng đợi River & PostgreSQL 16 & Giao dịch ACID nhiều module (\uc{UC21}, \uc{UC41}), ràng buộc, khóa dòng & Nguồn sự thật & pgBackRest: đầy đủ hằng ngày, WAL liên tục (\nfr{NFR13})\\ \hline
+Giới hạn tần suất, bộ đệm, Pub/Sub & Redis 7 & Độ trễ thấp, TTL, thao tác nguyên tử & Tạm thời & Không sao lưu; tự nạp lại\\ \hline
+Chỉ mục thực phẩm, công thức (chung và riêng của không gian) & Elastic\-search 8.15 & Tìm không dấu, lỗi gõ, gợi ý $\le$ 500 ms (\nfr{NFR09}) & Dẫn xuất & Đánh chỉ mục lại; tạm dùng trigram\\ \hline
+Ảnh, tệp báo cáo xuất & MinIO & Tệp nhị phân, URL ký sẵn & Ảnh gốc: nguồn sự thật & Bucket sao lưu; biến thể và tệp xuất sinh lại\\ \hline
+Bản sao không gian, hàng đợi ngoại tuyến & SQLite (thiết bị) & Dùng khi mất mạng (\nfr{NFR11}) & Bản sao & Tải lại qua API\\ \hline
+\end{longtable}
+}
+
+\subsection{Mô hình dữ liệu quan hệ}\label{ssec:mo-hinh-quan-he}
+
+Lược đồ PostgreSQL~\cite{postgresql} theo các quy ước chung. Khóa chính là UUIDv7~\cite{rfc9562}: thiết bị sinh được khi ngoại tuyến (\nfr{NFR11}) và tiền tố thời gian làm các lần chèn gần như tăng dần, ít phân mảnh chỉ mục hơn UUIDv4. Thời điểm dùng \texttt{timestamptz} (UTC); ngày nghiệp vụ dùng \texttt{date} theo giờ Asia/Ho\_Chi\_Minh, mọi câu SQL so sánh ngày nhận ngày hiện tại qua tham số \texttt{\$today} do \texttt{platform/clock} cấp thay vì \texttt{current\_date} của phiên chạy UTC, vì từ 00:00 đến 07:00 giờ Việt Nam hai giá trị này lệch nhau một ngày và làm sai \br{BR12}, \br{BR15}. Số lượng dùng \texttt{numeric(12,2)} (\br{BR14}), tiền dùng \texttt{bigint} (đồng), tập giá trị cố định dùng ENUM. Thực thể đồng bộ có \texttt{version} cho khóa lạc quan (lệnh sửa kèm \texttt{If-Match} thêm điều kiện \texttt{version = \$v}; không dòng nào được cập nhật thì trả mã 4002) và \texttt{deleted\_at} cho xóa mềm, tạo bia mộ (tombstone) giữ 90 ngày. Mỗi module sở hữu một schema cùng tên; khóa ngoại liên schema chỉ trỏ tới \texttt{identity.users}, \texttt{household.spaces}, \texttt{catalog.*}, còn tham chiếu giữa module ngang hàng (mặt hàng -- lô, bữa ăn -- công thức, biến động kho -- bữa ăn) là tham chiếu logic do giao dịch của module sở hữu giữ đúng, tránh chu trình khóa ngoại và giữ khả năng tách module. Riêng schema \texttt{report} là mô hình đọc (read model): ngoài bảng \texttt{exports} do report sở hữu, nó gồm các view \texttt{report.v\_*} chỉ \texttt{SELECT} trên shopping, pantry, mealplan, catalog và một materialized view; đây là ngoại lệ có chủ đích của quy tắc “mỗi module chỉ đọc schema của mình”, chấp nhận được vì report không bao giờ ghi vào schema khác. Toàn lược đồ có 29 bảng (kể cả materialized view) trong 12 schema. Hình~\ref{fig:erd-tong-quan} là ERD tổng quan của chín schema chứa dữ liệu nghiệp vụ; ba schema hỗ trợ notification, media, admin chỉ tham chiếu \texttt{users} nên được vẽ riêng ở Hình~\ref{fig:erd-thong-bao-he-thong}.
+
+\diagram[\textwidth]{c3-20-erd-tong-quan}{Sơ đồ thực thể -- liên kết tổng quan theo schema}{fig:erd-tong-quan}
+
+Lược đồ có hai trục. Trục sở hữu đi từ \texttt{spaces}: điều kiện \texttt{space\_id} trên mọi truy vấn sinh bằng sqlc~\cite{sqlc} vừa lọc dữ liệu vừa là ranh giới phân quyền (\br{BR23}); \texttt{foods} cũng có khóa ngoại tùy chọn \texttt{owner\_space\_id} tới \texttt{spaces} cho thực phẩm riêng của không gian (\uc{UC25}), còn công thức mẫu có \texttt{space\_id} rỗng. Trục danh mục hội tụ về \texttt{foods}, được mặt hàng, lô và nguyên liệu cùng tham chiếu. Ba nét đứt là ba tham chiếu logic giữa module ngang hàng: mặt hàng -- lô sinh ra khi nhập tủ (\uc{UC21}), bữa ăn -- công thức (\uc{UC37}) và biến động \texttt{cook} -- bữa ăn đã nấu (\uc{UC41}); nét đứt từ \texttt{spaces} tới \texttt{daily\_space\_stats} chỉ nguồn của materialized view. Schema \texttt{river} do River tự quản lý nên không vẽ. Trong các ERD chi tiết, chấm tròn đặc là NOT NULL, «GEN» là cột sinh, nét đứt là tham chiếu logic không có khóa ngoại, phần dưới đường chấm của một bảng ghi ràng buộc đáng chú ý, \texttt{created\_at} và \texttt{updated\_at} được lược bớt; các cột người thực hiện như \texttt{created\_by} được đánh dấu «FK» nhưng không vẽ đường nối để sơ đồ dễ đọc. Hình~\ref{fig:erd-tai-khoan-nhom} trình bày schema identity và household.
+
+\diagram[\textwidth]{c3-21-erd-tai-khoan-nhom}{ERD schema identity và household}{fig:erd-tai-khoan-nhom}
+
+Ba ghi chú dưới household là ba quy tắc “tối đa một” được cưỡng chế bằng chỉ mục duy nhất từng phần: mỗi không gian một trưởng nhóm (\br{BR05}), mỗi người một nhóm gia đình và một không gian cá nhân (\br{BR04}), mỗi nhóm một mã mời còn hiệu lực (\br{BR06}). Để chỉ mục về \texttt{space\_kind} không bị sai lệch, \texttt{space\_members} sao chép loại không gian và khóa ngoại ghép (\texttt{space\_id}, \texttt{space\_kind}) trỏ tới ràng buộc duy nhất (\texttt{id}, \texttt{kind}) của \texttt{spaces}, nên giá trị sao chép không thể khác bản gốc. \texttt{spaces.change\_seq} là bộ đếm thay đổi riêng từng không gian cho đồng bộ (Hình~\ref{fig:seq-dong-bo-ngoai-tuyen}). Trong identity, email tối đa 100 ký tự theo Phụ lục~\ref{pl:tu-dien}; \texttt{last\_login\_at} và \texttt{lock\_reason} phục vụ màn hình quản lý tài khoản của \uc{UC48}, trong đó \texttt{locked} là khóa tạm do đăng nhập sai (\br{BR03}, kèm \texttt{locked\_until}) còn \texttt{disabled} là khóa của quản trị viên. Khi xác minh OTP đặt lại mật khẩu (\uc{UC04}), máy chủ ghi băm của mã đặt lại 256 bit vào \texttt{otp\_challenges.reset\_token\_hash} với hạn 10 phút; A08 tiêu thụ mã bằng một câu \texttt{UPDATE ... SET reset\_token\_hash = NULL ... RETURNING} có điều kiện còn hạn, nên mã chỉ dùng được một lần kể cả khi hai yêu cầu đến cùng lúc. Hình~\ref{fig:erd-mua-sam-tu-lanh} thể hiện schema shopping và pantry.
+
+\diagram[\textwidth]{c3-22-erd-mua-sam-tu-lanh}{ERD schema shopping và pantry}{fig:erd-mua-sam-tu-lanh}
+
+Liên kết “tạo ra” giữa mặt hàng và lô là quan hệ không -- hoặc -- một ở cả hai đầu, được ghi hai chiều (\texttt{lot\_id}, \texttt{source\_item\_id}) trong giao dịch \uc{UC21}; mặt hàng tên tự do không có \texttt{food\_id} nên không sinh lô. Lô không sao chép đơn giá mà lưu \texttt{total\_cost}, bằng lượng thực mua nhân đơn giá tại thời điểm nhập tủ; giá trị lãng phí của một lần loại bỏ được tính bằng $\texttt{total\_cost} \times \text{lượng bỏ} / \texttt{initial\_qty}$. Cách tính theo tỷ lệ này đúng cả khi S14 đổi đơn vị của lô so với mặt hàng (ví dụ mua theo bó nhưng cất theo gam), điều mà công thức “đơn giá $\times$ lượng bỏ” không bảo đảm; lô nhập tay không có giá thì \texttt{total\_cost} rỗng và chỉ được tính theo số lượng (\br{BR21}). Cột sinh \texttt{base\_remaining} cộng tồn kho theo đơn vị cơ sở (\br{BR16}). Bảng \texttt{stock\_movements} chỉ ghi thêm: khi P04 sửa lượng còn của lô (\uc{UC27}), lượng còn không được hợp nhất theo kiểu lệnh sau thắng mà phải khớp \texttt{If-Match} (lệch trả 409 mã 4002), và chênh lệch được ghi thành một biến động \texttt{adjust} có dấu; nhờ vậy tổng biến động của một lô luôn khớp \texttt{initial\_qty} trừ \texttt{remaining\_qty}. Hình~\ref{fig:erd-cong-thuc-ke-hoach} gom schema catalog, recipe và mealplan.
+
+\diagram[\textwidth]{c3-23-erd-cong-thuc-ke-hoach}{ERD schema catalog, recipe và mealplan}{fig:erd-cong-thuc-ke-hoach}
+
+\texttt{foods} chứa cả thực phẩm chung lẫn thực phẩm riêng của không gian (\uc{UC25}), nên tính duy nhất của tên và mã vạch được xét theo từng phạm vi (dấu «UQ*»): mã vạch là duy nhất trong danh mục chung và duy nhất trong từng không gian, vì hai gia đình có thể cùng tự tạo một sản phẩm trước khi quản trị viên chuẩn hóa. Hai vòng tự tham chiếu thể hiện hai thao tác của quản trị và người dùng. \texttt{foods.merged\_into} ghi kết quả duyệt thực phẩm riêng (\uc{UC49}): duyệt thì bản ghi thành \texttt{global}; gộp thì bản ghi chuyển \texttt{inactive} và trỏ tới bản chuẩn, sự kiện \texttt{food.merged} sinh các tác vụ River lũy đẳng đổi \texttt{food\_id} trong pantry, shopping và recipe. Thực phẩm riêng có mã vạch trùng một bản chung chỉ được gộp, vì duyệt sẽ vi phạm chỉ mục duy nhất của phạm vi chung. \texttt{recipes.origin\_recipe\_id} ghi nguồn khi R09 sao chép công thức mẫu thành bản của không gian (\uc{UC32}, \uc{UC52}). Công thức thuộc không gian (\texttt{kind = space}) chứ không thuộc cá nhân; Chương~\ref{chap:dac-ta} gọi đó là bộ sưu tập cá nhân vì xét từ không gian cá nhân. Công thức mẫu dùng đủ ba trạng thái \texttt{draft}, \texttt{published}, \texttt{hidden} của \uc{UC52}, còn công thức không gian luôn \texttt{published}; R01 và M05 chỉ đọc công thức \texttt{published}. Với \texttt{units}, cờ \texttt{is\_base} cùng chỉ mục duy nhất từng phần bảo đảm mỗi nhóm đại lượng có đúng một đơn vị cơ sở hệ số 1 (\br{BR16}). Đổi nhóm đại lượng của một đơn vị đã được tham chiếu sẽ làm sai mọi lượng đang lưu, nên bị trigger \texttt{BEFORE UPDATE OF dimension} của \texttt{catalog.units} từ chối (422, mã 4004); kiểm tra đặt trong CSDL vì phải nhìn các bảng tham chiếu ở schema khác, điều module catalog không được phép truy vấn. Hình~\ref{fig:erd-thong-bao-he-thong} gồm các schema hỗ trợ.
+
+\diagram[\textwidth]{c3-24-erd-thong-bao-he-thong}{ERD các schema notification, sync, media, admin và report}{fig:erd-thong-bao-he-thong}
+
+\texttt{notifications.dedupe\_key} là chốt chống trùng cuối cùng của thông báo: \texttt{userId:ngày} với nhắc hạn dùng (\br{BR13}, mỗi người tối đa một thông báo mỗi ngày gộp mọi không gian) và khóa kèm mốc đợt giao với thông báo phân công. \texttt{deliveries.device\_id} là tham chiếu logic vì thiết bị có mã FCM không còn hợp lệ bị xóa khỏi \texttt{devices} nhưng lịch sử gửi vẫn giữ. \texttt{idempotency\_keys.status} phân biệt khóa đang xử lý (\texttt{in\_progress}) với khóa đã có phản hồi (\texttt{completed}); dòng được chèn bằng câu đầu tiên của giao dịch ghi và chỉ ghi phản hồi ngay trước commit, nên lỗi làm giao dịch rollback thì khóa cũng biến mất và chỉ kết quả thành công được phát lại. \texttt{media.objects} chỉ còn theo dõi ảnh, với \texttt{purpose} (ảnh đại diện, không gian, công thức, thực phẩm) và \texttt{target\_id} để Y04 kiểm tra quyền trên đối tượng đích. Tệp báo cáo xuất có bảng riêng \texttt{report.exports} (\uc{UC47}) lưu loại báo cáo, khoảng ngày, định dạng PDF hoặc CSV, trạng thái \texttt{pending}, \texttt{ready}, \texttt{failed}, khóa đối tượng, lỗi và hạn 7 ngày; B05 lọc theo cả \texttt{space\_id} và \texttt{requested\_by} sau khi kiểm tra thành viên. \texttt{daily\_space\_stats} được vẽ nét đứt vì là materialized view, không có khóa ngoại. Hai cột người thực hiện của admin (\texttt{updated\_by}, \texttt{actor\_id}) trỏ tới \texttt{users}; \texttt{updated\_by} rỗng với giá trị mặc định do di trú nạp.
+
+Đối chiếu với mô hình khái niệm, phần lớn khái niệm ánh xạ một -- một thành bảng, trừ năm điểm. (1) “Nhóm” thành \texttt{household.spaces} có cột \texttt{kind}: không gian cá nhân là nhóm một thành viên nên mọi dữ liệu nghiệp vụ chỉ có một kiểu chủ sở hữu \texttt{space\_id} (\br{BR04}). (2) \texttt{space\_members} sao chép \texttt{space\_kind} để cưỡng chế \br{BR04} bằng ràng buộc duy nhất từng phần. (3) “Nhật ký sử dụng” thành sổ cái \texttt{pantry.stock\_movements} có thêm \texttt{stock\_in}, \texttt{cook} (\uc{UC41}) và \texttt{adjust} (\uc{UC27}) để đối soát tồn kho. (4) Thuộc tính đa trị “hạn dùng gợi ý” thành bảng \texttt{food\_shelf\_lives}. (5) “Trạng thái” lô tách đôi: \texttt{lifecycle} được lưu, còn trạng thái hạn dùng được suy diễn theo ngưỡng $N$ của người xem (\br{BR12}).
+
+\subsection{Đặc tả bảng và tham số cấu hình}\label{ssec:dac-ta-bang}
+
+Đặc tả chi tiết từng cột, kiểu dữ liệu và ràng buộc của các bảng trọng tâm, cùng bảng tóm tắt các bảng còn lại, được đặt ở Phụ lục~\ref{pl:dac-ta-bang} để giữ mạch trình bày; riêng \texttt{pantry.food\_lots} được minh họa bằng khối DDL ở mục~\ref{ssec:chi-muc}. Mục này trình bày phần có ý nghĩa thiết kế trực tiếp là cách các tham số nghiệp vụ được lưu và đọc.
+
+Bảng \texttt{admin.system\_configs} hiện thực các tham số vận hành của \uc{UC53}. Bảng~\ref{tab:c3-tham-so} ánh xạ từng tham số của Bảng~\ref{tab:tham-so-he-thong} sang khóa cấu hình, miền được kiểm tra khi lưu, thành phần đọc và thời điểm có hiệu lực. \texttt{PUT /admin/configs} ghi nhiều khóa trong một giao dịch: kiểm tra miền và tổng trọng số bằng 1 trước khi ghi (sai thì trả \msg{MSG27}, không áp dụng một phần), ghi một dòng \texttt{audit\_logs} chứa giá trị cũ và mới, rồi phát đúng một sự kiện \texttt{config.changed}. Mọi bản API và worker đọc cấu hình qua \texttt{cfg:all} có TTL 5 phút và xóa bản đệm ngay khi nhận thông điệp trên kênh \texttt{cfg}, nên TTL chỉ là lưới an toàn khi một thông điệp Pub/Sub bị mất. Thời điểm hiệu lực theo một nguyên tắc chung: giá trị được chụp vào dữ liệu lúc tạo bản ghi (hạn của OTP, của mã mời) không hồi tố, còn giá trị dùng để tính lúc truy vấn ($N$, $\theta$, trọng số) có hiệu lực từ yêu cầu kế tiếp.
+
+{\footnotesize\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.1}
+\begin{longtable}{|L{2.2cm}|L{3.4cm}|L{1.95cm}|L{3.9cm}|L{\dimexpr\textwidth-10\tabcolsep-6\arrayrulewidth-2.2cm-3.4cm-1.95cm-3.9cm\relax}|}
+\caption{Tham số cấu hình: khóa, miền, thành phần đọc và thời điểm hiệu lực}\label{tab:c3-tham-so}\\
+\hline
+\hd{Tham số} & \hd{Khóa} & \hd{Miền (mặc định)} & \hd{Thành phần đọc} & \hd{Thời điểm hiệu lực}\\ \hline
+\endfirsthead
+\multicolumn{5}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Tham số} & \hd{Khóa} & \hd{Miền (mặc định)} & \hd{Thành phần đọc} & \hd{Thời điểm hiệu lực}\\ \hline
+\endhead
+Ngưỡng nhắc mặc định $N$ & \path{reminder.defaultDays} & 1--7 ngày (3) & Biểu thức \texttt{expiry\_state} khi \texttt{reminder\_days} rỗng (P01, P07, Q01); \texttt{UserReminder}; A12 & Yêu cầu và lượt nhắc kế tiếp\\ \hline
+Khung giờ chạy nhắc nhở & \path{reminder.runAt} & 05:00--21:00 (08:00) & \texttt{ReminderDispatcher} kiểm tra mỗi phút; A12 & Lần kiểm tra kế tiếp; ngày đã chạy thì từ hôm sau\\ \hline
+Số thành viên tối đa & \path{group.maxMembers} & 2--30 (10) & G05, G07 (đếm trong khóa tư vấn của không gian) & Lần mời, tham gia kế tiếp; không loại thành viên hiện có\\ \hline
+Thời hạn mã mời & \path{invite.ttlHours} & 1--168 giờ (48) & G05 ghi \texttt{expires\_at} & Mã tạo sau thay đổi\\ \hline
+Thời hạn OTP & \path{otp.ttlMinutes} & 2--15 phút (5) & A01, A03, A07 ghi \texttt{expires\_at} & Mã sinh sau thay đổi\\ \hline
+Ngưỡng đáp ứng $\theta$ & \path{suggest.theta} & 0,3--1,0 (0,6) & M05 (\path{SuggestionEngine.Rank}) & Ngay; \texttt{config.changed} xóa \texttt{suggest:*}\\ \hline
+Trọng số $R$, $E$, $F$ & \path{suggest.weights} & Mỗi số 0--1, tổng 1 (0,6; 0,3; 0,1) & M05 & Như trên\\ \hline
+Số món gợi ý tối đa & \path{suggest.maxResults} & 3--30 (10) & M05 & Như trên\\ \hline
+Khoảng lập kế hoạch tối đa & \path{mealplan.horizonDays} & 7--60 ngày (28) & M02, M03, S15 so với \texttt{\$today} (\br{BR18}, \msg{MSG28}) & Yêu cầu kế tiếp; món đã lập không bị xóa\\ \hline
+Số lô tối đa mỗi thông báo tổng hợp & \path{reminder.maxLotsPerNotice} & 1--10 lô (5) & \texttt{UserReminder} & Lượt nhắc kế tiếp\\ \hline
+\end{longtable}
+}
+
+Mười khóa trùng mười dòng của Bảng~\ref{tab:tham-so-he-thong}. Cột \texttt{value\_type}, \texttt{min\_value}, \texttt{max\_value} của \texttt{system\_configs} lưu luôn miền hợp lệ, nên trình kiểm tra của \texttt{PUT /admin/configs} là mã chung cho mọi khóa, chỉ riêng ràng buộc tổng trọng số bằng 1 cần luật riêng. Khi nội dung thông báo nhắc vượt \texttt{reminder.maxLotsPerNotice} lô, phần còn lại được gộp thành “và $k$ lô khác”; miền tối đa 10 lô cũng giữ tải tin dưới giới hạn 4 KB của FCM.
+
+\subsection{Chỉ mục, ràng buộc toàn vẹn và tối ưu truy vấn}\label{ssec:chi-muc}
+
+Chỉ mục được thiết kế từ truy vấn thực tế: B-tree phức hợp theo thứ tự lọc rồi sắp xếp, chỉ mục từng phần (partial index) và ràng buộc duy nhất từng phần cho quy tắc “tối đa một” (Bảng~\ref{tab:c3-chi-muc}, không liệt kê B-tree thông thường). Chỉ mục trigram dùng hàm bọc \texttt{f\_unaccent} khai báo \texttt{IMMUTABLE} vì \texttt{unaccent} gốc không dùng được. Mã nguồn~\ref{code:c3-ddl-food-lots} là định nghĩa bảng \texttt{pantry.food\_lots}, nơi tập trung nhiều quy tắc nhất.
+
+\codecaption{Định nghĩa bảng \texttt{pantry.food\_lots} và các chỉ mục từng phần}{code:c3-ddl-food-lots}
+\nopagebreak[4]
+\begin{Verbatim}
+CREATE TABLE pantry.food_lots (
+  id               uuid PRIMARY KEY,                       -- UUIDv7
+  space_id         uuid NOT NULL REFERENCES household.spaces (id),
+  food_id          uuid NOT NULL REFERENCES catalog.foods (id),
+  initial_qty      numeric(12,2) NOT NULL CHECK (initial_qty > 0),
+  remaining_qty    numeric(12,2) NOT NULL,
+  unit_id          uuid NOT NULL REFERENCES catalog.units (id),
+  unit_factor      numeric(12,4) NOT NULL CHECK (unit_factor > 0),
+  base_remaining   numeric GENERATED ALWAYS AS
+                     (remaining_qty * unit_factor) STORED,
+  storage_location catalog.storage_location NOT NULL,
+  purchased_on     date NOT NULL,
+  expires_on       date NOT NULL,
+  lifecycle        pantry.lot_lifecycle NOT NULL DEFAULT 'active',
+  source_item_id   uuid,              -- tham chiếu logic sang shopping
+  total_cost       bigint CHECK (total_cost >= 0),      -- BR21, S14
+  note             varchar(200),
+  created_by       uuid NOT NULL REFERENCES identity.users (id),
+  version          int NOT NULL DEFAULT 1,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now(),
+  deleted_at       timestamptz,
+  CONSTRAINT ck_lot_remaining CHECK                            -- BR14
+    (remaining_qty BETWEEN 0 AND initial_qty),
+  CONSTRAINT ck_lot_dates CHECK (expires_on >= purchased_on),  -- BR11
+  CONSTRAINT ck_lot_lifecycle CHECK                            -- BR14
+    ((lifecycle = 'active') = (remaining_qty > 0)));
+CREATE INDEX ix_lots_fefo ON pantry.food_lots       -- FEFO (BR15)
+  (space_id, food_id, expires_on, id) WHERE lifecycle = 'active';
+CREATE INDEX ix_lots_expiry ON pantry.food_lots (expires_on)  -- UC31
+  WHERE lifecycle = 'active';
+\end{Verbatim}
+
+\texttt{ck\_lot\_lifecycle} diễn đạt bất biến của \br{BR14}: lô \texttt{active} khi và chỉ khi còn lượng, nên P04 đặt lượng còn bằng 0 phải đồng thời chuyển lô sang \texttt{consumed}. \texttt{ix\_lots\_fefo} có thứ tự cột trùng điều kiện lọc và \texttt{ORDER BY expires\_on, id}, nên câu \texttt{SELECT ... WHERE expires\_on >= \$today ... FOR UPDATE} của FEFO duyệt chỉ mục đúng thứ tự khóa dòng mà không sắp xếp (Hình~\ref{fig:seq-xac-nhan-nau}). \texttt{ix\_lots\_expiry} phục vụ bộ điều phối nhắc hạn dùng: lọc lô có \texttt{expires\_on} $\le$ \texttt{\$today} + 7 (ngưỡng $N$ lớn nhất) rồi nối \texttt{space\_members} để ra danh sách người cần nhắc.
+
+{\footnotesize\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.1}
+\begin{longtable}{|L{2.75cm}|L{7.3cm}|L{2.0cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-2.75cm-7.3cm-2.0cm\relax}|}
+\caption{Chỉ mục và ràng buộc chính}\label{tab:c3-chi-muc}\\
+\hline
+\hd{Bảng} & \hd{Chỉ mục, ràng buộc} & \hd{Loại} & \hd{Phục vụ}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Bảng} & \hd{Chỉ mục, ràng buộc} & \hd{Loại} & \hd{Phục vụ}\\ \hline
+\endhead
+\path{users} & \texttt{uq\_users\_email} \texttt{(email)}; CK \texttt{char\_length(email) <= 100} & UQ; CK & \br{BR01}\\ \hline
+\path{space_members} & \texttt{uq\_space\_leader} \texttt{(space\_id) WHERE role = 'leader'} & UQ từng phần & \br{BR05}\\ \hline
+\path{space_members} & \texttt{uq\_member\_family} \texttt{(user\_id) WHERE space\_kind = 'family'}, \texttt{uq\_member\_personal} tương tự với \texttt{'personal'}; FK \texttt{(space\_id, space\_kind)} tới \texttt{spaces (id, kind)} & UQ từng phần; FK ghép & \br{BR04}\\ \hline
+\path{invite_codes} & UQ \texttt{(space\_id) WHERE status = 'active'}; UQ \texttt{(code)}; CK \texttt{code \textasciitilde{} '\textasciicircum[A-HJ-NP-Z2-9]\{8\}\$'} & UQ từng phần; CK & \br{BR06}\\ \hline
+\path{foods} & UQ \texttt{(category\_id, lower(name)) WHERE scope = 'global'} và \texttt{(owner\_space\_id, category\_id, lower(name)) WHERE scope = 'space'}; UQ \texttt{(barcode) WHERE scope = 'global'} và \texttt{(owner\_space\_id, barcode) WHERE scope = 'space'}; CK \texttt{(scope = 'global') = (owner\_space\_id IS NULL)}; CK \texttt{merged\_into IS NULL OR status = 'inactive'}; \texttt{GIN (f\_unaccent(name) gin\_trgm\_ops)} & UQ từng phần; CK; GIN & \br{BR22}, \uc{UC26}, \uc{UC49}; tìm dự phòng\\ \hline
+\path{units} & UQ \texttt{(dimension) WHERE is\_base}; CK \texttt{NOT is\_base OR factor\_to\_base = 1}; trigger chặn đổi \texttt{dimension} khi đang được tham chiếu & UQ từng phần; CK & \br{BR16}\\ \hline
+\path{shopping_items} & \texttt{(list\_id, position)}; \texttt{(assignee\_id) WHERE status = 'assigned'}; \texttt{(space\_id, food\_id) WHERE status IN ('to\_buy', 'assigned', 'purchased')} & B-tree từng phần & \br{BR10}; hàng đang chờ mua của \br{BR20}\\ \hline
+\path{food_lots} & \texttt{ix\_lots\_fefo}, \texttt{ix\_lots\_expiry}; ba CK (Mã nguồn~\ref{code:c3-ddl-food-lots}) & Từng phần; CK & \br{BR15}, \uc{UC31}, \br{BR14}\\ \hline
+\path{stock_movements} & \texttt{(space\_id, occurred\_at)}; CK \texttt{reason}, \texttt{meal\_entry\_id} theo \texttt{kind}; CK \texttt{quantity <> 0 AND (kind = 'adjust' OR quantity > 0)} & B-tree; CK & \uc{UC45}, \uc{UC46}, \uc{UC27}\\ \hline
+\path{recipes} & CK \texttt{(kind = 'template') = (space\_id IS NULL)}; CK \texttt{kind = 'template' OR status = 'published'}; \texttt{(space\_id) WHERE deleted\_at IS NULL} & CK; B-tree từng phần & \br{BR17}, \uc{UC52}\\ \hline
+\path{notifications} & UQ \texttt{(dedupe\_key)}; \texttt{(user\_id, created\_at DESC)} & UQ; B-tree & \br{BR13}, \uc{UC31}\\ \hline
+\path{idempotency_keys} & PK \texttt{(user\_id, key)}; CK \texttt{status = 'in\_progress' OR response\_body IS NOT NULL} & PK; CK & \nfr{NFR11}\\ \hline
+\path{space_changes} & PK \texttt{(space\_id, seq)}; \texttt{BRIN (changed\_at)} & B-tree; BRIN & Y01 đọc theo con trỏ; G03\\ \hline
+\path{exports} & \texttt{(space\_id, requested\_by, created\_at DESC)} & B-tree & \uc{UC47}\\ \hline
+\path{daily_space_stats} & UQ \texttt{(space\_id, stat\_date, category\_id, dimension)} & UQ & \texttt{REFRESH CONCURRENTLY}\\ \hline
+Bảng tham chiếu danh mục & Mọi FK tới \texttt{food\_categories}, \texttt{units}, \texttt{foods} là \texttt{ON DELETE RESTRICT} & FK & \br{BR22}\\ \hline
+\end{longtable}
+}
+
+Các ràng buộc khai báo tạo phòng thủ nhiều lớp (defense in depth) cho \br{BR04}--\br{BR06}, \br{BR11}, \br{BR14}. Mọi thao tác đổi thành viên, vai trò hoặc mã mời của một không gian trước hết lấy khóa tư vấn \path{pg_advisory_xact_lock(hashtext(space_id::text))}, nên các yêu cầu cùng không gian được tuần tự hóa và phép đếm thành viên so với \texttt{group.maxMembers} của G07 luôn chính xác, điều không ràng buộc khai báo nào diễn đạt được. Khóa tư vấn không che được hai yêu cầu của cùng một người tham gia hai nhóm khác nhau cùng lúc, vì chúng giữ hai khóa khác nhau; khi đó \texttt{uq\_member\_family} chặn yêu cầu commit sau. Chỉ mục một trưởng nhóm không thể trì hoãn (deferrable) nên chuyển quyền \uc{UC14} phải hạ vai trò người cũ trước rồi mới nâng người mới trong cùng giao dịch. Ứng dụng vẫn kiểm tra trước để trả đúng thông điệp (Phụ lục~\ref{pl:thong-diep}); khi hai yêu cầu tranh nhau, lỗi của PostgreSQL được dịch theo SQLSTATE và \emph{tên ràng buộc} chứ không theo SQLSTATE đơn thuần, vì cùng mã 23505 có thể là dữ liệu đã tồn tại (\texttt{uq\_users\_email}, trùng khóa chính do thiết bị sinh: 4003), vi phạm quy tắc (\texttt{uq\_member\_family}: 4004) hay xung đột đồng thời (\texttt{uq\_space\_leader}: 4002). Ánh xạ đầy đủ, gồm 23514 của \texttt{ck\_lot\_dates}, \texttt{ck\_lot\_remaining} và 23503 khi xóa mục danh mục đang được tham chiếu (D05, D06 trả 4004 kèm \br{BR22}), nằm ở Bảng~\ref{tab:c3-anh-xa-loi}; đó là lý do mọi ràng buộc đều được đặt tên tường minh.
+
+\subsection{Thiết kế dữ liệu Redis, Elasticsearch và MinIO}\label{ssec:du-lieu-phu}
+
+Kho phụ không được thành nguồn sự thật thứ hai; khóa Redis~\cite{redis} mang tiền tố môi trường (ví dụ \texttt{prod:}) và có thời hạn sống (Bảng~\ref{tab:c3-khoa-redis}). Bộ đệm luôn bị xóa bởi móc sau commit của giao dịch làm thay đổi dữ liệu nguồn, còn TTL chỉ giới hạn thời gian sai lệch nếu một lần xóa bị bỏ lỡ.
+
+{\footnotesize\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.1}
+\begin{longtable}{|L{5.2cm}|L{2.3cm}|L{1.7cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-5.2cm-2.3cm-1.7cm\relax}|}
+\caption{Các mẫu khóa Redis}\label{tab:c3-khoa-redis}\\
+\hline
+\hd{Mẫu khóa} & \hd{Kiểu Redis} & \hd{TTL} & \hd{Mục đích}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Mẫu khóa} & \hd{Kiểu Redis} & \hd{TTL} & \hd{Mục đích}\\ \hline
+\endhead
+\texttt{rl:<luật>:<chủ thể>} & string (GCRA) & Theo luật & Giới hạn tần suất, ví dụ \path{rl:login:<ip>}, \path{rl:join:<userId>}; ngưỡng ở mục~\ref{sec:bao-mat}\\ \hline
+\path{otp:cooldown:<email>:<purpose>}; \path{otp:hourly:<email>} & string, \texttt{SET NX}, \texttt{INCR} & 60 s; 1 giờ & Chờ 60 s; tối đa 5 lần mỗi giờ (\br{BR02})\\ \hline
+\path{auth:ver:<userId>} & string & 30 phút & Bộ đệm \texttt{token\_version} (\br{BR03})\\ \hline
+\path{member:<spaceId>:<userId>} & string & 60 s & Vai trò thành viên; xóa khi đổi thành viên, vai trò\\ \hline
+\path{suggest:<spaceId>} & hash (trường theo người, bữa, khẩu phần) & 10 phút & Gợi ý món (\uc{UC40}); xóa khi \texttt{lot.changed}, \texttt{recipe.changed}, \texttt{config.changed} khóa \texttt{suggest.*}, khi A13 đổi $N$\\ \hline
+\path{cfg:all} & hash & 5 phút & Cấu hình hệ thống; xóa ngay khi có thông điệp kênh \texttt{cfg}\\ \hline
+\path{catalog:snapshot:<etag>} & string (JSON) & 24 giờ & Danh mục kèm ETag (Q03)\\ \hline
+\path{barcode:<code>} & string (JSON) & 30 ngày & Mã vạch trong danh mục chung (không thấy: 1 ngày)\\ \hline
+\path{space:<id>}, \path{user:<id>}, \path{cfg} & Kênh Pub/Sub & -- & Gợi ý thay đổi; sự kiện cá nhân, đóng socket; xóa bộ đệm cấu hình\\ \hline
+\end{longtable}
+}
+
+Elasticsearch~\cite{elasticsearch} giữ \texttt{foods\_v1}, \texttt{recipes\_v1} sau bí danh, cập nhật bởi hàng đợi \texttt{index} (Hình~\ref{fig:seq-tim-kiem-chi-muc}); ánh xạ đầy đủ ở mục~\ref{ssec:ky-thuat}, các trường ở Bảng~\ref{tab:c3-truong-es}. Hai chỉ mục chứa cả danh mục chung lẫn thực phẩm và công thức riêng của các không gian, nên các trường phạm vi \texttt{scope}, \texttt{owner\_space\_id}, \texttt{kind}, \texttt{status}, \texttt{space\_id} là bắt buộc trong mọi tài liệu và mọi truy vấn. Tài liệu của một không gian bị xóa khi nhóm giải tán (tác vụ \texttt{PurgeSpace}) hoặc khi tài khoản sở hữu không gian cá nhân bị xóa hẳn (\nfr{NFR18}); thực phẩm bị gộp được cập nhật cùng tác vụ xử lý \texttt{food.merged}.
+
+{\footnotesize\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.1}
+\begin{longtable}{|L{1.45cm}|L{5.6cm}|L{4.2cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-1.45cm-5.6cm-4.2cm\relax}|}
+\caption{Các trường của chỉ mục Elasticsearch}\label{tab:c3-truong-es}\\
+\hline
+\hd{Chỉ mục} & \hd{Trường} & \hd{Kiểu, analyzer} & \hd{Mục đích}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Chỉ mục} & \hd{Trường} & \hd{Kiểu, analyzer} & \hd{Mục đích}\\ \hline
+\endhead
+\texttt{foods} & \path{name}, \path{aliases} (kèm \path{prefix}, \path{exact}) & text: \texttt{vi\_base} khi ghi, \texttt{vi\_fold} khi tìm; edge\_ngram 2--15; giữ dấu & Tìm không dấu, đồng nghĩa, lỗi gõ; gợi ý tên\\ \hline
+\texttt{foods} & \path{category_id}, \path{scope}, \path{owner_space_id}, \path{status}, \path{barcode}, \path{updated_at} & keyword; date & Lọc \texttt{scope = global} $\lor$ \texttt{owner\_space\_id = sid}, \texttt{status = active}; đối soát hằng tuần\\ \hline
+\texttt{recipes} & \path{name}, \path{ingredient_names}; \path{kind}, \path{status}, \path{space_id}, \path{food_ids} & text như \texttt{foods}; keyword & Tìm theo tên, nguyên liệu; mẫu đã công bố hoặc của không gian (\br{BR23})\\ \hline
+\end{longtable}
+}
+
+MinIO~\cite{minio} dùng bucket riêng tư, khóa đối tượng chứa UUID nên nội dung không đổi và ảnh được lưu đệm theo khóa (Bảng~\ref{tab:c3-bucket}).
+
+{\footnotesize\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.1}
+\begin{longtable}{|L{1.8cm}|L{5.6cm}|L{4.2cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-1.8cm-5.6cm-4.2cm\relax}|}
+\caption{Các bucket MinIO}\label{tab:c3-bucket}\\
+\hline
+\hd{Bucket} & \hd{Mẫu khóa đối tượng} & \hd{Quyền truy cập} & \hd{Vòng đời}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Bucket} & \hd{Mẫu khóa đối tượng} & \hd{Quyền truy cập} & \hd{Vòng đời}\\ \hline
+\endhead
+\texttt{media} & \path{<loại>/<ownerId>/<uuid>.jpg} (loại theo \texttt{purpose}: avatars, spaces, recipes, foods); biến thể \path{thumb.webp} & URL ký sẵn: PUT 5 phút, $\le$ 5 MB; GET ngắn hạn & \texttt{pending} quá 24 giờ bị dọn\\ \hline
+\texttt{exports} & \path{<spaceId>/<exportId>.pdf} hoặc \path{.csv}; \texttt{exportId} là \texttt{report.exports.id} & URL GET ký sẵn 15 phút, chỉ cho người yêu cầu (\uc{UC47}) & Xóa sau 7 ngày, trùng \texttt{expires\_at}\\ \hline
+Sao lưu & Kho pgBackRest; bản sao bucket \texttt{media} & Tài khoản sao lưu & 7 bản (\nfr{NFR13})\\ \hline
+\end{longtable}
+}
+
+\subsection{Di trú lược đồ và vòng đời dữ liệu}\label{ssec:di-tru}
+
+Lược đồ được quản lý bằng goose: mỗi thay đổi là một tệp SQL có số phiên bản với phần \texttt{-- +goose Up} và \texttt{Down}, chạy bằng \texttt{goose up} (kèm di trú River) trước khi cuốn chiếu API (mục~\ref{sec:trien-khai}). Vì API cũ và mới cùng chạy khi cuốn chiếu và ứng dụng di động chậm cập nhật, thay đổi phá vỡ tương thích theo chiến lược mở rộng -- thu hẹp (expand--contract): thêm cấu trúc mới và ghi song song, chuyển mã sang đọc dạng mới, chỉ xóa dạng cũ khi phiên bản ứng dụng tối thiểu (bản cũ hơn nhận mã 4260) không còn dùng. Ví dụ, đổi tên một cột được thực hiện qua ba bản phát hành: thêm cột mới và ghi cả hai cột, chuyển mã đọc sang cột mới và nạp lại dữ liệu cũ bằng tác vụ theo lô, rồi mới bỏ cột cũ. Chỉ mục được tạo bằng \texttt{CREATE INDEX CONCURRENTLY}, ràng buộc thêm \texttt{NOT VALID} rồi \texttt{VALIDATE} để không khóa bảng lâu. Dữ liệu tạm có thời hạn lưu giữ (\nfr{NFR18}), dọn hằng đêm trên hàng đợi \texttt{maintenance} (Bảng~\ref{tab:c3-luu-giu}; mốc ngoài yêu cầu là giả định thiết kế).
+
+{\footnotesize\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.1}
+\begin{longtable}{|L{4.6cm}|L{3.0cm}|L{\dimexpr\textwidth-6\tabcolsep-4\arrayrulewidth-4.6cm-3.0cm\relax}|}
+\caption{Thời hạn lưu giữ và tác vụ dọn dẹp}\label{tab:c3-luu-giu}\\
+\hline
+\hd{Dữ liệu} & \hd{Thời hạn lưu giữ} & \hd{Tác vụ dọn dẹp}\\ \hline
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Dữ liệu} & \hd{Thời hạn lưu giữ} & \hd{Tác vụ dọn dẹp}\\ \hline
+\endhead
+OTP; khóa lũy đẳng; phiên đã thu hồi & +1 ngày; 7 ngày; 30 ngày & Xóa theo thời điểm hết hạn; khóa \texttt{in\_progress} không tồn đọng vì rollback xóa cùng giao dịch\\ \hline
+Nhật ký thay đổi; bản ghi xóa mềm & 90 ngày & Xóa; con trỏ cũ hơn: mã 4100\\ \hline
+Thông báo; bản ghi gửi & 90 ngày; 30 ngày & Xóa hằng đêm\\ \hline
+Mã mời hết hạn; nhật ký quản trị & Giữ lại; tối thiểu 12 tháng & Chuyển \texttt{expired}; không xóa\\ \hline
+Tệp xuất và \texttt{report.exports}; ảnh tải dở; tác vụ River & 7 ngày; 24 giờ; 1--7 ngày & Vòng đời bucket và xóa bản ghi quá \texttt{expires\_at}; dọn \texttt{pending}; River tự dọn\\ \hline
+Tài khoản đã xóa (A16) & 30 ngày & Ẩn danh email, họ tên; xóa ảnh, dữ liệu không gian cá nhân, tài liệu ES; giữ đóng góp trong nhóm\\ \hline
+Nhóm giải tán (G10, \uc{UC15}) & Từ lúc ghi \texttt{dissolved\_at} & \texttt{PurgeSpace} xóa mềm dữ liệu chung, xóa tài liệu ES\\ \hline
+\texttt{daily\_space\_stats} & Làm mới hằng đêm & \texttt{REFRESH MATERIALIZED VIEW CONCURRENTLY}\\ \hline
+\end{longtable}
+}
+
+Xóa tài khoản không xóa cứng dòng \texttt{users}, vì dữ liệu nhóm tham chiếu tới người tạo, người mua và người nấu qua khóa ngoại. Khi A16 thành công, giao dịch ghi \texttt{deleted\_at}, thu hồi mọi phiên, tăng \texttt{token\_version} và xóa thiết bị, nên tài khoản không đăng nhập được ngay. Sau 30 ngày, tác vụ nền thay email bằng một giá trị duy nhất không định danh (giữ được \texttt{uq\_users\_email}), đặt họ tên thành “Người dùng đã xóa”, vô hiệu băm mật khẩu, rồi xóa ảnh, dữ liệu của không gian cá nhân và tài liệu Elasticsearch tương ứng; dữ liệu người đó đóng góp trong nhóm gia đình được giữ nguyên với tên hiển thị mới (\nfr{NFR18}).

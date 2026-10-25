@@ -1,0 +1,48 @@
+@startuml c3-05a-c4-thanh-phan-api-vao
+!$TECHN_FONT_SIZE = 14
+!$LEGEND_TITLE_TEXT = "Chú giải"
+!include <C4/C4_Component>
+skinparam dpi 170
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowFontSize 14
+skinparam wrapWidth 165
+skinparam nodesep 30
+skinparam ranksep 55
+HIDE_STEREOTYPE()
+LAYOUT_TOP_DOWN()
+UpdateElementStyle("container", $legendText="vùng chứa")
+UpdateElementStyle("component", $legendText="thành phần")
+UpdateBoundaryStyle($legendText="ranh giới vùng chứa")
+UpdateContainerBoundaryStyle($legendText="ranh giới vùng chứa")
+
+Container(caddy, "Reverse proxy", "Caddy 2", "Nhận HTTPS/WSS từ ứng dụng")
+
+Container_Boundary(api, "API") {
+  Component(router, "Router và chuỗi middleware", "chi v5, net/http", "Mã yêu cầu, giới hạn, lũy đẳng")
+  Component(auth, "Xác thực, phân quyền", "platform/auth", "JWT, token_version, vai trò")
+  Component(handlers, "Handler HTTP", "oapi-codegen, mỗi module", "Kiểm tra đầu vào, ánh xạ DTO")
+  Component(hub, "Hub WebSocket", "coder/websocket", "Giữ kết nối, đẩy gợi ý")
+  Component(svc, "Dịch vụ ứng dụng", "Go, mỗi module", "Ca sử dụng, giao dịch; chi tiết ở hình sau")
+}
+
+ContainerDb(pg, "PostgreSQL", "PostgreSQL 16", "sync.idempotency_keys")
+ContainerDb(redis, "Redis", "Redis 7", "rl:*, auth:ver, member, Pub/Sub")
+
+Rel_D(caddy, router, "HTTP, WebSocket")
+Rel_R(router, auth, "Xác thực")
+Rel_D(router, handlers, "Định tuyến")
+Rel_D(router, hub, "Nâng cấp /ws")
+Rel_U(hub, auth, "Xác thực /ws")
+Rel_D(handlers, svc, "Gọi ca sử dụng")
+Rel_L(router, pg, "idempotency_keys          ")
+Rel_D(router, redis, "        rl:*")
+Rel_D(auth, redis, "auth:ver, member:*")
+Rel_D(hub, redis, "SUBSCRIBE space:*, user:*")
+
+Lay_R(handlers, hub)
+Lay_D(svc, redis)
+
+SHOW_FLOATING_LEGEND()
+Lay_D(pg, LEGEND())
+@enduml

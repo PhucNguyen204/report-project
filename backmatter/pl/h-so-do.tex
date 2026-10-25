@@ -1,0 +1,110 @@
+% ---------------------------------------------------------------------
+%  PHỤ LỤC H. DANH MỤC SƠ ĐỒ VÀ MÃ NGUỒN PLANTUML
+% ---------------------------------------------------------------------
+\section{Danh mục sơ đồ và mã nguồn PlantUML}\label{pl:so-do}
+
+Các sơ đồ trong báo cáo được viết bằng PlantUML~\cite{plantuml}, lưu dưới dạng văn bản trong \texttt{diagrams/} và kết xuất thành ảnh PNG trong \texttt{figures/diagrams/}. Lưu mã nguồn giúp quản lý phiên bản và so sánh thay đổi; kiểu dáng chung được khai báo trong \texttt{\_style.iuml}. Bảng~\ref{tab:danh-muc-so-do} liệt kê sơ đồ và tệp nguồn tương ứng.
+
+{\small
+\begin{longtable}{|C{1.3cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-1.3cm-5.6cm-2.4cm\relax}|L{5.6cm}|L{2.4cm}|}
+\caption{Danh mục sơ đồ và tệp nguồn PlantUML}\label{tab:danh-muc-so-do}\\
+\hline
+\hd{Hình} & \hd{Tên sơ đồ} & \hd{Tệp nguồn} & \hd{Loại sơ đồ}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Hình} & \hd{Tên sơ đồ} & \hd{Tệp nguồn} & \hd{Loại sơ đồ}\\ \hline
+\endhead
+\ref{fig:quy-trinh-thu-cong} & Quy trình đi chợ và sử dụng thực phẩm theo cách thủ công & \path{c1-01-quy-trinh-thu-cong.puml} & Hoạt động\\ \hline
+\ref{fig:phan-ra-chuc-nang} & Sơ đồ phân rã chức năng của ứng dụng & \path{c1-03-phan-ra-chuc-nang.puml} & Sơ đồ tư duy\\ \hline
+\ref{fig:chu-trinh} & Chu trình nghiệp vụ khép kín đề xuất cho ứng dụng & \path{c1-02-chu-trinh-nghiep-vu.puml} & Khối quy trình\\ \hline
+\ref{fig:ngu-canh} & Sơ đồ ngữ cảnh của hệ thống & \path{c1-04-ngu-canh.puml} & Ngữ cảnh\\ \hline
+\ref{fig:ipo-tong-quat} & Mô hình Đầu vào – Xử lý – Đầu ra tổng quát của hệ thống & \path{c1-05-ipo-tong-quat.puml} & Khối IPO\\ \hline
+\ref{fig:quy-trinh-mua-sam} & Quy trình mua sắm có phân công trong nhóm gia đình & \path{c1-06-quy-trinh-mua-sam-nhom.puml} & Hoạt động\\ \hline
+\ref{fig:trang-thai-mat-hang} & Vòng đời của một mặt hàng trong danh sách mua sắm & \path{c1-07-trang-thai-mat-hang.puml} & Trạng thái\\ \hline
+\ref{fig:trang-thai-thuc-pham} & Vòng đời của một lô thực phẩm trong tủ lạnh & \path{c1-08-trang-thai-thuc-pham.puml} & Trạng thái\\ \hline
+\ref{fig:quy-trinh-ke-hoach} & Quy trình lập kế hoạch bữa ăn gắn với tồn kho & \path{c1-09-quy-trinh-ke-hoach-bua-an.puml} & Hoạt động\\ \hline
+\ref{fig:mo-hinh-khai-niem} & Mô hình khái niệm nghiệp vụ & \path{c1-10-mo-hinh-khai-niem.puml} & Lớp khái niệm\\ \hline
+\ref{fig:quan-he-tac-nhan} & Biểu đồ quan hệ giữa các tác nhân & \path{c2-01-quan-he-tac-nhan.puml} & Use case\\ \hline
+\ref{fig:uc-tong-quan} & Biểu đồ use case tổng quan của hệ thống & \path{c2-02-uc-tong-quan.puml} & Use case\\ \hline
+\ref{fig:uc-tai-khoan} & Biểu đồ use case phân rã gói Xác thực và quản lý tài khoản & \path{c2-03-uc-tai-khoan.puml} & Use case\\ \hline
+\ref{fig:uc-nhom} & Biểu đồ use case phân rã gói Quản lý nhóm gia đình & \path{c2-05-uc-nhom.puml} & Use case\\ \hline
+\ref{fig:act-tham-gia-nhom} & Biểu đồ hoạt động của use case Tham gia nhóm gia đình & \path{c2-06-act-tham-gia-nhom.puml} & Hoạt động\\ \hline
+\ref{fig:uc-mua-sam} & Biểu đồ use case phân rã gói Quản lý danh sách mua sắm & \path{c2-07-uc-mua-sam.puml} & Use case\\ \hline
+\ref{fig:act-danh-dau-da-mua} & Biểu đồ hoạt động của use case Đánh dấu đã mua và Chuyển vào tủ lạnh & \path{c2-08-act-danh-dau-da-mua.puml} & Hoạt động\\ \hline
+\ref{fig:act-sinh-ds} & Biểu đồ hoạt động của use case Sinh danh sách mua sắm từ kế hoạch bữa ăn & \path{c2-09-act-sinh-ds-tu-ke-hoach.puml} & Hoạt động\\ \hline
+\ref{fig:uc-tu-lanh} & Biểu đồ use case phân rã gói Quản lý thực phẩm trong tủ lạnh & \path{c2-10-uc-tu-lanh.puml} & Use case\\ \hline
+\ref{fig:act-nhac-nho} & Biểu đồ hoạt động của use case Gửi nhắc nhở thực phẩm sắp hết hạn & \path{c2-11-act-nhac-nho.puml} & Hoạt động\\ \hline
+\ref{fig:seq-nhac-nho} & Biểu đồ tuần tự của luồng nhắc nhở hạn dùng & \path{c2-12-seq-nhac-nho.puml} & Tuần tự\\ \hline
+\ref{fig:uc-cong-thuc} & Biểu đồ use case phân rã gói Quản lý công thức nấu ăn & \path{c2-13-uc-cong-thuc.puml} & Use case\\ \hline
+\ref{fig:uc-ke-hoach} & Biểu đồ use case phân rã gói Quản lý kế hoạch bữa ăn & \path{c2-14-uc-ke-hoach.puml} & Use case\\ \hline
+\ref{fig:act-goi-y} & Biểu đồ hoạt động của use case Gợi ý món ăn từ thực phẩm sẵn có & \path{c2-15-act-goi-y-mon.puml} & Hoạt động\\ \hline
+\ref{fig:act-xac-nhan-nau} & Biểu đồ hoạt động của use case Xác nhận đã nấu món ăn & \path{c2-16-act-xac-nhan-nau.puml} & Hoạt động\\ \hline
+\ref{fig:uc-tim-kiem} & Biểu đồ use case phân rã gói Tìm kiếm và phân loại thực phẩm & \path{c2-17-uc-tim-kiem.puml} & Use case\\ \hline
+\ref{fig:uc-thong-ke} & Biểu đồ use case phân rã gói Thống kê báo cáo & \path{c2-18-uc-thong-ke.puml} & Use case\\ \hline
+\ref{fig:uc-quan-tri} & Biểu đồ use case phân rã gói Quản trị hệ thống & \path{c2-19-uc-quan-tri.puml} & Use case\\ \hline
+\multicolumn{4}{|l|}{\hs{Chương 3. Thiết kế backend}}\\ \hline
+\ref{fig:c4-ngu-canh} & Sơ đồ ngữ cảnh hệ thống theo mô hình C4 (mức 1) & \path{c3-01-c4-ngu-canh.puml} & C4\\ \hline
+\ref{fig:c4-container} & Sơ đồ vùng chứa theo mô hình C4 (mức 2) & \path{c3-02-c4-container.puml} & C4\\ \hline
+\ref{fig:giao-tiep-su-kien} & Luồng sự kiện miền: hộp thư đi trong giao dịch và phát tán thời gian thực & \path{c3-03-giao-tiep-su-kien.puml} & Thành phần\\ \hline
+\ref{fig:phu-thuoc-module} & Sơ đồ gói thể hiện phụ thuộc giữa các module & \path{c3-04-phu-thuoc-module.puml} & Gói\\ \hline
+\ref{fig:c4-thanh-phan-api-vao} & Sơ đồ thành phần của vùng chứa API theo mô hình C4 (mức 3): phía vào & \path{c3-05a-c4-thanh-phan-api-vao.puml} & C4\\ \hline
+\ref{fig:c4-thanh-phan-api-ra} & Sơ đồ thành phần của vùng chứa API theo mô hình C4 (mức 3): phía ra & \path{c3-05b-c4-thanh-phan-api-ra.puml} & C4\\ \hline
+\ref{fig:c4-thanh-phan-worker} & Sơ đồ thành phần của vùng chứa Worker theo mô hình C4 (mức 3) & \path{c3-06-c4-thanh-phan-worker.puml} & C4\\ \hline
+\ref{fig:kien-truc-ung-dung} & Kiến trúc tầng của ứng dụng Flutter và các điểm tiếp xúc với backend & \path{c3-41-kien-truc-ung-dung.puml} & Thành phần\\ \hline
+\ref{fig:vong-doi-dong-bo} & Biểu đồ trạng thái vòng đời ứng dụng và kênh đồng bộ trên Android và iOS & \path{c3-42-vong-doi-dong-bo.puml} & Trạng thái\\ \hline
+\ref{fig:phan-tang-module} & Phân tầng lục giác bên trong một module & \path{c3-07-phan-tang-module.puml} & Thành phần\\ \hline
+\ref{fig:lop-tu-lanh} & Biểu đồ lớp module tủ lạnh (pantry) & \path{c3-08-lop-tu-lanh.puml} & Lớp\\ \hline
+\ref{fig:lop-mua-sam-ke-hoach} & Biểu đồ lớp module mua sắm (shopping) & \path{c3-09-lop-mua-sam-ke-hoach.puml} & Lớp\\ \hline
+\ref{fig:lop-ke-hoach} & Biểu đồ lớp module kế hoạch bữa ăn (mealplan) & \path{c3-09b-lop-ke-hoach.puml} & Lớp\\ \hline
+\ref{fig:pipeline-yeu-cau} & Chuỗi xử lý một yêu cầu HTTP trong tiến trình api & \path{c3-10-pipeline-yeu-cau.puml} & Hoạt động\\ \hline
+\ref{fig:trang-thai-tai-khoan} & Biểu đồ trạng thái tài khoản người dùng & \path{c3-11-trang-thai-tai-khoan.puml} & Trạng thái\\ \hline
+\ref{fig:trang-thai-mat-hang-be} & Biểu đồ trạng thái mặt hàng mua sắm ở phía máy chủ & \path{c3-12-trang-thai-mat-hang-be.puml} & Trạng thái\\ \hline
+\ref{fig:trang-thai-tac-vu} & Vòng đời tác vụ nền trong hàng đợi River & \path{c3-13-trang-thai-tac-vu.puml} & Trạng thái\\ \hline
+\ref{fig:seq-xac-nhan-nau} & Biểu đồ tuần tự xác nhận đã nấu với giao dịch nguyên tử và khóa dòng & \path{c3-14-seq-xac-nhan-nau.puml} & Tuần tự\\ \hline
+\ref{fig:seq-outbox-mua-hang} & Biểu đồ tuần tự đánh dấu đã mua với hộp thư đi giao dịch & \path{c3-15-seq-outbox-mua-hang.puml} & Tuần tự\\ \hline
+\ref{fig:seq-nhap-tu} & Biểu đồ tuần tự chuyển mặt hàng đã mua vào tủ lạnh qua cổng StockIn & \path{c3-15b-seq-nhap-tu.puml} & Tuần tự\\ \hline
+\ref{fig:seq-dong-bo-ngoai-tuyen} & Biểu đồ tuần tự đồng bộ ngoại tuyến với phát lại lũy đẳng & \path{c3-16-seq-dong-bo-ngoai-tuyen.puml} & Tuần tự\\ \hline
+\ref{fig:seq-thoi-gian-thuc} & Biểu đồ tuần tự đồng bộ thời gian thực qua WebSocket, Redis Pub/Sub và FCM & \path{c3-17-seq-thoi-gian-thuc.puml} & Tuần tự\\ \hline
+\ref{fig:seq-nhac-han-dung-be} & Biểu đồ tuần tự nhắc hạn dùng phía backend với ba lớp chống trùng & \path{c3-18-seq-nhac-han-dung-be.puml} & Tuần tự\\ \hline
+\ref{fig:seq-tim-kiem-chi-muc} & Biểu đồ tuần tự đánh chỉ mục và truy vấn tìm kiếm có dự phòng & \path{c3-37-seq-tim-kiem-chi-muc.puml} & Tuần tự\\ \hline
+\ref{fig:seq-ma-vach} & Biểu đồ tuần tự tra cứu mã vạch qua bộ đệm, danh mục và Open Food Facts & \path{c3-19-seq-ma-vach.puml} & Tuần tự\\ \hline
+\ref{fig:seq-tham-gia-nhom} & Biểu đồ tuần tự hiện thực use case Tham gia nhóm gia đình & \path{c3-29-seq-tham-gia-nhom.puml} & Tuần tự\\ \hline
+\ref{fig:seq-phan-cong} & Biểu đồ tuần tự hiện thực use case Phân công người mua & \path{c3-30-seq-phan-cong.puml} & Tuần tự\\ \hline
+\ref{fig:seq-sinh-ds-ke-hoach} & Biểu đồ tuần tự hiện thực use case Sinh danh sách mua sắm từ kế hoạch bữa ăn & \path{c3-31-seq-sinh-ds-ke-hoach.puml} & Tuần tự\\ \hline
+\ref{fig:seq-them-thuc-pham} & Biểu đồ tuần tự hiện thực use case Thêm thực phẩm vào tủ lạnh & \path{c3-32-seq-them-thuc-pham.puml} & Tuần tự\\ \hline
+\ref{fig:seq-goi-y-mon} & Biểu đồ tuần tự hiện thực use case Gợi ý món ăn từ thực phẩm sẵn có & \path{c3-33-seq-goi-y-mon.puml} & Tuần tự\\ \hline
+\ref{fig:seq-lap-lich} & Biểu đồ tuần tự hiện thực use case Lên lịch bữa ăn & \path{c3-40-seq-lap-lich.puml} & Tuần tự\\ \hline
+\ref{fig:seq-bao-cao-xuat} & Biểu đồ tuần tự hiện thực use case Xem báo cáo lãng phí và Xuất báo cáo & \path{c3-34-seq-bao-cao-xuat.puml} & Tuần tự\\ \hline
+\ref{fig:seq-dang-ky-otp} & Biểu đồ tuần tự hiện thực use case Đăng ký tài khoản, Xác thực mã OTP và Khôi phục mật khẩu & \path{c3-35-seq-dang-ky-otp.puml} & Tuần tự\\ \hline
+\ref{fig:seq-roi-nhom-chuyen-quyen} & Biểu đồ tuần tự hiện thực use case Chuyển quyền trưởng nhóm, Rời nhóm và Xóa thành viên & \path{c3-36-seq-roi-nhom-chuyen-quyen.puml} & Tuần tự\\ \hline
+\ref{fig:seq-quan-tri-cau-hinh} & Biểu đồ tuần tự hiện thực use case Cấu hình tham số hệ thống và thao tác khóa tài khoản & \path{c3-38-seq-quan-tri-cau-hinh.puml} & Tuần tự\\ \hline
+\ref{fig:seq-duyet-thuc-pham} & Biểu đồ tuần tự hiện thực thao tác duyệt và gộp thực phẩm riêng của use case Quản lý danh mục thực phẩm & \path{c3-39-seq-duyet-thuc-pham.puml} & Tuần tự\\ \hline
+\ref{fig:erd-tong-quan} & Sơ đồ thực thể -- liên kết tổng quan theo schema & \path{c3-20-erd-tong-quan.puml} & Thực thể liên kết\\ \hline
+\ref{fig:erd-tai-khoan-nhom} & ERD schema identity và household & \path{c3-21-erd-tai-khoan-nhom.puml} & Thực thể liên kết\\ \hline
+\ref{fig:erd-mua-sam-tu-lanh} & ERD schema shopping và pantry & \path{c3-22-erd-mua-sam-tu-lanh.puml} & Thực thể liên kết\\ \hline
+\ref{fig:erd-cong-thuc-ke-hoach} & ERD schema catalog, recipe và mealplan & \path{c3-23-erd-cong-thuc-ke-hoach.puml} & Thực thể liên kết\\ \hline
+\ref{fig:erd-thong-bao-he-thong} & ERD các schema notification, sync, media, admin và report & \path{c3-24-erd-thong-bao-he-thong.puml} & Thực thể liên kết\\ \hline
+\ref{fig:seq-dang-nhap-lam-moi} & Biểu đồ tuần tự đăng nhập và làm mới phiên xoay vòng & \path{c3-25-seq-dang-nhap-lam-moi.puml} & Tuần tự\\ \hline
+\ref{fig:seq-dung-lai-ma-lam-moi} & Biểu đồ tuần tự phát hiện dùng lại mã làm mới & \path{c3-25b-seq-dung-lai-ma-lam-moi.puml} & Tuần tự\\ \hline
+\ref{fig:trien-khai} & Sơ đồ triển khai giai đoạn 1 trên một VPS & \path{c3-26-trien-khai.puml} & Triển khai\\ \hline
+\ref{fig:cicd} & Biểu đồ hoạt động của pipeline CI/CD trên GitLab & \path{c3-27-cicd.puml} & Hoạt động\\ \hline
+\ref{fig:mo-rong} & Sơ đồ triển khai giai đoạn 2 với nhiều nút & \path{c3-28-mo-rong.puml} & Triển khai\\ \hline
+\end{longtable}
+}
+
+Sau khi chỉnh sửa sơ đồ, chạy \texttt{make diagrams} tại thư mục gốc để kết xuất lại các tệp \texttt{diagrams/*.puml} thành ảnh PNG. Các sơ đồ use case, trạng thái, lớp và ngữ cảnh dùng bộ dàn trang Smetana tích hợp trong PlantUML, không cần Graphviz. Hướng dẫn chi tiết có trong \texttt{README.md}.
+
+Tệp kiểu dáng dùng chung được trình bày dưới đây. Mỗi sơ đồ nạp tệp này bằng chỉ thị \texttt{!include \_style.iuml}; các sơ đồ UML của Chương~\ref{chap:backend} nạp \texttt{\_style-c3.iuml}, tệp kế thừa \texttt{\_style.iuml} và tăng cỡ chữ để chữ khi in không nhỏ hơn 6,5 pt, còn sơ đồ C4 dùng thư viện chuẩn C4 có sẵn trong PlantUML.
+
+\codecaption{Tệp kiểu dáng dùng chung \_style.iuml}{lst:style}
+\VerbatimInput{diagrams/_style.iuml}
+
+Mã nguồn dưới đây là biểu đồ phân rã gói Xác thực và quản lý tài khoản (Hình~\ref{fig:uc-tai-khoan}), minh họa cách khai báo tác nhân, use case, quan hệ bao gồm và tác nhân phụ.
+
+\codecaption{Tệp c2-03-uc-tai-khoan.puml}{lst:uc-tai-khoan}
+\VerbatimInput{diagrams/c2-03-uc-tai-khoan.puml}
+
+Biểu đồ hoạt động Gợi ý món ăn (Hình~\ref{fig:act-goi-y}) minh họa cách mô tả làn, vòng lặp và nhánh xử lý trong PlantUML.
+
+\codecaption{Tệp c2-15-act-goi-y-mon.puml}{lst:act-goi-y}
+\VerbatimInput{diagrams/c2-15-act-goi-y-mon.puml}

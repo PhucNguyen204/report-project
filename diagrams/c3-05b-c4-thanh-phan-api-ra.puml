@@ -1,0 +1,52 @@
+@startuml c3-05b-c4-thanh-phan-api-ra
+!$TECHN_FONT_SIZE = 14
+!$LEGEND_TITLE_TEXT = "Chú giải"
+!include <C4/C4_Component>
+skinparam dpi 170
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowFontSize 14
+skinparam wrapWidth 160
+skinparam nodesep 28
+skinparam ranksep 60
+HIDE_STEREOTYPE()
+LAYOUT_LEFT_RIGHT()
+UpdateElementStyle("container", $legendText="vùng chứa")
+UpdateElementStyle("component", $legendText="thành phần")
+UpdateElementStyle("external_system", $legendText="hệ thống bên ngoài")
+UpdateContainerBoundaryStyle($legendText="ranh giới vùng chứa")
+
+Container_Boundary(api, "API") {
+  Component(svc, "Dịch vụ ứng dụng", "Go, mỗi module", "Ca sử dụng, BR, ranh giới giao dịch (TxManager)")
+  Component(bc, "BarcodeService + bộ ngắt mạch", "catalog", "Cache → foods global (Repository) → OFF")
+  Component(cache, "Bộ đệm cấu hình, gợi ý", "bộ nhớ + Redis", "cfg:all 5 phút, suggest:{sid}")
+  Component(cf, "ChangefeedAppender", "sync: SyncEngine", "Cuối giao dịch; PUBLISH sau commit")
+  Component(pub, "Event publisher", "River InsertTx", "Chèn tác vụ cùng giao dịch")
+  Component(repo, "Repository", "sqlc, pgx v5", "Lọc space_id, khóa dòng")
+  Component(ext, "Search client, S3 presigner", "go-elasticsearch, minio-go", "Lọc theo không gian; ký URL")
+}
+
+System_Ext(off, "Open Food Facts", "Tra cứu mã vạch")
+ContainerDb(redis, "Redis", "Redis 7", "cfg:all, suggest, barcode, Pub/Sub")
+ContainerDb(pg, "PostgreSQL", "PostgreSQL 16", "Schema module, river_job")
+ContainerDb(es, "Elasticsearch", "8.15", "foods, recipes")
+ContainerDb(minio, "MinIO", "S3", "Bucket media")
+
+Rel(svc, bc, "Tra mã vạch (P08)")
+Rel(svc, cache, "Đọc tham số, gợi ý")
+Rel(svc, cf, "Ghi thay đổi")
+Rel(svc, pub, "Phát sự kiện")
+Rel(svc, repo, "Đọc/ghi")
+Rel(svc, ext, "Tìm kiếm, xin URL")
+Rel(bc, off, "GET sản phẩm", "HTTPS, 3 s")
+Rel(bc, redis, "barcode:{code}")
+Rel(cache, redis, "cfg:all, SUBSCRIBE cfg")
+Rel(cf, redis, "PUBLISH space:{id}")
+Rel(cf, pg, "change_seq, space_changes")
+Rel(pub, pg, "INSERT river_job")
+Rel(repo, pg, "SQL, FOR UPDATE")
+Rel(ext, es, "Truy vấn")
+Rel(ext, minio, "Ký URL, HEAD")
+
+SHOW_LEGEND()
+@enduml

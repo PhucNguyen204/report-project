@@ -1,0 +1,157 @@
+% =====================================================================
+%  3.4. THIẾT KẾ CHI TIẾT (3.4.1–3.4.4)
+%  Mục 3.4.5 "Các kỹ thuật nổi bật" nằm ở tệp ky-thuat.tex.
+% =====================================================================
+\section{Thiết kế chi tiết}\label{sec:thiet-ke-chi-tiet}
+
+Mục này đi xuống mức mã nguồn, tương ứng mức 4 của mô hình C4~\cite{c4model}, gồm tổ chức mã và phân tầng (mục~\ref{ssec:to-chuc-ma-nguon}), biểu đồ lớp (mục~\ref{ssec:thiet-ke-lop}), chuỗi xử lý một yêu cầu (mục~\ref{ssec:luong-yeu-cau}) và máy trạng thái phía máy chủ (mục~\ref{ssec:may-trang-thai}). Mục~\ref{ssec:ky-thuat} trình bày các kỹ thuật cho những bài toán khó nhất: khóa dòng theo FEFO, transactional outbox, đồng bộ ngoại tuyến, đẩy thay đổi thời gian thực, nhắc hạn không trùng lặp, gợi ý món và tìm kiếm tiếng Việt; mục~\ref{ssec:hien-thuc-uc} khép lại bằng cách hiện thực hóa các use case trọng tâm trên nền các thành phần này.
+
+% ---------------------------------------------------------------------
+\subsection{Tổ chức mã nguồn và phân tầng trong module}\label{ssec:to-chuc-ma-nguon}
+
+Toàn bộ backend nằm trong một kho mã và một module Go~\cite{golang}, với cây thư mục rút gọn ở Mã nguồn~\ref{code:c3-cay-thu-muc}. Trình biên dịch Go cấm mã bên ngoài nhập các gói dưới \texttt{internal}, nên ranh giới công khai duy nhất là hợp đồng API. Bên trong mỗi module, nhóm áp dụng kiến trúc lục giác, hay cổng và bộ chuyển đổi (ports and adapters)~\cite{hexagonal}.
+
+\codecaption{Cây thư mục kho mã backend (rút gọn)}{code:c3-cay-thu-muc}
+\begin{Verbatim}
+dicho-backend/
+|-- cmd/api/, cmd/worker/  # composition root của hai tiến trình
+|-- api/openapi.yaml       # hợp đồng OpenAPI 3.1, nguồn sinh mã
+|-- db/migrations/         # tệp goose (expand-contract)
+|-- db/queries/<module>/   # câu SQL có tên, đầu vào của sqlc
+|-- internal/platform/     # config, db (pgxpool, TxManager), httpx,
+|                          # auth, events, clock, i18n, observability
+|-- internal/kernel/       # Quantity, Unit, Money, DateRange, ID
+|-- internal/modules/
+|   |-- pantry/
+|   |   |-- api/           # cổng vào: StockIn, StockQuery...
+|   |   |-- domain/        # FoodLot, StockMovement, FEFOAllocator
+|   |   |-- app/           # PantryService và các cổng ra
+|   |   `-- adapter/http/, adapter/postgres/  # handler; mã sqlc
+|   |-- shopping/ mealplan/ recipe/ household/ ...
+|   `-- notification/      # thêm adapter/river: worker đẩy, thư
+|-- deploy/compose/        # docker-compose.*.yml, Caddyfile
+`-- .gitlab-ci.yml         # verify, test, build, scan, deploy
+\end{Verbatim}
+
+Tệp \path{api/openapi.yaml} là nguồn sự thật của hợp đồng API theo hướng thiết kế API trước (contract-first)~\cite{openapi}: \texttt{oapi-codegen} sinh interface \texttt{ServerInterface} cho máy chủ, ứng dụng Flutter sinh client từ cùng tệp (\nfr{NFR20}). Câu SQL trong \path{db/queries} được \texttt{sqlc}~\cite{sqlc} biên dịch thành hàm Go an toàn kiểu; CI so sánh mã sinh lại với mã đã commit để chặn lệch hợp đồng hoặc lược đồ. Hình~\ref{fig:phan-tang-module} thể hiện cấu trúc lục giác của một module, lấy \texttt{shopping} làm ví dụ cho hai loại cổng nối với module khác.
+
+\diagram[\textwidth]{c3-07-phan-tang-module}{Phân tầng lục giác bên trong một module}{fig:phan-tang-module}
+
+Lõi lục giác gồm tầng ứng dụng và tầng miền. Tầng miền chỉ nhập thư viện chuẩn và \texttt{kernel}. Tầng ứng dụng có một phương thức cho mỗi use case, là ranh giới giao dịch, nơi kiểm tra quyền theo vai trò trong nhóm, và tự khai báo các cổng ra mà nó cần (repository, \texttt{ChangefeedAppender}, \texttt{EventPublisher}) theo thông lệ “interface đặt ở phía dùng” của Go. Trên mép lục giác có hai loại cổng nối module với module. Cổng vào là gói \texttt{<module>/api} do chính module công bố, ví dụ \path{shopping/api.ListComposer}: module khác (ở đây là \texttt{mealplan}) chỉ thấy interface này, còn dịch vụ ứng dụng hiện thực nó, nên cổng vào không phải một adapter mà là một phần hợp đồng của lõi. Cổng ra tới module khác là interface do module bên kia công bố, ví dụ \texttt{shopping} gọi \path{pantry/api.StockIn} khi nhập tủ và \texttt{PantryService} của \texttt{pantry} hiện thực nó. Adapter vào (handler HTTP sinh từ OpenAPI, worker River) gọi tầng ứng dụng; adapter ra (repository dùng mã \texttt{sqlc}, \texttt{RiverPublisher} chèn tác vụ bằng \texttt{InsertTx}, \texttt{SyncEngine} của module \texttt{sync}) hiện thực cổng ra. Mọi mũi tên phụ thuộc hướng vào lõi, và một module chỉ được nhập gói \texttt{api} của module khác theo đồ thị không chu trình ở Hình~\ref{fig:phu-thuoc-module}; luật \texttt{depguard} của \texttt{golangci-lint} kiểm tra điều này trong CI. Nhờ vậy tầng miền được kiểm thử đơn vị không cần cơ sở dữ liệu (\nfr{NFR20}).
+
+Có ba chỗ chiều gọi ngược với chiều phụ thuộc cho phép. Khi thành viên rời hoặc bị xóa khỏi nhóm, \texttt{household} cần \texttt{shopping} trả các mặt hàng đang giao cho người đó về Cần mua (\br{BR07}), trong khi \texttt{shopping} đã phụ thuộc \texttt{household}. Nhóm áp dụng nguyên lý đảo phụ thuộc: \texttt{household} công bố interface \path{household/api.MemberLeaveHook}, \texttt{ShoppingService} hiện thực và được đăng ký tại gốc lắp ghép, rồi \texttt{household} gọi hook trong chính giao dịch xóa thành viên. Hai trường hợp còn lại dùng cùng khuôn: \path{identity/api.ActivationHook} do \texttt{household} hiện thực để tạo không gian cá nhân ngay khi tài khoản được kích hoạt (\uc{UC02}, \br{BR04}), và \path{recipe/api.RecipeDeleteHook} do \texttt{mealplan} hiện thực để chuyển các món dự kiến thành món tự do khi công thức bị xóa (\uc{UC33}).
+
+Phụ thuộc được lắp ghép thủ công qua hàm khởi tạo tại gốc lắp ghép (composition root), tức hàm \texttt{main} của hai tiến trình: tạo pool, client Redis và River, rồi repository, dịch vụ, handler, và nối cổng giữa module, ví dụ \texttt{ShoppingService} nhận \texttt{PantryService} dưới dạng \texttt{pantryapi.StockIn}. \texttt{TxManager.WithinTx(ctx, fn)} mở \texttt{pgx.Tx} và gắn vào context; repository lấy đối tượng truy vấn qua \texttt{db.Querier(ctx)}, dùng giao dịch nếu context đang mang. Lời gọi lồng nhau tham gia giao dịch sẵn có, nên khi nhập tủ (\uc{UC21}) việc tạo lô, đổi trạng thái mặt hàng và ghi nhật ký thay đổi qua cổng \texttt{ChangefeedAppender}, do \texttt{SyncEngine} của module \texttt{sync} hiện thực, nằm trong một giao dịch mà không module nào biết \texttt{pgx.Tx}; tác dụng phụ ngoài cơ sở dữ liệu chỉ chạy sau commit.
+
+% ---------------------------------------------------------------------
+\subsection{Thiết kế lớp (C4 mức 4)}\label{ssec:thiet-ke-lop}
+
+Biểu đồ lớp ánh xạ \texttt{struct} của Go thành lớp và \texttt{interface} thành lớp «interface», thuộc tính ghi theo kiểu Go (\texttt{*T} là giá trị có thể rỗng), ký hiệu theo UML~2.5~\cite{uml251}. Mọi phương thức của dịch vụ, cổng và repository nhận \texttt{ctx context.Context} làm tham số đầu và trả thêm \texttt{error}; hai thành phần lặp lại này được lược bỏ trên hình, cùng với kiểu lệnh và kiểu kết quả phụ. Tên dịch vụ, phương thức và cổng trên hình là tên dùng thống nhất trong các sơ đồ tuần tự của chương. Hình~\ref{fig:lop-tu-lanh} trình bày module \texttt{pantry}, trong đó \texttt{FoodLot} là gốc tập hợp (aggregate root)~\cite{evans}.
+
+\diagram[\textwidth]{c3-08-lop-tu-lanh}{Biểu đồ lớp module tủ lạnh (pantry)}{fig:lop-tu-lanh}
+
+\texttt{PantryService} hiện thực ba cổng vào của gói \path{pantry/api}: \path{StockIn.AddLots} cho nhập tủ từ danh sách mua sắm (\uc{UC21}), \path{StockConsumer.ConsumeForMeal} cho trừ kho khi nấu (\uc{UC41}) và \texttt{StockQuery} gồm \texttt{Available} (tồn kho còn hạn đến một ngày, dùng cho gợi ý món, sinh danh sách và đối chiếu nguyên liệu) cùng \texttt{SearchLots} (tìm lô trong không gian). Các phương thức riêng \texttt{AddLot}, \texttt{UpdateLot}, \texttt{Consume}, \texttt{Discard} phục vụ \uc{UC25}, \uc{UC27}, \uc{UC28}, \uc{UC29}. Mọi thay đổi lượng tồn đi qua phương thức của \texttt{FoodLot}, nơi kiểm tra bất biến (\br{BR11}, \br{BR14}, \br{BR16}) và sinh một \texttt{StockMovement} chỉ ghi thêm. Riêng \texttt{Adjust} phục vụ sửa lượng còn lại ở \uc{UC27}: khác các trường mô tả như vị trí, ngày hết hạn, ghi chú vốn được hợp nhất theo trường và lệnh sau thắng, lượng còn lại không áp dụng quy tắc này, \texttt{If-Match} lệch thì trả 409/4002, giá trị vượt lượng ban đầu trả 400/2002, giá trị 0 chuyển lô sang \texttt{consumed}, và mỗi lần đổi sinh một biến động loại \texttt{adjust}. Thuộc tính \texttt{TotalCost} lưu thành tiền lúc nhập tủ thay cho đơn giá, nên giá trị lãng phí tính theo tỷ lệ lượng bỏ đi trên lượng ban đầu vẫn đúng khi đơn vị của lô khác đơn vị mua. \texttt{Quantity} là value object của \texttt{kernel} (số thập phân chính xác kèm đơn vị, quy đổi về đơn vị cơ sở theo \br{BR16}) nên chỉ xuất hiện dưới dạng kiểu thuộc tính. \texttt{FEFOAllocator} là hàm thuần nhận các lô đã khóa theo thứ tự \texttt{(expires\_on, id)} (\br{BR15}) và trả phần phân bổ cùng lượng còn thiếu, còn \texttt{PantryService} chỉ điều phối: khóa lô, phân bổ, lưu, ghi nhật ký thay đổi, phát \path{lot.changed}. Cơ chế khóa dòng được phân tích ở mục~\ref{sssec:kt-fefo}.
+
+Hai module \texttt{shopping} và \texttt{mealplan} liên kết chặt qua \uc{UC22} nhưng mỗi module có đủ lớp để cần một hình riêng: Hình~\ref{fig:lop-mua-sam-ke-hoach} trình bày \texttt{shopping}, Hình~\ref{fig:lop-ke-hoach} trình bày \texttt{mealplan}; ở mỗi hình, cổng của module khác chỉ được vẽ ở mức interface. Trong module \texttt{shopping}, năm phương thức \texttt{AddItem}, \texttt{AssignItem}, \texttt{MarkPurchased}, \texttt{UndoPurchase} và \texttt{StockItems} của \texttt{ShoppingService} lần lượt phục vụ \uc{UC17}, \uc{UC19}, \uc{UC20} (hai lệnh đánh dấu và hoàn tác) và \uc{UC21}. Dịch vụ còn hiện thực hai cổng do module khác gọi: \path{shopping/api.ListComposer} cho \texttt{mealplan} (\texttt{PendingQuantities} trả lượng đang chờ mua theo thực phẩm, \texttt{Compose} tạo hoặc gộp danh sách) và \path{household/api.MemberLeaveHook} cho \texttt{household}.
+
+\diagram[\textwidth]{c3-09-lop-mua-sam-ke-hoach}{Biểu đồ lớp module mua sắm (shopping)}{fig:lop-mua-sam-ke-hoach}
+
+Như Hình~\ref{fig:lop-mua-sam-ke-hoach} cho thấy, quy tắc trạng thái mặt hàng nằm ở \texttt{ShoppingItem}, còn quy tắc trạng thái danh sách nằm ở gốc tập hợp \texttt{ShoppingList}: \texttt{DeriveStatus} suy ra \texttt{ListStatus} theo \br{BR08}, \texttt{CheckEditable} từ chối sửa danh sách Hoàn tất trừ các lệnh được phép sau khi mua (mục~\ref{ssec:may-trang-thai}). Quy tắc vai trò theo \br{BR10} nằm ở \texttt{AssignmentPolicy}, nên đổi chính sách phân quyền không chạm vào máy trạng thái. \texttt{ShoppingService} chỉ điều phối các lớp này trong một giao dịch và gọi \path{StockIn.AddLots} khi nhập tủ.
+
+\diagram[\textwidth]{c3-09b-lop-ke-hoach}{Biểu đồ lớp module kế hoạch bữa ăn (mealplan)}{fig:lop-ke-hoach}
+
+Trong Hình~\ref{fig:lop-ke-hoach}, \texttt{MealPlanService} có \texttt{PlanMeals} (\uc{UC37}), \texttt{UpdateMeal} (\uc{UC39}), \texttt{Cook} (\uc{UC41}), \texttt{Suggest} (\uc{UC40}) và \texttt{GenerateList} (\uc{UC22}), đồng thời hiện thực \path{recipe/api.RecipeDeleteHook}. Với \uc{UC22}, handler \texttt{MealHandler} nhận lệnh S15 và gọi \texttt{GenerateList}; dịch vụ lấy nguyên liệu qua \path{RecipeQuery.Ingredients}, tồn kho qua \path{StockQuery.Available}, lượng đang chờ mua qua \path{ListComposer.PendingQuantities}, giao phép tính cho \path{ShortageCalculator.Compute} rồi ghi danh sách qua \path{ListComposer.Compose}. Vì \texttt{ListComposer} do \texttt{shopping} công bố, \texttt{mealplan} phụ thuộc \texttt{shopping} mà không có chiều ngược lại. \texttt{Cook} gọi \path{StockConsumer.ConsumeForMeal} trong cùng giao dịch với \path{MealEntry.MarkCooked}, bảo đảm \uc{UC41} nguyên tử (\nfr{NFR11}). \path{SuggestionEngine.Rank} và \path{ShortageCalculator.Compute} là hai dịch vụ miền thuần ngang hàng: cả hai nhận dữ liệu đã nạp sẵn và không truy cập cơ sở dữ liệu. Dịch vụ miền nhận ngày hiện tại và tham số cấu hình làm đối số, ví dụ \texttt{Reschedule} nhận cửa sổ lập kế hoạch đọc từ khóa \path{mealplan.horizonDays} (mặc định 28 ngày, \br{BR18}), nên ví dụ kiểm chứng ở Chương~\ref{chap:dac-ta} như cà rốt thiếu 0,3~kg trở thành ca kiểm thử đơn vị. Bảng~\ref{tab:c3-lop-chinh} tóm tắt trách nhiệm các lớp chính của ba biểu đồ lớp.
+
+{\small
+\begin{longtable}{|L{4.3cm}|L{\dimexpr\textwidth-4\tabcolsep-3\arrayrulewidth-4.3cm\relax}|}
+\caption{Trách nhiệm của các lớp chính}\label{tab:c3-lop-chinh}\\
+\hline
+\hd{Lớp} & \hd{Trách nhiệm chính}\\ \hline
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Lớp} & \hd{Trách nhiệm chính}\\ \hline
+\endhead
+\texttt{FoodLot} & Gốc tập hợp; giữ bất biến của lô, sinh biến động kho (kể cả \texttt{adjust}), tính trạng thái hạn dùng suy diễn.\\ \hline
+\texttt{FEFOAllocator} & Dịch vụ miền; phân bổ lượng trừ theo ngày hết hạn tăng dần, bỏ qua lô quá hạn (\br{BR15}).\\ \hline
+\texttt{PantryService} & Dịch vụ ứng dụng của \uc{UC25}, \uc{UC27}--\uc{UC29} (\texttt{AddLot}, \texttt{UpdateLot}, \texttt{Consume}, \texttt{Discard}); hiện thực cổng \texttt{StockIn}, \texttt{StockConsumer}, \texttt{StockQuery}.\\ \hline
+\texttt{ShoppingList} & Gốc tập hợp; gộp mặt hàng trùng (\br{BR09}), suy ra trạng thái danh sách và chặn sửa danh sách Hoàn tất (\br{BR08}).\\ \hline
+\texttt{ShoppingItem} & Thực thể; hiện thực máy trạng thái mặt hàng ở mục~\ref{ssec:may-trang-thai}.\\ \hline
+\texttt{ShoppingService} & Dịch vụ ứng dụng của \uc{UC17}--\uc{UC21}; gọi \texttt{StockIn.AddLots} trong cùng giao dịch khi nhập tủ; hiện thực \texttt{ListComposer} và \texttt{MemberLeaveHook}.\\ \hline
+\texttt{AssignmentPolicy} & Dịch vụ miền; quyền phân công và mua thay theo \br{BR10}.\\ \hline
+\texttt{MealEntry} & Gốc tập hợp; ràng buộc \br{BR18} với cửa sổ \texttt{mealplan.horizonDays} đọc từ cấu hình, chuyển sang đã nấu đúng một lần.\\ \hline
+\texttt{MealPlanService} & Dịch vụ ứng dụng của \uc{UC37}, \uc{UC39}--\uc{UC41}, \uc{UC22}; hiện thực \texttt{RecipeDeleteHook}.\\ \hline
+\texttt{SuggestionEngine} & Dịch vụ miền; tính $R$, $E$, $F$ và điểm $S$ theo \br{BR19}, trọng số và ngưỡng đọc từ cấu hình.\\ \hline
+\texttt{ShortageCalculator} & Dịch vụ miền; tính phần thiếu theo ngày nấu, mỗi lượng chỉ tính một lần (\br{BR20}).\\ \hline
+\texttt{SyncEngine} & Thuộc module \texttt{sync}; hiện thực \texttt{ChangefeedAppender} (tăng \texttt{change\_seq}, ghi \texttt{space\_changes}) và quản lý khóa lũy đẳng.\\ \hline
+\end{longtable}
+}
+
+% ---------------------------------------------------------------------
+\subsection{Luồng xử lý một yêu cầu}\label{ssec:luong-yeu-cau}
+
+Mọi yêu cầu tới tiến trình \texttt{api} đi qua cùng một chuỗi bước ở Hình~\ref{fig:pipeline-yeu-cau}, sắp theo nguyên tắc kiểm tra rẻ trước, kiểm tra đắt sau để từ chối sớm yêu cầu không hợp lệ trước khi chiếm kết nối cơ sở dữ liệu.
+
+\diagram[0.92\textwidth]{c3-10-pipeline-yeu-cau}{Chuỗi xử lý một yêu cầu HTTP trong tiến trình api}{fig:pipeline-yeu-cau}
+
+Mã \texttt{X-Request-Id} được gắn đầu tiên để mọi log và span cùng định danh; bước ghi log và trace bao phần còn lại nên độ trễ đo được gồm cả yêu cầu bị từ chối (\nfr{NFR09}). Giới hạn thân 1~MB chặn tiêu tốn tài nguyên (API4 của OWASP~\cite{owaspapi}) và trả HTTP 413 với mã 2002; kiểm tra phiên bản đứng trước xác thực để ứng dụng quá cũ luôn nhận mã 4260. Giới hạn tần suất chia làm hai bước vì hai loại khóa đếm khác nhau. Bước 6 chỉ áp cho tuyến công khai như đăng ký, đăng nhập, gửi lại OTP và đếm theo địa chỉ IP, do lúc này chưa biết người gọi (\nfr{NFR17}). Bước 7 so claim \texttt{ver} của JWT với \texttt{token\_version} lưu đệm trong Redis, nên token mất hiệu lực ngay khi đăng xuất, đổi mật khẩu hoặc bị khóa; với nhóm đường dẫn \path{/admin/*}, bước này còn đòi \texttt{system\_role = admin}, thiếu thì trả 403/3007. Khi đã biết người gọi, bước 7b đếm theo người dùng, gồm luật chung cho mọi API và luật riêng như nhập mã mời, gợi ý tên, tra mã vạch; vượt ngưỡng trả 429/4290 kèm \texttt{Retry-After}. Bước 8 xác minh người gọi là thành viên không gian trong đường dẫn và đặt vai trò trong nhóm vào context; người ngoài nhận 404/4001 thay vì 403 để không xác nhận không gian tồn tại (\br{BR23}, \nfr{NFR16}), và mọi truy vấn repository vẫn lọc thêm \texttt{space\_id = \$sid}. Chi tiết bảo mật nằm ở mục~\ref{sec:bao-mat}.
+
+Bước 9 chỉ đọc \texttt{Idempotency-Key} và băm phương thức, đường dẫn, thân yêu cầu vào context; việc kiểm tra thật nằm ở câu lệnh đầu tiên của giao dịch ở bước 11, do \texttt{SyncEngine} thực hiện: \texttt{INSERT} vào \path{sync.idempotency_keys} một dòng \texttt{status = 'in\_progress'} với \texttt{ON CONFLICT DO NOTHING}. Nếu khóa đã tồn tại với băm khác, yêu cầu nhận 400/2002; khóa đã \texttt{completed} được phát lại đúng phản hồi đã lưu kèm \texttt{Idempotent-Replayed: true}; ngay trước \texttt{COMMIT}, dòng khóa được cập nhật thành \texttt{completed} cùng phản hồi. Đặt khóa vào chính giao dịch nghiệp vụ cho hai tính chất. Lỗi nghiệp vụ dẫn tới \texttt{ROLLBACK} nên khóa biến mất cùng dữ liệu, tức chỉ kết quả thành công được lưu và lần gửi lại sau khi người dùng sửa dữ liệu vẫn được xử lý. Hai bản sao đồng thời của cùng yêu cầu cũng không thể cùng chạy, vì PostgreSQL buộc lệnh \texttt{INSERT ... ON CONFLICT} thứ hai chờ giao dịch đang giữ khóa trùng kết thúc: bản đầu commit thì bản sau thấy \texttt{completed} và phát lại, bản đầu rollback thì bản sau tự chèn được và xử lý bình thường. Nếu phải chờ quá \texttt{lock\_timeout}, khóa được coi là đang ở \texttt{in\_progress} và yêu cầu nhận 409/4002 kèm \texttt{Retry-After}. Sau khi khóa lũy đẳng được giữ, dịch vụ kiểm tra vai trò trong nhóm cho thao tác chỉ dành cho trưởng nhóm (403/3007) và so \texttt{If-Match} với cột \texttt{version} cho lệnh không được hợp nhất (409/4002), rồi mới chạy logic miền, ghi qua repository, ghi nhật ký thay đổi và chèn tác vụ River bằng \texttt{InsertTx}. Các khóa dòng được lấy theo thứ tự toàn cục trình bày ở mục~\ref{sssec:kt-fefo}, trong đó dòng \texttt{change\_seq} của không gian luôn được cập nhật cuối cùng.
+
+Lỗi được ánh xạ tại một nơi: tầng miền trả lỗi có kiểu, \texttt{httpx.WriteError} dùng \texttt{errors.As} chuyển thành mã HTTP và mã phản hồi, ví dụ không tìm thấy thành 404/4001, xung đột phiên bản thành 409/4002 (\msg{MSG35}), vượt lượng còn lại thành 422/2003 (\msg{MSG17}), vi phạm quy tắc thành 422/4004 kèm mã BR. Khi lỗi xảy ra trong giao dịch, \texttt{TxManager} rollback trước rồi mới chuyển lỗi tới bước 14, như mũi tên từ bước 11 trên hình. Vi phạm ràng buộc cơ sở dữ liệu được repository dịch theo SQLSTATE và tên ràng buộc thành lỗi miền như Bảng~\ref{tab:c3-anh-xa-loi}, nên cùng mã 23505 có thể thành 4003, 4004 hay 4002 tùy ý nghĩa nghiệp vụ. Lỗi không nhận diện được luôn thành 500/5000, chi tiết chỉ ghi vào log kèm \texttt{traceId}. Handler không tự ghi mã trạng thái, nên mọi API dùng chung bộ mã ở mục~\ref{sec:api} (\nfr{NFR21}), thông điệp lấy từ Phụ lục~\ref{pl:thong-diep} theo \texttt{Accept-Language}. Sau commit, bước 13 phát \texttt{PUBLISH space:\{sid\}} để các thiết bị kéo thay đổi, và xóa \texttt{suggest:\{sid\}} khi lô hoặc công thức đổi để gợi ý món không dùng tồn kho cũ.
+
+Mỗi yêu cầu có hạn chót 5~giây trong context, còn kết nối PostgreSQL đặt \texttt{statement\_timeout} và \texttt{lock\_timeout} cùng 3~giây: hạn câu lệnh ngắn hơn để cơ sở dữ liệu tự hủy truy vấn chậm thay vì giữ kết nối sau khi client đã bỏ cuộc~\cite{nygard}. Theo định luật Little $L = \lambda W$, đỉnh 50 yêu cầu/giây với thời gian giữ kết nối 20~ms (giả định thiết kế) chỉ cần trung bình 1 kết nối; nhóm đặt tối đa 20 kết nối cho mỗi bản \texttt{api} và 10 cho \texttt{worker}, tổng 50, dưới giới hạn 100 mặc định của PostgreSQL và còn dư cho báo cáo, đợt tăng tải, sao lưu và giám sát.
+
+Khi gặp khóa chết (SQLSTATE 40P01) hoặc chờ khóa quá \texttt{lock\_timeout} (55P03), \texttt{TxManager} chạy lại cả hàm giao dịch tối đa 3 lần, chờ tăng lũy thừa từ 20~ms kèm nhiễu ngẫu nhiên (full jitter) và dừng sớm nếu hạn chót của context không đủ cho lần chạy tiếp; hết lượt thì trả 503/5003 (\msg{MSG33}). Ngoại lệ duy nhất là 55P03 phát sinh ngay ở câu chèn khóa lũy đẳng: chạy lại chỉ chờ tiếp chính yêu cầu đang xử lý, nên lỗi này được trả thẳng 409/4002 như trên. Chạy lại an toàn vì mọi tác dụng phụ, kể cả tác vụ River và khóa lũy đẳng, nằm trong giao dịch hoặc chạy sau commit. Mọi giao dịch ghi chạy ở mức \texttt{READ COMMITTED} với khóa dòng tường minh, nên lỗi tuần tự hóa 40001 không phát sinh và \texttt{TxManager} không thử lại mã này. Ở PostgreSQL, 40001 chỉ xuất hiện khi giao dịch \texttt{REPEATABLE READ} hoặc \texttt{SERIALIZABLE} sửa một dòng đã bị giao dịch khác sửa sau thời điểm chụp dữ liệu, hoặc khi \texttt{SERIALIZABLE} phát hiện phụ thuộc đọc ghi nguy hiểm~\cite{postgresql}. Các thao tác chỉ đọc cần ảnh chụp nhất quán qua nhiều câu truy vấn, như bản xem trước của S15 hay báo cáo, chạy \texttt{REPEATABLE READ READ ONLY}, vốn không bao giờ gặp 40001. Nhóm không nâng mức cô lập cho giao dịch ghi vì mọi giao dịch ghi đều cập nhật \texttt{spaces.change\_seq}: ở \texttt{REPEATABLE READ}, hai lệnh ghi đồng thời trong cùng không gian sẽ thường xuyên va nhau tại đúng dòng này.
+
+% ---------------------------------------------------------------------
+\subsection{Máy trạng thái}\label{ssec:may-trang-thai}
+
+Với trạng thái được lưu, nhóm đặt hai lớp bảo vệ: phương thức của thực thể từ chối chuyển trạng thái không hợp lệ, và câu lệnh cập nhật có điều kiện \texttt{WHERE status IN (...)}, kèm \texttt{AND version = \$v} khi lệnh mang \texttt{If-Match}, giữ đúng máy trạng thái khi hai yêu cầu đồng thời cùng đọc trạng thái cũ. Nhãn chuyển trạng thái có dạng \textit{API [điều kiện] / hành động}; dòng bên trong một trạng thái là lệnh không đổi trạng thái kèm phản hồi, ví dụ \textit{A04 / 423 (3004)} nghĩa là A04 trả HTTP 423 với mã 3004. Mã API theo mục~\ref{sec:api}. Hình~\ref{fig:trang-thai-tai-khoan} thể hiện vòng đời tài khoản.
+
+\diagram[0.8\textwidth]{c3-11-trang-thai-tai-khoan}{Biểu đồ trạng thái tài khoản người dùng}{fig:trang-thai-tai-khoan}
+
+Tài khoản chỉ sang \texttt{active} khi OTP hợp lệ; trong cùng giao dịch, \texttt{household} tạo không gian cá nhân và dòng trưởng nhóm qua \texttt{ActivationHook} (\br{BR04}). Ở \texttt{pending}, A04 với mật khẩu đúng trả 403/3009 (\msg{MSG34}) và máy chủ gửi lại OTP nếu còn trong giới hạn của \br{BR02}, để người dùng quên bước xác thực được dẫn thẳng sang màn hình nhập mã. Lần đăng nhập sai thứ năm đặt \texttt{locked\_until} sau 15 phút (\br{BR03}); trong thời gian đó A04 trả 423/3004 (\msg{MSG06}) kèm \texttt{Retry-After}. Việc mở khóa được đánh giá lười ở lần đăng nhập kế tiếp nên không cần tác vụ định kỳ; A08 với \texttt{resetToken} hợp lệ cũng đưa bộ đếm về 0, xóa \texttt{locked\_until}, thu hồi mọi phiên và tăng \texttt{token\_version}. Trạng thái \texttt{disabled} do quản trị viên đặt qua D02 (\uc{UC48}) kèm \texttt{lock\_reason} và không tự hết hạn: phiên bị thu hồi, \texttt{token\_version} tăng nên mã truy cập còn hạn mất hiệu lực ngay ở bước 7 của Hình~\ref{fig:pipeline-yeu-cau}, đăng nhập trả 403/3005 (\msg{MSG21}). Đổi mật khẩu bằng A11 không đổi trạng thái nhưng thu hồi các phiên khác, tăng \texttt{token\_version} và cấp cặp mã mới cho phiên hiện tại.
+
+Xóa tài khoản bằng A16 (\nfr{NFR18}) đòi nhập lại mật khẩu, sai thì trả 400/2002, và phải thỏa \br{BR07}: người đang là trưởng nhóm của một nhóm còn thành viên khác nhận 422/4004 (\msg{MSG24}) và phải chuyển quyền trước. Khi hợp lệ, một giao dịch đặt \texttt{deleted\_at}, thu hồi mọi phiên, xóa thiết bị và gỡ tư cách thành viên nhóm gia đình như khi rời nhóm, nên mặt hàng đang giao cho người đó trở về Cần mua qua \texttt{MemberLeaveHook}. Từ đó A04 trả 401/3003 như với email không tồn tại, không tiết lộ tài khoản từng có. Sau 30 ngày, tác vụ bảo trì ẩn danh email và họ tên, xóa ảnh, dữ liệu không gian cá nhân và tài liệu Elasticsearch; dòng người dùng được giữ ở dạng ẩn danh để dữ liệu đóng góp trong nhóm hiển thị “Người dùng đã xóa” mà không gãy khóa ngoại.
+
+Hình~\ref{fig:trang-thai-mat-hang-be} là phiên bản phía máy chủ của Hình~\ref{fig:trang-thai-mat-hang}, gắn mỗi chuyển trạng thái với lệnh API và điều kiện bảo vệ. Hai trạng thái Cần mua và Đã phân công được gom vào trạng thái hợp “Chưa mua” vì chúng chung ba lối ra: đánh dấu đã mua, bỏ qua và xóa mềm. Bảng~\ref{tab:c3-chuyen-trang-thai} bổ sung sự kiện miền hoặc tác vụ nền phát ra ở mỗi chuyển trạng thái.
+
+{\small
+\begin{longtable}{|L{3.0cm}|L{1.7cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-3.0cm-1.7cm-3.8cm\relax}|L{3.8cm}|}
+\caption{Chuyển trạng thái của mặt hàng mua sắm}\label{tab:c3-chuyen-trang-thai}\\
+\hline
+\hd{Chuyển trạng thái} & \hd{API} & \hd{Điều kiện} & \hd{Sự kiện, tác vụ nền}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Chuyển trạng thái} & \hd{API} & \hd{Điều kiện} & \hd{Sự kiện, tác vụ nền}\\ \hline
+\endhead
+(mới) → Cần mua & S07, S06, S15, R08 & Danh sách chưa Hoàn tất; gộp trùng (\br{BR09}) & Không\\ \hline
+Cần mua → Đã phân công & S10 & Trưởng nhóm; version khớp (\br{BR10}) & \texttt{AssignmentDigest} lùi 5~s, phát \texttt{item.assigned}\\ \hline
+Đã phân công → Cần mua & S11; G08, G10 & Trưởng nhóm; hoặc người được giao rời, bị xóa khỏi nhóm (\br{BR07}, \texttt{MemberLeaveHook}) & \texttt{item.unassigned}\\ \hline
+Chưa mua → Đã mua & S12 & Lệnh được máy chủ ghi nhận trước thắng; mua thay cần \texttt{onBehalf} (\br{BR10}) & \texttt{items.purchased}; \texttt{PushNotification} khi mua thay\\ \hline
+Đã mua → Cần mua & S13 & Chưa nhập tủ; version khớp; danh sách Hoàn tất trở về Đang mua & Không\\ \hline
+Đã mua → Đã nhập tủ & S14 & \texttt{lot\_id IS NULL}; có \texttt{food\_id}; hạn mặc định theo \br{BR11} & \texttt{items.stocked}, \texttt{lot.changed}\\ \hline
+Chưa mua → Đã bỏ qua & S08 & \texttt{status = skipped}; version khớp & \texttt{item.unassigned} nếu đang giao\\ \hline
+Chưa mua → kết thúc & S09 & Version khớp; xóa mềm, để lại tombstone cho đồng bộ & Không\\ \hline
+Đã mua → kết thúc & -- & Danh sách Hoàn tất mà mặt hàng không được nhập tủ & Không\\ \hline
+\end{longtable}
+}
+
+\diagram[\textwidth]{c3-12-trang-thai-mat-hang-be}{Biểu đồ trạng thái mặt hàng mua sắm ở phía máy chủ}{fig:trang-thai-mat-hang-be}
+
+Điều kiện \textit{[leader]} lấy từ vai trò do bước 8 của Hình~\ref{fig:pipeline-yeu-cau} đặt vào context; \textit{[version khớp]} so header \texttt{If-Match} với cột \texttt{version}, lệch thì trả 409/4002. S12 xử lý cả lô mặt hàng bằng một câu \texttt{UPDATE ... WHERE status IN ('to\_buy', 'assigned') RETURNING}, hiện thực quy tắc “lệnh được máy chủ ghi nhận trước thắng”. Đây là cách hiện thực “giữ bản ghi sớm hơn” của \uc{UC20} (\nfr{NFR11}): đồng hồ thiết bị không đáng tin, nên \texttt{purchasedAt} do ứng dụng gửi chỉ dùng để hiển thị và báo cáo, không dùng để phân xử. Mặt hàng không được trả về đã có người mua trước và nhận kết quả \texttt{already\_purchased} kèm người mua trong phản hồi 200; nếu không mặt hàng nào của lệnh được ghi, như khi phát lại một mặt hàng duy nhất, phản hồi là 409/4002 kèm \texttt{current.purchasedBy}. S14 thêm điều kiện \texttt{lot\_id IS NULL} và tạo lô qua \texttt{StockIn.AddLots} trong cùng giao dịch, nên một mặt hàng không thể sinh hai lô; gửi lại nhận \texttt{already\_stocked} kèm lô cũ. Mặt hàng ghi tên tự do không có \texttt{food\_id} nên không bao giờ sang Đã nhập tủ: S14 trả 422/4004 cho mặt hàng đó, và khi danh sách Hoàn tất nó kết thúc ở Đã mua với chi tiêu đã được ghi nhận. Trạng thái danh sách (\br{BR08}) được ghi cùng giao dịch; danh sách Hoàn tất từ chối lệnh sửa nội dung bằng 422/4004, trừ ba lệnh sau khi mua: S08 sửa \texttt{actualQuantity}, \texttt{unitPrice} của mặt hàng đã mua, S13 hoàn tác (danh sách trở về Đang mua) và S14 nhập tủ, vì người dùng thường cất hàng sau khi danh sách đã hoàn tất. Phân công gộp qua tác vụ \texttt{AssignmentDigest} của \texttt{shopping}, duy nhất theo cặp người được giao và danh sách, chạy sau 5~giây, nên giao liền nhiều mặt hàng chỉ sinh một thông báo.
+
+Với lô thực phẩm, cơ sở dữ liệu chỉ lưu \texttt{lifecycle} (\texttt{active}, \texttt{consumed}, \texttt{discarded}); ba trạng thái hạn dùng ở Hình~\ref{fig:trang-thai-thuc-pham} được suy diễn lúc truy vấn theo ngưỡng $N$ của người xem (\br{BR12}). Lý do là $N$ thuộc thiết lập từng người (\uc{UC08}) nên một cột lưu sẵn không thể đúng cho mọi thành viên; trạng thái tự đổi theo ngày mà không cần tác vụ cập nhật hằng đêm, bước tính lại trạng thái của \uc{UC31} trở thành phép tính khi đọc; và dữ liệu không bao giờ lệch giữa các thành viên hay khi tác vụ nền chạy trễ. Mã nguồn~\ref{code:c3-trang-thai-han-dung} là biểu thức tính, với \texttt{\$2} là tham số \texttt{\$today}, tức ngày hôm nay theo giờ Việt Nam do \path{platform/clock} cung cấp (không dùng \texttt{current\_date} của phiên chạy UTC), và \texttt{\$3} là \texttt{reminder\_days} của người xem hoặc giá trị mặc định \texttt{reminder.defaultDays}; \texttt{FoodLot.ExpiryState} hiện thực cùng quy tắc trong Go và được kiểm thử đối chiếu.
+
+\codecaption{Biểu thức SQL tính trạng thái hạn dùng suy diễn}{code:c3-trang-thai-han-dung}
+\begin{Verbatim}
+CASE WHEN l.expires_on < $2 THEN 'expired'
+     WHEN l.expires_on - $2 <= $3 THEN 'expiring'
+     ELSE 'fresh' END AS expiry_state
+\end{Verbatim}
+
+Cuối cùng, mọi tác vụ nền đi qua vòng đời của River~\cite{river} ở Hình~\ref{fig:trang-thai-tac-vu}, lưu bền vững trong bảng \texttt{river\_job}. Ba trạng thái chưa chạy được gom thành trạng thái hợp “Chờ chạy” vì cùng có thể bị hủy thủ công.
+
+\diagram[\textwidth]{c3-13-trang-thai-tac-vu}{Vòng đời tác vụ nền trong hàng đợi River}{fig:trang-thai-tac-vu}
+
+Tác vụ chèn bằng \texttt{InsertTx} chỉ tồn tại khi dữ liệu nghiệp vụ đã commit. Tác vụ khai báo khóa duy nhất (\texttt{UniqueOpts}) như \texttt{UserReminder} theo người dùng và ngày hay \texttt{AssignmentDigest} theo người được giao và danh sách: lần chèn trùng bị bỏ qua, nên chống trùng được giải ngay ở hàng đợi. Worker nhận việc bằng \texttt{FOR UPDATE SKIP LOCKED} nên không nhận trùng; tiến trình chết giữa chừng thì bộ cứu hộ (rescuer) đưa tác vụ treo về \texttt{retryable}. Lỗi vĩnh viễn, như dữ liệu đích đã bị xóa, được worker báo bằng \texttt{river.JobCancel} để không thử lại vô ích; người vận hành có thể hủy tác vụ chưa chạy bằng \texttt{client.JobCancel} và chạy lại tác vụ \texttt{discarded} bằng \texttt{client.JobRetry} sau khi khắc phục nguyên nhân, ví dụ khóa dịch vụ FCM hết hạn. Tác vụ \texttt{PushNotification} trên hàng đợi \texttt{notify} có tối đa 4 lần chạy, tức ba lần thử lại theo \nfr{NFR12}, chờ 20~s, 60~s, 180~s cộng nhiễu; độ trễ gửi xấu nhất khoảng 4,5 phút. Con số này thuộc chỉ số “gửi tới FCM”; chỉ số “thông báo được tạo trong 15 phút sau giờ nhắc” không phụ thuộc vào nó, vì bản ghi thông báo được \texttt{UserReminder} tạo trước khi gửi đẩy. Tác vụ \texttt{discarded} được đếm bằng chỉ số Prometheus để cảnh báo, còn thông báo vẫn nằm trong hộp thư của người dùng. Cơ chế chống nhắc trùng được trình bày ở mục~\ref{sssec:kt-nhac-han}.

@@ -1,0 +1,45 @@
+@startuml c3-42-vong-doi-dong-bo
+!include _style-c3.iuml
+skinparam nodesep 40
+skinparam ranksep 48
+
+state "Bắt kịp" as BK
+BK : entry / hiển thị dữ liệu SQLite
+BK : do / A05 nếu cần; xả hàng đợi;\nGET /changes từ con trỏ
+BK : 410 / đọc changeSeq (G03), tải lại
+BK : 426 / mở trang cập nhật
+
+state "Tiền cảnh" as TC {
+  state "Trực tuyến" as ON
+  ON : entry / mở /ws
+  ON : gợi ý / gom 200 ms, GET /changes
+  ON : ghi / SQLite + hàng đợi, gửi ngay
+  state "Ngoại tuyến" as OFF
+  OFF : ghi / SQLite + hàng đợi (MSG20)
+  [*] --> ON
+  ON -down-> OFF : mất\nmạng
+  OFF -up-> ON : có mạng / xả hàng đợi,\nGET /changes
+}
+
+state "Nền" as NEN
+NEN : entry / đóng /ws; lên lịch tác vụ nền;\nxả hàng đợi (iOS: xin thêm thời gian)
+
+state "Không chạy mã\n(tạm dừng hoặc bị tắt)" as KC
+note left of KC
+  Mã ứng dụng không chạy; hệ điều hành
+  vẫn hiển thị thông báo qua FCM, APNs
+end note
+
+state "Tác vụ nền" as TVN
+TVN : do / xả hàng đợi, GET /changes
+TVN : exit / lưu con trỏ, báo hoàn tất
+
+[*] -right-> BK : mở\nứng dụng
+BK -right-> TC : [hasMore\nlà false]
+TC -down-> NEN : paused
+NEN -up-> BK : resumed
+NEN -left-> KC : [iOS] sau vài giây;\n[Android] hệ thống\nthu hồi tiến trình
+KC -up-> BK : mở lại, chạm\nthông báo / đi\ntới data.route
+KC -down-> TVN : WorkManager đến hạn\n[có mạng]; BGAppRefresh-\nTask được cấp
+TVN -up-> KC : xong hoặc\nhết hạn
+@enduml

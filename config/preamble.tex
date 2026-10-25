@@ -239,6 +239,21 @@
     \caption{#3}\label{#4}
   \end{figure}}
 
+% Sơ đồ cao (Chương 3 và các phụ lục đi kèm): ảnh được chiếm tới 0,88 chiều cao
+% vùng chữ và đặt dạng hình trôi để không để lại khoảng trắng; dùng trong một nhóm
+% \begingroup\usetalldiagrams ... \endgroup.
+\newcommand{\usetalldiagrams}{%
+  \renewcommand{\diagram}[4][\textwidth]{%
+    \begin{figure}[!tbp]
+      \centering
+      \includegraphics[width=##1,height=0.88\textheight,keepaspectratio]{##2}
+      \caption{##3}\label{##4}
+    \end{figure}}%
+  \renewcommand{\topfraction}{0.92}%
+  \renewcommand{\bottomfraction}{0.6}%
+  \renewcommand{\textfraction}{0.08}%
+  \renewcommand{\floatpagefraction}{0.6}}
+
 % Ô tiêu đề bảng
 \newcommand{\hd}[1]{\cellcolor{headerbg}\textbf{#1}}
 \newcommand{\hs}[1]{\cellcolor{subheaderbg}\textbf{#1}}
@@ -250,3 +265,4 @@
 \newcommand{\nfr}[1]{\textsf{\small #1}}
 
 \input{config/ucspec}
+\input{config/apispec}

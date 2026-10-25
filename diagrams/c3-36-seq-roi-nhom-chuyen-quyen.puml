@@ -1,0 +1,45 @@
+@startuml c3-36-seq-roi-nhom-chuyen-quyen
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Ứng dụng\nFlutter" as APP
+participant "API\n(SpaceHandler)" as API
+participant "household\nService" as SVC
+participant "shopping\n(MemberLeaveHook)" as HK
+database "PostgreSQL" as PG
+database "Redis" as RD
+
+group G09 – chuyển quyền trưởng nhóm (UC14)
+  APP -> API : POST …/leader-transfer\n{toUserId}
+  API -> SVC : TransferLeader(sid, to)
+  SVC -> PG : BEGIN; khóa lũy đẳng;\npg_advisory_xact_lock(hashtext(\nspace_id::text)); khóa hai dòng\nspace_members theo user_id
+  break không còn là trưởng nhóm\nhoặc người nhận đã rời (4a)
+    API --> APP : 403 (3007), MSG13 |\n422 (4004), BR05
+  end
+  SVC -> PG : hạ người chuyển (member) trước,\nrồi nâng người nhận (leader)
+  SVC -> PG : thu hồi invite_codes; InsertTx\nPushNotification (leader.transferred);\nspace_changes; COMMIT
+  SVC -> RD : DEL member:{sid}:{uid | to};\nPUBLISH space:{sid}
+  API --> APP : 200 (1000), MSG10
+end
+
+group G10 – rời nhóm (UC15)
+  APP -> API : POST …/leave
+  API -> SVC : LeaveSpace(uid, sid)
+  SVC -> PG : BEGIN; khóa lũy đẳng; advisory lock;\nspace_members theo user_id
+  break trưởng nhóm và còn\nthành viên khác (2a)
+    API --> APP : 422 (4004), BR07,\nMSG24 → G09 rồi gửi lại
+  end
+  alt thành viên duy nhất (2b)
+    SVC -> PG : DELETE space_members; InsertTx\nPurgeSpace; spaces.dissolved_at
+  else còn thành viên khác
+    SVC -> PG : DELETE space_members (sid, uid)
+    SVC -> HK : OnMemberLeave(tx, uid)
+    HK -> PG : mặt hàng giao cho uid\n→ to_buy (BR07);\nitem.unassigned
+  end
+  SVC -> PG : last_space_id (cổng identity); InsertTx\nPushNotification (member.left);\nspace_changes; COMMIT
+  SVC -> RD : DEL member:{sid}:{uid};\nPUBLISH user:{uid}, space:{sid}
+  API --> APP : 200 (1000): không gian cá nhân
+end
+note over APP, SVC : G08 xóa thành viên (UC13): như nhánh\n[còn thành viên khác], chỉ trưởng nhóm\nđược gọi, phát member.removed
+@enduml

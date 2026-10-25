@@ -133,6 +133,8 @@ Phụ lục này mô tả thuộc tính của các khái niệm trong Hình~\ref
 \dd{Bữa phù hợp}{Tập liệt kê}{Không}{Sáng, Trưa, Tối}
 \dd{Các bước thực hiện}{Danh sách văn bản}{Không}{Có thứ tự; mỗi bước tối đa 500 ký tự}
 \dd{Loại công thức}{Liệt kê}{Có}{Cá nhân, Mẫu (do quản trị viên quản lý)}
+\dd{Không gian sở hữu}{Tham chiếu Nhóm}{Không}{Bắt buộc với công thức cá nhân: công thức thuộc bộ sưu tập của không gian hiện hành, nên các thành viên nhóm dùng chung trong kế hoạch bữa ăn; bỏ trống với công thức mẫu}
+\dd{Trạng thái}{Liệt kê}{Có}{Nháp, Công bố, Ẩn (với công thức mẫu, \uc{UC52}); công thức cá nhân luôn ở trạng thái Công bố}
 \dd{Người tạo}{Tham chiếu Người dùng}{Có}{}
 \dd{Công thức gốc}{Tham chiếu Công thức}{Không}{Khi được sao chép từ công thức mẫu}
 \ddentity{Nguyên liệu công thức}
@@ -160,7 +162,7 @@ Phụ lục này mô tả thuộc tính của các khái niệm trong Hình~\ref
 \dd{Loại}{Liệt kê}{Có}{Nhắc hạn dùng, Phân công, Hoạt động nhóm, Hệ thống}
 \dd{Tiêu đề, nội dung}{Chuỗi}{Có}{Nội dung tóm tắt, không chứa dữ liệu nhạy cảm}
 \dd{Đối tượng liên quan}{Tham chiếu}{Không}{Danh sách, lô hoặc nhóm để mở đúng màn hình}
-\dd{Khóa chống trùng}{Chuỗi}{Không}{Ví dụ người nhận + lô + ngày (\br{BR13})}
+\dd{Khóa chống trùng}{Chuỗi}{Không}{Với nhắc hạn dùng là người nhận + ngày, bảo đảm mỗi người nhận tối đa một thông báo tổng hợp mỗi ngày (\br{BR13})}
 \dd{Đã đọc}{Logic}{Có}{Mặc định chưa đọc}
 \dd{Thời điểm gửi}{Ngày giờ}{Có}{}
 \ddentity{Cấu hình hệ thống}

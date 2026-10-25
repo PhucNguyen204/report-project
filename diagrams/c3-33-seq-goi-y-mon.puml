@@ -1,0 +1,45 @@
+@startuml c3-33-seq-goi-y-mon
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Ứng dụng\nFlutter" as APP
+participant "API\n(MealHandler)" as API
+participant "MealPlanService\n(Suggest)" as SVC
+participant "SuggestionEngine\n(miền)" as ENG
+database "PostgreSQL" as PG
+database "Redis" as RD
+
+group M05 – gợi ý món (UC40; UC30 dùng expiringOnly)
+  APP -> API : GET .../recipe-suggestions?date,\nmealSlot, servings, expiringOnly
+  break tham số sai
+    API --> APP : 400 (2002), MSG02
+  end
+  API -> SVC : Suggest(sid, uid, q)
+  SVC -> RD : HGET suggest:{sid} {uid}:{date}:\n{bữa}:{khẩu phần}:{expiringOnly}
+  break trúng bộ đệm
+    API --> APP : 200 (1000): kết quả đã lưu
+  end
+  SVC -> RD : cfg:all (θ, trọng số, maxResults)
+  SVC -> PG : BEGIN REPEATABLE READ\nREAD ONLY; N (user_settings)
+  SVC -> PG : lô expires_on ≥ $today\n(StockQuery.Available)
+  SVC -> PG : công thức published có ≥ 1\nnguyên liệu trong tủ, theo bữa\n(RecipeQuery); yêu thích; COMMIT
+  break tủ lạnh trống (2a)
+    API --> APP : 200 (1000): công thức mẫu phổ biến,\nlời nhắc thêm thực phẩm (UC25)
+  end
+  SVC -> ENG : Rank(ứng viên,\ntồn kho, N, cfg)
+  ENG -> ENG : R, E, F; loại R < θ;\nS = 0,6R + 0,3E + 0,1F;\nexpiringOnly: E > 0
+  ENG --> SVC : ≤ maxResults món;\n3 món có R cao nhất
+  SVC -> RD : HSET suggest:{sid} ...;\nEXPIRE 600
+  note left
+    bị xóa sau commit khi có
+    lot.changed, recipe.changed,
+    config.changed hoặc A13 đổi N
+  end note
+  alt không món nào đạt θ (4a)
+    API --> APP : 200 (1000), MSG31:\n3 món có R cao nhất
+  else có kết quả
+    API --> APP : 200 (1000): món, nhãn đủ / thiếu k,\nthực phẩm sắp hết hạn, thời gian nấu
+  end
+end
+@enduml

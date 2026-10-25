@@ -1,0 +1,298 @@
+% ---------------------------------------------------------------------
+%  PHỤ LỤC. ĐẶC TẢ CHI TIẾT API BỔ SUNG (tiếp mục Thiết kế API của Chương 3)
+% ---------------------------------------------------------------------
+\section{Đặc tả chi tiết API bổ sung}\label{pl:dac-ta-api}
+
+Phụ lục này bổ sung cho mục~\ref{sec:api}: các API dùng chung quy ước, mã phản hồi và macro bảng đặc tả của mục đó. Phần đầu ghi tham số và hành vi của các API không đặc tả chi tiết; phần sau đặc tả đầy đủ tám API có rủi ro thiết kế cao, mỗi API kèm test case dự kiến.
+
+\subsection{Tham số và hành vi bổ sung}\label{pl:api-bo-sung}
+
+Phần lớn API ngoài mục~\ref{ssec:dac-ta-api} là thao tác thêm, sửa, xóa theo đúng quy ước ở trên. Bảng~\ref{tab:c3-api-bo-sung} ghi những API có tham số hoặc hành vi không suy ra được từ quy ước, để hợp đồng OpenAPI và kiểm thử tích hợp có căn cứ.
+
+{\scriptsize\renewcommand{\arraystretch}{1.05}
+\begin{longtable}{|C{1.15cm}|L{5.0cm}|L{\dimexpr\textwidth-6\tabcolsep-4\arrayrulewidth-1.15cm-5.0cm\relax}|}
+\caption{Tham số và hành vi bổ sung của các API không đặc tả chi tiết}\label{tab:c3-api-bo-sung}\\
+\hline
+\hd{Mã} & \hd{Yêu cầu} & \hd{Hành vi, phản hồi và lỗi}\\ \hline
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Mã} & \hd{Yêu cầu} & \hd{Hành vi, phản hồi và lỗi}\\ \hline
+\endhead
+\multicolumn{3}{|l|}{\hs{Tài khoản}}\\ \hline
+A02 & \texttt{email}; \texttt{purpose}: \texttt{register} hoặc \texttt{reset\_password}; \texttt{code}: 6 chữ số & \texttt{register}: kích hoạt tài khoản, \texttt{ActivationHook} tạo không gian cá nhân trong cùng giao dịch, cấp phiên như A04. \texttt{reset\_password}: trả \texttt{resetToken} 256 bit, chỉ lưu băm, sống 10 phút, dùng một lần. Mã sai: 400, 3006 (MSG04); lần sai thứ năm vô hiệu mã (BR02)\\ \hline
+A08 & \texttt{email}, \texttt{resetToken}, \texttt{newPassword} (BR01) & Đặt mật khẩu mới, đưa \texttt{failed\_login\_count} về 0, xóa \texttt{locked\_until}, thu hồi mọi phiên, tăng \texttt{token\_version} (BR03). Mã hết hạn, đã dùng hoặc không khớp email: 400, 3006\\ \hline
+A10 & \texttt{fullName} (2--50 ký tự), \texttt{avatarObjectId}, \texttt{locale} & Ghi một dòng \texttt{space\_changes} (thực thể \texttt{member}) cho mọi không gian của người dùng, để thành viên khác thấy tên và ảnh mới (UC06)\\ \hline
+A11 & \texttt{currentPassword}, \texttt{newPassword} & Mật khẩu hiện tại sai: 400, 2002 (MSG02), tăng bộ đếm sai (BR03). Thành công: thu hồi mọi phiên khác, tăng \texttt{token\_version} và trả cặp mã mới cho phiên hiện tại (UC07 bước 3)\\ \hline
+A12, A13 & A13: \texttt{reminderDays} (1--7 hoặc \texttt{null} để dùng mặc định), ba công tắc thông báo & A12 trả thêm \texttt{reminder.runAt} và $N$ mặc định của hệ thống ở dạng chỉ đọc (UC08 bước 2). A13 đổi $N$ thì xóa \texttt{suggest:\{sid\}} của mọi không gian của người dùng\\ \hline
+A16 & \texttt{password} & Sai mật khẩu: 400, 2002. Là trưởng nhóm của nhóm còn thành viên khác: 422, 4004, BR07 (MSG24). Ngay lập tức thu hồi mọi phiên, đặt \texttt{deleted\_at}, chặn đăng nhập, xóa thiết bị; sau 30 ngày tác vụ nền ẩn danh email, họ tên, xóa ảnh, dữ liệu không gian cá nhân và tài liệu Elasticsearch. Dữ liệu đóng góp trong nhóm được giữ, hiển thị “Người dùng đã xóa” (NFR18)\\ \hline
+\multicolumn{3}{|l|}{\hs{Không gian và nhóm}}\\ \hline
+G02 & \texttt{name} (3--50 ký tự, BR05); \texttt{copyPersonalData}: \texttt{\{lists, lots, recipes\}} kiểu boolean & 201 kèm không gian mới, người gọi là trưởng nhóm; đã thuộc nhóm gia đình: 422, 4004, BR04 (MSG08). Sau commit chèn tác vụ \texttt{CopySpaceData}, lũy đẳng theo không gian, để sao chép phần dữ liệu được chọn (UC09)\\ \hline
+G03 & -- & Thông tin nhóm, thành viên (trưởng nhóm đứng đầu), \texttt{changeSeq}, và \texttt{recentActivity}: 20 thay đổi gần nhất từ \texttt{sync.space\_changes} kèm tên người thực hiện (UC12 bước 3)\\ \hline
+G05 & -- & Thời hạn đọc từ \texttt{invite.ttlHours}; mã cũ bị thu hồi trong cùng giao dịch (BR06); không gian cá nhân: 422, 4004. Trả \texttt{code}, \texttt{expiresAt} và \texttt{link} dạng \path{https://dicho.example/join/{code}}, mở thẳng ứng dụng qua Universal Links, App Links\\ \hline
+\multicolumn{3}{|l|}{\hs{Mua sắm, tủ lạnh, tìm kiếm}}\\ \hline
+S01 & \texttt{status}, \texttt{from}, \texttt{to}, \texttt{groupBy = month}, phân trang & Mỗi danh sách kèm số mặt hàng, tổng chi tiêu (mặt hàng có đơn giá) và những người đã mua; \texttt{groupBy = month} trả tổng theo tháng cho thẻ Lịch sử (UC23). Lọc \texttt{status} chưa hoàn tất và ngày trong khoảng cho danh sách đích ở UC22 bước 6a\\ \hline
+P01, Q01 & \texttt{categoryId}, \texttt{location}, \texttt{expiryState} nhận nhiều giá trị; \texttt{q} & Cùng tham số là “hoặc”, khác tham số là “và”; phản hồi kèm \texttt{facets} đếm số kết quả theo từng loại, vị trí, trạng thái để vẽ bảng lọc (UC43); \texttt{expiryState} tính theo $N$ của người xem. Q01 tìm danh mục, công thức trên Elasticsearch với bộ lọc bắt buộc \texttt{scope = global} hoặc \texttt{owner\_space\_id = sid}; lô trong tủ tìm bằng PostgreSQL\\ \hline
+P04 & Trường bất kỳ của lô; \texttt{If-Match} & \texttt{remainingQty} không theo LWW: lệch phiên bản trả 409, 4002; lớn hơn \texttt{initial\_qty} trả 400, 2002; bằng 0 chuyển \texttt{consumed}; mỗi lần đổi lượng ghi \texttt{stock\_movements} loại \texttt{adjust}. Vị trí, ngày hết hạn, ghi chú hợp nhất theo trường và trả \texttt{overwrittenFields}\\ \hline
+Q02 & \texttt{q} (từ 2 ký tự), \texttt{limit} $\le$ 10 & Nằm dưới \path{/spaces/{sid}} để gồm thực phẩm riêng của không gian; 20 yêu cầu/giây/người; mỗi gợi ý kèm đơn vị, vị trí mặc định và hạn dùng gợi ý theo vị trí; Elasticsearch lỗi hoặc quá 300~ms thì chuyển sang PostgreSQL trigram\\ \hline
+\multicolumn{3}{|l|}{\hs{Công thức}}\\ \hline
+R01 & \texttt{source}: \texttt{space}, \texttt{template} hoặc \texttt{favorite}; \texttt{q}; phân trang & Chỉ trả công thức \texttt{published}: công thức của không gian và công thức mẫu đã công bố (UC34, UC37)\\ \hline
+R04, R05 & R04: toàn bộ công thức (BR17), \texttt{If-Match} & Người tạo hoặc trưởng nhóm; người khác và mọi lệnh sửa công thức mẫu: 403, 3007. R05 gọi \texttt{RecipeDeleteHook}: món Dự kiến dùng công thức thành món tự do giữ tên, món Đã nấu giữ tham chiếu (UC33)\\ \hline
+R06 & -- & Chỉ nhận công thức mẫu đã công bố hoặc công thức thuộc không gian mà người gọi là thành viên; ngược lại 404, 4001\\ \hline
+R09 & \texttt{name} (tùy chọn) & Sao chép công thức mẫu đã công bố thành công thức của không gian, ghi \texttt{origin\_recipe\_id}; 201 kèm công thức mới (BR17). Công thức không phải mẫu: 404, 4001\\ \hline
+\multicolumn{3}{|l|}{\hs{Báo cáo và tệp}}\\ \hline
+B01 & \texttt{from}, \texttt{to} ($\le$ 12 tháng, BR21); \texttt{groupBy}: \texttt{day}, \texttt{week} hoặc \texttt{month} & Tổng chi tiêu, cơ cấu theo loại, chuỗi theo \texttt{groupBy}; không có dữ liệu: 200, 1000 (MSG26); khoảng sai: 400, 2002 (MSG25)\\ \hline
+B04, B05 & B04: \texttt{reportType}, \texttt{from}, \texttt{to}, \texttt{format} (\texttt{pdf}, \texttt{csv}) & B04 chèn \texttt{report.exports} (\texttt{pending}) và tác vụ xuất trong cùng giao dịch, trả 202, 1001 kèm \texttt{exportId}. B05 lọc theo \texttt{space\_id} và \texttt{requested\_by} sau khi kiểm tra thành viên, nên tệp của người khác trả 404, 4001; trả \texttt{pending}, \texttt{ready} kèm URL \texttt{GET} ký sẵn 15 phút, hoặc \texttt{failed} kèm lỗi. Khi xong, \texttt{export.completed} sinh thông báo đẩy\\ \hline
+Y03 & \texttt{purpose}: \texttt{avatar}, \texttt{space}, \texttt{recipe} hoặc \texttt{food}; \texttt{targetId}; \texttt{contentType}; \texttt{size} & Kiểm tra quyền trên đối tượng đích (chính mình, trưởng nhóm, người tạo công thức, thực phẩm riêng của không gian mình); trả URL \texttt{PUT} ký sẵn 5 phút, tối đa 5~MB, JPEG hoặc PNG\\ \hline
+\multicolumn{3}{|l|}{\hs{Quản trị}}\\ \hline
+D05, D06 & Mục danh mục; \texttt{DELETE} trên một mục & Chưa được tham chiếu thì xóa; đang được tham chiếu: 422, 4004, BR22 (MSG22), ứng dụng đề nghị chuyển \texttt{inactive}. D06 không cho đổi nhóm đại lượng của đơn vị đang được tham chiếu; mỗi nhóm có đúng một đơn vị cơ sở (BR16)\\ \hline
+D09 & \texttt{values}: ánh xạ khóa tham số sang giá trị & Kiểm tra miền và tổng trọng số bằng 1 (MSG27), rồi ghi mọi khóa trong một giao dịch với một dòng \texttt{audit\_logs} và một sự kiện \texttt{config.changed}; không áp dụng một phần. Sau commit \texttt{PUBLISH cfg} để mọi bản xóa \texttt{cfg:all}; đổi \texttt{suggest.*} thì xóa cả \texttt{suggest:*} (UC53)\\ \hline
+D11 & \texttt{action}: \texttt{approve} hoặc \texttt{merge}; \texttt{targetFoodId} khi gộp & Như đoạn dưới đây (UC49)\\ \hline
+\end{longtable}
+}
+
+D11 khép lại vòng đời của thực phẩm riêng mà người dùng tạo ở \uc{UC25} bước 3a và \uc{UC26} bước 4a. Thực phẩm phải có \texttt{scope = space} và \texttt{status = pending\_review}; nếu quản trị viên khác vừa xử lý, yêu cầu nhận 409, mã 4002. Nhánh \texttt{approve} chuyển thực phẩm thành bản dùng chung (\texttt{scope = global}, bỏ \texttt{owner\_space\_id}, \texttt{status = active}). Nếu tên trong cùng loại hoặc mã vạch trùng một thực phẩm dùng chung, chỉ mục duy nhất theo phạm vi trả 409, mã 4003, và quản trị viên chỉ còn cách gộp. Nhánh \texttt{merge} yêu cầu đích là thực phẩm dùng chung đang hoạt động và khác chính nó; thực phẩm nguồn nhận \texttt{status = inactive}, \texttt{merged\_into = targetFoodId}, rồi sự kiện \texttt{food.merged} sinh các tác vụ River của pantry, shopping và recipe đổi \texttt{food\_id} của lô, mặt hàng, nguyên liệu sang đích. Các tác vụ này lũy đẳng vì câu \texttt{UPDATE ... WHERE food\_id = <nguồn>} chạy lại không đổi thêm gì; tài liệu Elasticsearch của nguồn bị xóa. Cả hai nhánh ghi \texttt{audit\_logs} trong cùng giao dịch. Nhờ cột \texttt{merged\_into}, lệnh ngoại tuyến còn mang id cũ vẫn được máy chủ chuyển sang thực phẩm đích thay vì nhận 404.
+
+
+
+% ---------------------------------------------------------------------
+\subsection{A05 – Làm mới phiên}\label{sssec:api-a05}
+
+A05 cấp cặp mã mới khi mã truy cập hết hạn (\br{BR03}); cơ chế xoay vòng, phát hiện dùng lại và cửa sổ ân hạn 30 giây được lập luận ở mục~\ref{sec:bao-mat} (Hình~\ref{fig:seq-dang-nhap-lam-moi}). Dòng phiên được khóa theo băm SHA-256 của mã bằng \texttt{FOR UPDATE}; dùng lại trong ân hạn chỉ thu hồi phiên kế nhiệm (\texttt{superseded}), ngoài ân hạn thì thu hồi cả họ và tăng \texttt{token\_version}. A05 không dùng \texttt{Idempotency-Key} vì cửa sổ ân hạn đã đảm nhiệm việc gửi lại, tránh lưu mã làm mới dạng rõ (Bảng~\ref{tab:c3-api-a05}, Mã nguồn~\ref{code:c3-api-a05}).
+
+\begin{apispec}{Đặc tả và test case dự kiến của API A05 -- Làm mới phiên}{tab:c3-api-a05}{tab:c3-tc-a05}
+\apirow{URL, quyền}{\texttt{POST} \path{/it4788/v1/auth/refresh}; công khai, không cần \texttt{Authorization}.}
+\apirow{Yêu cầu}{\texttt{refreshToken}: chuỗi base64url 43 ký tự, bắt buộc; \texttt{deviceId}: UUID, bắt buộc, trùng \texttt{device\_id} của phiên.}
+\apirow{Phản hồi}{200, 1000: \texttt{accessToken}, \texttt{expiresIn}, \texttt{refreshToken} mới, \texttt{refreshExpiresAt} (30 ngày kể từ lần làm mới).}
+\apirow{Mã lỗi}{2001; 3001 mã không tồn tại, hết hạn hoặc đã thu hồi; 3005 tài khoản \texttt{disabled} (khóa tạm \texttt{locked} chỉ chặn A04, không chặn làm mới phiên đang có); 3008 dùng lại mã đã xoay hoặc sai thiết bị.}
+\tchead
+\tcrow{TC-A05-01}{Làm mới hợp lệ}{Mã còn hạn, chưa xoay, đúng thiết bị}{200, 1000; phiên cũ có \texttt{rotated\_at}; thêm kế nhiệm cùng \texttt{family\_id}}
+\tcrow{TC-A05-02}{Sai dữ liệu, biên thời hạn}{(a) Thiếu \texttt{refreshToken}; (b) \texttt{expires\_at} sớm hơn hiện tại 1 giây}{(a) 400, 2001; (b) 401, 3001; không tạo phiên}
+\tcrow{TC-A05-03}{Dùng lại ngoài ân hạn}{Gửi lại mã đã xoay 31 giây trước}{401, 3008; cả họ bị thu hồi, \texttt{token\_version} tăng 1; mã kế nhiệm cũng bị từ chối}
+\tcrow{TC-A05-04}{Gửi lại trong ân hạn}{Mã đã xoay 5 giây trước, cùng thiết bị, kế nhiệm chưa dùng}{200; kế nhiệm bị thu hồi (\texttt{superseded}); họ còn đúng một phiên hoạt động}
+\tcrow{TC-A05-05}{Sai thiết bị, trạng thái tài khoản}{(a) \texttt{deviceId} khác; (b) \texttt{status = disabled}; (c) \texttt{locked} do người khác đoán sai mật khẩu}{(a) 401, 3008, thu hồi cả họ; (b) 403, 3005; (c) 200, phiên của chủ tài khoản không bị cắt}
+\end{apispec}
+
+\apiNeed{3.4cm}\codecaption{Ví dụ yêu cầu và phản hồi của A05 khi mã cũ bị dùng lại}{code:c3-api-a05}
+\begin{Verbatim}[fontsize=\scriptsize]
+POST /it4788/v1/auth/refresh                                 X-Platform: ios
+{ "refreshToken": "q3v9Xb7tLk2...wYc8", "deviceId": "0192f3a1-7c2e-..." }
+HTTP/1.1 401 Unauthorized                 (mã đã xoay từ 31 giây trước)
+{ "code": 3008, "message": "Refresh token reused; session family revoked",
+  "traceId": "8e1c0d2a9b3f4e5d6c7b8a9f0e1d2c3b" }
+\end{Verbatim}
+
+% ---------------------------------------------------------------------
+\subsection{G07 – Tham gia nhóm bằng mã mời}\label{sssec:api-g07}
+
+G07 hiện thực \uc{UC11} (Bảng~\ref{tab:c3-api-g07}). Lần gọi \texttt{dryRun = true} kiểm tra \br{BR06}, \br{BR04}, \br{BR05} theo thứ tự của Hình~\ref{fig:act-tham-gia-nhom} và trả thông tin nhóm để xác nhận. Lần gọi xác nhận kiểm tra lại trong giao dịch ghi theo thứ tự khóa toàn cục: chèn khóa lũy đẳng, tra mã mời để lấy \texttt{space\_id}, lấy khóa tư vấn \path{pg_advisory_xact_lock(hashtext(space_id::text))}, rồi đọc lại trạng thái mã và đếm thành viên, cuối cùng mới tăng \texttt{change\_seq}. Khóa tư vấn này cũng được G05, G06, G08--G10 lấy, nên hai người tranh chỗ cuối, hay một người tham gia đúng lúc trưởng nhóm đổi mã mời, được tuần tự hóa mà không phải khóa dòng \texttt{household.spaces} từ đầu giao dịch. Mã sai, hết hạn hay bị thu hồi nhận cùng \msg{MSG07}; với giới hạn 10 lần/giờ/người (\path{rl:join:<userId>}) trên $32^8$ mã, dò vét cạn là không khả thi (Mã nguồn~\ref{code:c3-api-g07}).
+
+\begin{apispec}{Đặc tả và test case dự kiến của API G07 -- Tham gia nhóm bằng mã mời}{tab:c3-api-g07}{tab:c3-tc-g07}
+\apirow{URL, quyền}{\texttt{POST} \path{/it4788/v1/spaces/join}; người dùng đã đăng nhập; 10 lần/giờ/người, tính cả lần gọi \texttt{dryRun}; \texttt{Idempotency-Key} khi \texttt{dryRun = false}.}
+\apirow{Yêu cầu}{\texttt{code}: 8 ký tự A--Z, 2--9, không có O, I, 0, 1; máy chủ bỏ khoảng trắng và chuyển chữ in hoa (BR06); \texttt{dryRun}: boolean, mặc định \texttt{false}.}
+\apirow{Phản hồi}{200, 1000. Xem trước: \texttt{space}, \texttt{leaderName}, \texttt{memberCount}, \texttt{maxMembers}. Tham gia: \texttt{space}, \texttt{role = "member"}, \texttt{joinedAt}; người đã là thành viên của nhóm nhận lại thông tin hiện có.}
+\apirow{Mã lỗi}{2001; 2002 sai định dạng (MSG02); 4004 với \texttt{rule} BR06 (MSG07), BR04 (MSG08, kèm tên nhóm hiện tại) hoặc BR05 (MSG09).}
+\tchead
+\tcrow{TC-G07-01}{Tham gia hợp lệ}{Mã còn hiệu lực, nhóm 3/10, người dùng chưa thuộc nhóm gia đình}{200, 1000; thêm một thành viên; \texttt{change\_seq} tăng 1; một tác vụ thông báo cho trưởng nhóm}
+\tcrow{TC-G07-02}{Xem trước, chuẩn hóa mã}{\texttt{dryRun = true}, mã gõ “ k7mx 9qpa”}{200; tên nhóm, trưởng nhóm, 3/10; CSDL không đổi}
+\tcrow{TC-G07-03}{Sai định dạng, vi phạm quy tắc}{(a) Mã 7 hoặc 9 ký tự, có chữ O; (b) \texttt{expires\_at} sớm hơn hiện tại 1 giây; (c) đang ở nhóm khác}{(a) 400, 2002; (b) 422, 4004, \texttt{rule = "BR06"}; (c) 422, 4004, \texttt{rule = "BR04"}, MSG08 có tên nhóm}
+\tcrow{TC-G07-04}{Tranh chấp chỗ cuối}{Nhóm 9/10, hai người gửi đồng thời}{Một yêu cầu 200, yêu cầu kia 422, 4004, \texttt{rule = "BR05"}; nhóm có đúng 10 thành viên}
+\tcrow{TC-G07-05}{Gửi lại lũy đẳng}{Lặp lại TC-G07-01 với cùng \texttt{Idempotency-Key}}{200, \texttt{Idempotent-Replayed: true}; không thêm thành viên, không thêm tác vụ}
+\end{apispec}
+
+\apiNeed{3.4cm}\codecaption{Ví dụ yêu cầu và phản hồi của G07}{code:c3-api-g07}
+\begin{Verbatim}[fontsize=\scriptsize]
+POST /it4788/v1/spaces/join         Idempotency-Key: 0192f3d0-8a1b-7c2d-...
+{ "code": "K7MX9QPA", "dryRun": false }
+HTTP/1.1 200 OK
+{ "code": 1000, "message": "Đã lưu thay đổi.",
+  "data": { "space": { "id": "0192e8b1-...", "name": "Nhà mình" },
+            "role": "member", "joinedAt": "2026-10-25T03:20:11Z" } }
+\end{Verbatim}
+
+% ---------------------------------------------------------------------
+\subsection{S12, S14 – Đánh dấu đã mua và chuyển vào tủ lạnh}\label{sssec:api-s12-s14}
+
+S12, S14 hiện thực \uc{UC20}, \uc{UC21} (Bảng~\ref{tab:c3-api-s12-s14}, Hình~\ref{fig:seq-outbox-mua-hang} và Hình~\ref{fig:seq-nhap-tu}). Hai API được tách vì đánh dấu diễn ra tại chợ, thường khi ngoại tuyến, còn nhập tủ diễn ra ở nhà. Cả hai nhận mảng mặt hàng và trả 200 với \texttt{results[i].outcome} cho từng mặt hàng, trong đó hai kết quả \texttt{already\_purchased}, \texttt{already\_stocked} là ca lũy đẳng chứ không phải lỗi. Lỗi dữ liệu vào 2xxx, lỗi quy tắc 4004 và xung đột 4002 làm hỏng cả lô: \texttt{errors} chỉ rõ \texttt{items[i]} và không mặt hàng nào được ghi.
+
+Mua trùng được giải theo quy tắc lệnh được máy chủ ghi nhận trước thắng. Đây là cách hiện thực “giữ bản ghi sớm hơn” ở bước 6a của \uc{UC20} (\nfr{NFR11}): đồng hồ thiết bị không đáng tin, nên \texttt{purchasedAt} do ứng dụng gửi chỉ để hiển thị và báo cáo. Một câu \texttt{UPDATE ... WHERE status IN ('to\_buy', 'assigned') RETURNING} trên cả lô quyết định ai thắng; mặt hàng không được trả về là đã có người mua trước, nhận \texttt{already\_purchased} kèm \texttt{current}. Nếu không mặt hàng nào được ghi, như khi phát lại một mặt hàng duy nhất, phản hồi là 409, mã 4002 (\msg{MSG35}) kèm \texttt{current.purchasedBy}. Mua thay người được giao cần \texttt{onBehalf = true} sau hộp thoại \msg{MSG12} (\br{BR10}). Danh sách Hoàn tất chặn sửa nội dung (\br{BR08}) trừ ba lệnh: S08 sửa \texttt{actualQuantity}, \texttt{unitPrice} của mặt hàng đã mua, S13 hoàn tác (danh sách trở về Đang mua) và S14 nhập tủ, vì người dùng thường cất hàng sau khi danh sách đã hoàn tất. Mặt hàng đã nhập tủ được trả lại lô cũ (Mã nguồn~\ref{code:c3-api-s14}).
+
+\begin{apispec}{Đặc tả và test case dự kiến của API S12, S14 -- Đánh dấu đã mua, chuyển vào tủ lạnh}{tab:c3-api-s12-s14}{tab:c3-tc-s12-s14}
+\apisub{S12 -- Đánh dấu đã mua}
+\apirow{URL, quyền}{\texttt{POST} \path{/it4788/v1/spaces/{sid}/shopping-items/purchase}; mọi thành viên (BR10); \texttt{Idempotency-Key}; \texttt{X-Client-Time} khi phát lại ngoại tuyến.}
+\apirow{Yêu cầu}{\texttt{items} (1--50): \texttt{itemId}; \texttt{actualQuantity} ($>$ 0, tối đa hai chữ số thập phân, mặc định lượng cần mua); \texttt{unitPrice} (số nguyên $\ge$ 0, đồng); \texttt{onBehalf} (mặc định \texttt{false}); \texttt{purchasedAt} (thời điểm thao tác trên thiết bị, chỉ để hiển thị và báo cáo).}
+\apirow{Phản hồi}{200, 1000: \texttt{results} (\texttt{itemId}, \texttt{outcome} là \texttt{purchased} hoặc \texttt{already\_purchased} kèm \texttt{current} gồm \texttt{purchasedBy}, \texttt{purchasedAt}; \texttt{status}, \texttt{version}); \texttt{list} với trạng thái tính lại theo BR08.}
+\apirow{Mã lỗi}{2002 (MSG16); 4001; 4002 khi mọi mặt hàng đã được người khác mua (MSG35, \texttt{current.purchasedBy}); 4004 với \texttt{rule = "BR10"} khi mặt hàng đang giao cho người khác mà thiếu \texttt{onBehalf} (MSG12 có tên người được giao), \texttt{rule = "BR08"} khi danh sách đã Hoàn tất.}
+\apisub{S14 -- Chuyển vào tủ lạnh}
+\apirow{URL, quyền}{\texttt{POST} \path{/it4788/v1/spaces/{sid}/shopping-items/stock}; như S12; nhận cả mặt hàng của danh sách đã Hoàn tất.}
+\apirow{Yêu cầu}{\texttt{items} (1--50): \texttt{itemId}; \texttt{foodId} (bắt buộc với mặt hàng tên tự do); \texttt{storageLocation} (\texttt{chill}, \texttt{freezer}, \texttt{crisper}, \texttt{door}, \texttt{pantry\_shelf}); \texttt{quantity}, \texttt{unitId} (mặc định lượng thực tế); \texttt{purchasedOn} (mặc định ngày đánh dấu đã mua); \texttt{expiresOn} ($\ge$ \texttt{purchasedOn}, bỏ trống thì tính theo BR11).}
+\apirow{Phản hồi}{200, 1000: \texttt{results} (\texttt{itemId}, \texttt{outcome} là \texttt{stocked} hoặc \texttt{already\_stocked}, \texttt{lotId}, \texttt{expiresOn}, \texttt{expiryState} theo ngưỡng $N$ của người gọi). Lô mới ghi \texttt{source\_item\_id} và \texttt{total\_cost} bằng lượng thực tế nhân đơn giá, nên giá trị lãng phí vẫn đúng khi đơn vị đổi lúc nhập tủ.}
+\apirow{Mã lỗi}{2002 ngày hết hạn trước ngày mua (MSG14), số lượng sai (MSG16); 4002 mặt hàng vừa bị hoàn tác, không còn Đã mua (MSG35); 4004 mặt hàng tên tự do chưa chọn thực phẩm (bước 2a, \texttt{field = "items[i].foodId"}).}
+\tchead
+\tcrow{TC-S12-01}{Đánh dấu hợp lệ}{Hai mặt hàng \texttt{to\_buy}, một mặt hàng có đơn giá}{200; hai \texttt{outcome = purchased}; danh sách chuyển \texttt{shopping}}
+\tcrow{TC-S12-02}{Trùng một phần}{Hai mặt hàng, B đã đánh dấu mặt hàng thứ hai trước}{200; \texttt{purchased} và \texttt{already\_purchased} với \texttt{current.purchasedBy} là B; bản ghi của B giữ nguyên}
+\tcrow{TC-S12-03}{Xung đột ngoại tuyến}{A phát lại một mặt hàng mà B đã mua trong lúc A mất mạng}{409, 4002 (MSG35 có tên B), \texttt{current.purchasedBy} là B; không ghi}
+\tcrow{TC-S12-04}{Mua thay, biên số lượng}{(a) Mặt hàng giao cho C, thiếu \texttt{onBehalf}; (b) \texttt{actualQuantity} bằng 0 hoặc 1,005}{(a) 422, 4004, \texttt{rule = "BR10"}, MSG12 có tên C; (b) 400, 2002; không mặt hàng nào được ghi}
+\tcrow{TC-S14-01}{Cất hàng của danh sách Hoàn tất}{Ba mặt hàng \texttt{purchased} của danh sách \texttt{completed}, bỏ trống \texttt{expiresOn}}{200; ba lô có hạn theo hạn dùng gợi ý tại vị trí; ba dòng \texttt{stock\_in}; \texttt{total\_cost} bằng lượng nhân đơn giá}
+\tcrow{TC-S14-02}{Biên ngày, tính nguyên tử}{Phần tử thứ hai có \texttt{expiresOn} trước ngày mua 1 ngày}{400, 2002 (MSG14), \texttt{field = "items[1].expiresOn"}; không lô nào được tạo}
+\tcrow{TC-S14-03}{Gửi lại với khóa mới}{Mặt hàng đã \texttt{stocked} bởi thiết bị khác}{200, \texttt{outcome = already\_stocked}, \texttt{lotId} cũ; số lô không đổi}
+\end{apispec}
+
+\apiNeed{3.4cm}\codecaption{Ví dụ yêu cầu và phản hồi của S14}{code:c3-api-s14}
+\begin{Verbatim}[fontsize=\scriptsize]
+POST /it4788/v1/spaces/0192e8b1-.../shopping-items/stock
+{ "items": [ { "itemId": "0192f101-aa01-...", "storageLocation": "chill" },
+    { "itemId": "0192f101-aa02-...", "storageLocation": "freezer",
+      "expiresOn": "2026-12-20" } ] }
+HTTP/1.1 200 OK
+{ "code": 1000, "message": "Đã lưu thay đổi.", "data": { "results": [
+  { "itemId": "0192f101-aa01-...", "outcome": "stocked",
+    "lotId": "0192f3e2-77a0-...", "expiresOn": "2026-10-28",
+    "expiryState": "expiring" },
+  { "itemId": "0192f101-aa02-...", "outcome": "already_stocked",
+    "lotId": "0192f3e2-77a1-...", "expiresOn": "2026-12-20",
+    "expiryState": "fresh" } ] } }
+\end{Verbatim}
+
+% ---------------------------------------------------------------------
+\subsection{S15 – Sinh danh sách mua sắm từ kế hoạch}\label{sssec:api-s15}
+
+S15 hiện thực \uc{UC22} theo Hình~\ref{fig:seq-sinh-ds-ke-hoach} (Bảng~\ref{tab:c3-api-s15}). Hai pha của use case dùng chung một API. Lần gọi \texttt{dryRun = true} tính phần thiếu theo \br{BR20} trong một giao dịch chỉ đọc; đầu vào là món chưa nấu có công thức trong khoảng \texttt{[from, to]}, lô còn hạn đến ngày nấu và lượng đang chờ mua, gồm mặt hàng Cần mua, Đã phân công, Đã mua chưa nhập tủ, trong đó hàng chưa mua chỉ được tính khi ngày dự kiến mua không sau ngày cần dùng. Mỗi dòng thiếu nêu các món dùng nó và ngày cần sớm nhất để người dùng hiểu vì sao phải mua. Món tên tự do không tính được nên được trả riêng (bước 2a); không thiếu gì thì trả 200 kèm \msg{MSG15} (bước 5a), vì đó là thông tin chứ không phải lỗi.
+
+Lần gọi xác nhận mang các dòng mà người dùng giữ lại hoặc chỉnh ở bước 6. Máy chủ không tính lại phần thiếu, vì đề xuất chỉ mang tính tư vấn, mà kiểm tra dữ liệu rồi giao cổng \texttt{ListComposer} của shopping tạo danh sách \texttt{origin = meal\_plan} hoặc gộp vào danh sách có sẵn theo \br{BR09}, nhờ đó quy tắc gộp chỉ được cài đặt một lần. Danh sách đích được khóa \texttt{FOR UPDATE} trước khi gộp để tuần tự hóa với thành viên đang thêm mặt hàng; danh sách đích ứng viên ở bước 6a lấy bằng S01 (Mã nguồn~\ref{code:c3-api-s15}).
+
+\begin{apispec}{Đặc tả và test case dự kiến của API S15 -- Sinh danh sách mua sắm từ kế hoạch}{tab:c3-api-s15}{tab:c3-tc-s15}
+\apirow{URL, quyền}{\texttt{POST} \path{/it4788/v1/spaces/{sid}/shopping-lists/generate}; thành viên không gian; \texttt{Idempotency-Key} khi \texttt{dryRun = false}; \texttt{X-Client-Time} khi phát lại ngoại tuyến.}
+\apirow{Yêu cầu}{\texttt{from}, \texttt{to}: ngày, bắt buộc, hôm nay $\le$ \texttt{from} $\le$ \texttt{to} $\le$ hôm nay + 28 (BR18); \texttt{dryRun}: boolean, mặc định \texttt{false}. Khi xác nhận: \texttt{lines} (1--100) gồm \texttt{foodId}, \texttt{quantity} ($>$ 0, tối đa hai chữ số thập phân), \texttt{unitId}; \texttt{name} (1--100 ký tự, mặc định theo ngày mua); đúng một trong hai \texttt{plannedDate} ($\ge$ hôm nay, BR08) để tạo mới hoặc \texttt{targetListId} để gộp (bước 6a).}
+\apirow{Phản hồi}{Xem trước: 200, 1000: \texttt{lines} (\texttt{foodId}, \texttt{name}, \texttt{shortQty}, \texttt{unitId}, \texttt{neededBy}, \texttt{meals}); \texttt{skippedMeals} (món tên tự do); \texttt{suggestedPlannedDate} là ngày liền trước \texttt{neededBy} sớm nhất nhưng không trước hôm nay; \texttt{lines} rỗng thì kèm MSG15. Xác nhận: 201, 1000: \texttt{listId}, \texttt{createdItemIds}, \texttt{merged} (\texttt{itemId}, lượng sau gộp; kèm MSG11).}
+\apirow{Mã lỗi}{2001 thiếu \texttt{from}, \texttt{to}, hoặc \texttt{lines} khi xác nhận (MSG01); 2002 khoảng ngày sai, \texttt{plannedDate} ở quá khứ, có cả hoặc không có \texttt{plannedDate} và \texttt{targetListId} (MSG02), số lượng sai (MSG16); 4001 \texttt{foodId} hoặc \texttt{targetListId} ngoài phạm vi không gian; 4004 \texttt{rule = "BR08"} khi danh sách đích đã Hoàn tất.}
+\tchead
+\tcrow{TC-S15-01}{Ví dụ kiểm chứng chương 2}{D là ngày mai; bữa D cần 0,4 kg cà rốt, bữa D+2 cần 0,6 kg; lô A 0,5 kg hết hạn D+1, lô B 0,2 kg hết hạn D+3; 0,1 kg chờ mua hôm nay; \texttt{dryRun = true}}{200; một dòng cà rốt \texttt{shortQty} 0,3 kg, \texttt{neededBy} D+2, \texttt{meals} là bữa D+2; \texttt{suggestedPlannedDate} D+1; CSDL không đổi}
+\tcrow{TC-S15-02}{Không thiếu, món tự do}{Tủ đủ mọi nguyên liệu; một món tên tự do trong khoảng}{200, 1000; \texttt{lines} rỗng, MSG15; \texttt{skippedMeals} có món tự do (bước 2a, 5a)}
+\tcrow{TC-S15-03}{Biên khoảng ngày, chọn đích}{(a) \texttt{to} bằng hôm nay + 28, đối chứng + 29; (b) \texttt{from} là hôm qua hoặc sau \texttt{to}; (c) có cả \texttt{plannedDate} và \texttt{targetListId}}{(a) 200, đối chứng 400, 2002; (b), (c) 400, 2002, \texttt{field} đúng tham số sai; CSDL không đổi}
+\tcrow{TC-S15-04}{Xác nhận tạo mới}{Bỏ một dòng, sửa cà rốt thành 0,5 kg; \texttt{plannedDate} hôm nay}{201; một danh sách \texttt{meal\_plan}, \texttt{drafting}; mặt hàng \texttt{to\_buy} đúng các dòng gửi lên; \texttt{change\_seq} tăng}
+\tcrow{TC-S15-05}{Gộp vào danh sách có sẵn}{\texttt{targetListId} là danh sách Đang lập có 2 lạng cà rốt; dòng 0,3 kg cà rốt}{201; mặt hàng cũ thành 5 lạng (BR09) và có trong \texttt{merged}, MSG11; không tạo danh sách mới}
+\tcrow{TC-S15-06}{Đích đã Hoàn tất}{\texttt{targetListId} là danh sách \texttt{completed}}{422, 4004, \texttt{rule = "BR08"}; không mặt hàng nào được thêm}
+\tcrow{TC-S15-07}{Gửi lại lũy đẳng}{(a) Lặp lại TC-S15-04 cùng \texttt{Idempotency-Key}; (b) cùng khóa nhưng \texttt{lines} khác}{(a) 201, \texttt{Idempotent-Replayed: true}, không có danh sách thứ hai; (b) 400, 2002}
+\end{apispec}
+
+\apiNeed{3.4cm}\codecaption{Ví dụ lần gọi xem trước và lần gọi xác nhận của S15}{code:c3-api-s15}
+\begin{Verbatim}[fontsize=\scriptsize]
+POST /it4788/v1/spaces/0192e8b1-.../shopping-lists/generate
+{ "from": "2026-10-26", "to": "2026-11-01", "dryRun": true }
+HTTP/1.1 200 OK
+{ "code": 1000, "message": "Thành công", "data": {
+  "lines": [ { "foodId": "0192a0d3-...", "name": "Cà rốt", "shortQty": 0.3,
+      "unitId": "<kg>", "neededBy": "2026-10-28",
+      "meals": [ { "mealId": "0192f5c1-...", "mealDate": "2026-10-28",
+                   "recipeName": "Canh rau củ" } ] } ],
+  "skippedMeals": [ { "mealId": "0192f5c7-...", "name": "Phở bò" } ],
+  "suggestedPlannedDate": "2026-10-27" } }
+POST /it4788/v1/spaces/0192e8b1-.../shopping-lists/generate
+Idempotency-Key: 0192f6a0-3b1c-7d2e-...
+{ "from": "2026-10-26", "to": "2026-11-01", "dryRun": false,
+  "lines": [ { "foodId": "0192a0d3-...", "quantity": 0.5, "unitId": "<kg>" }],
+  "name": "Đi chợ cuối tuần", "plannedDate": "2026-10-27" }
+HTTP/1.1 201 Created
+{ "code": 1000, "message": "Đã lưu thay đổi.", "data": {
+  "listId": "0192f6a1-...", "createdItemIds": [ "0192f6a2-..." ],
+  "merged": [] } }
+\end{Verbatim}
+
+% ---------------------------------------------------------------------
+\subsection{P05 – Ghi nhận sử dụng thực phẩm}\label{sssec:api-p05}
+
+P05 hiện thực \uc{UC28} (Bảng~\ref{tab:c3-api-p05}). Với \texttt{strategy = fefo}, lô trong đường dẫn chỉ xác định thực phẩm; máy chủ khóa mọi lô còn hạn (\texttt{expires\_on >= \$today}) của thực phẩm đó rồi trừ dần theo ngày hết hạn (\br{BR15}), quy đổi qua đơn vị cơ sở (\br{BR16}). \texttt{strategy = lot} chỉ trừ lô được chọn và là cách duy nhất để trừ lô quá hạn. Mỗi lô bị trừ có một dòng \texttt{stock\_movements} loại \texttt{consume}, lô về 0 chuyển \texttt{consumed} (\br{BR14}). Lệnh là phép trừ tương đối nên không cần \texttt{If-Match} (Mã nguồn~\ref{code:c3-api-p05}).
+
+\begin{apispec}{Đặc tả và test case dự kiến của API P05 -- Ghi nhận sử dụng thực phẩm}{tab:c3-api-p05}{tab:c3-tc-p05}
+\apirow{URL, quyền}{\texttt{POST} \path{/it4788/v1/spaces/{sid}/lots/{lotId}/consume}; thành viên không gian; \texttt{Idempotency-Key}.}
+\apirow{Yêu cầu}{\texttt{quantity}: $>$ 0, tối đa hai chữ số thập phân, bắt buộc; \texttt{unitId}: bắt buộc, cùng nhóm đại lượng với lô (BR16); \texttt{strategy}: \texttt{fefo} hoặc \texttt{lot}, mặc định \texttt{fefo}.}
+\apirow{Phản hồi}{200, 1000: \texttt{foodId}; \texttt{consumed} (\texttt{lotId}, lượng đã trừ, \texttt{remainingQty}, \texttt{lifecycle}, \texttt{version}); \texttt{totalRemaining}.}
+\apirow{Mã lỗi}{2001; 2002 (MSG16, hoặc \texttt{rule = "BR16"}); 2003 vượt lượng còn lại (MSG17); 4001; 4004 \texttt{rule = "BR15"} khi dùng \texttt{fefo} mà chỉ còn lô quá hạn, ứng dụng hỏi người dùng theo bước 4b.}
+\tchead
+\tcrow{TC-P05-01}{Trừ FEFO qua hai lô}{Lô A 0,3 kg hết hạn D+1, lô B 1 kg hết hạn D+5; dùng 500 g}{200; A về 0, \texttt{consumed}; B còn 0,8 kg; hai dòng \texttt{consume}}
+\tcrow{TC-P05-02}{Biên trên của lượng dùng}{Như TC-P05-01; dùng 1,3 kg; dùng 1,31 kg}{1,3 kg: 200, hai lô \texttt{consumed}; 1,31 kg: 422, 2003 (MSG17 kèm 1,3 kg), không lô nào đổi}
+\tcrow{TC-P05-03}{Dữ liệu sai}{\texttt{quantity} bằng 0 hoặc 0,005; đơn vị “quả” cho lô tính theo kg}{400, 2002; đơn vị sai kèm \texttt{rule = "BR16"}}
+\tcrow{TC-P05-04}{Chỉ còn lô quá hạn}{Lần 1 \texttt{fefo}; lần 2 \texttt{lot} trên lô quá hạn}{Lần 1: 422, 4004, \texttt{rule = "BR15"}, không ghi; lần 2: 200, chỉ lô được chọn bị trừ}
+\tcrow{TC-P05-05}{Đồng thời, lũy đẳng}{(a) Tổng còn 1,3 kg, hai yêu cầu 0,8 kg cùng lúc; (b) gửi lại TC-P05-01 cùng khóa}{(a) Một 200, một 422, 2003, không có lượng âm; (b) 200, \texttt{Idempotent-Replayed: true}, tồn kho không đổi}
+\end{apispec}
+
+\apiNeed{3.4cm}\codecaption{Ví dụ yêu cầu và phản hồi của P05}{code:c3-api-p05}
+\begin{Verbatim}[fontsize=\scriptsize]
+POST /it4788/v1/spaces/0192e8b1-.../lots/0192f3e2-77a0-.../consume
+{ "quantity": 500, "unitId": "<g>", "strategy": "fefo" }
+HTTP/1.1 200 OK
+{ "code": 1000, "message": "Đã lưu thay đổi.",
+  "data": { "foodId": "0192a011-...", "consumed": [
+    { "lotId": "0192f3e2-77a0-...", "quantity": 0.3, "remainingQty": 0,
+      "lifecycle": "consumed" },
+    { "lotId": "0192f3f9-1c20-...", "quantity": 0.2, "remainingQty": 0.8,
+      "lifecycle": "active" } ], "totalRemaining": { "quantity": 800 } } }
+\end{Verbatim}
+
+% ---------------------------------------------------------------------
+\subsection{M05 – Gợi ý món ăn}\label{sssec:api-m05}
+
+M05 hiện thực \uc{UC40} bằng thuật toán ở mục~\ref{sec:thiet-ke-chi-tiet} (Bảng~\ref{tab:c3-api-m05}). Chỉ công thức \texttt{published} được xét, gồm công thức của không gian và công thức mẫu đã công bố. Kết quả phụ thuộc ngưỡng $N$ và danh sách yêu thích của người gọi, nên bộ đệm 10 phút là một hash Redis \texttt{suggest:\{sid\}} với mỗi trường ứng với một người xem và bộ tham số. Khóa bị xóa khi có \texttt{lot.changed}, \texttt{recipe.changed}, \texttt{config.changed} với tham số \texttt{suggest.*}, hoặc khi một thành viên đổi $N$ qua A13, nên một lệnh \texttt{DEL} làm mới kết quả cho mọi người xem. Không có món đạt chuẩn vẫn trả 200: tủ trống trả công thức mẫu, không món nào đạt $\theta$ trả ba món có $R$ cao nhất kèm \msg{MSG31}, \texttt{meta.fallback} cho biết nhánh nào. Mỗi món kèm $R$, $E$, $F$ để kiểm thử đối chiếu với \br{BR19} (Mã nguồn~\ref{code:c3-api-m05}); mục tiêu 2 giây (\nfr{NFR09}).
+
+\begin{apispec}{Đặc tả và test case dự kiến của API M05 -- Gợi ý món ăn}{tab:c3-api-m05}{tab:c3-tc-m05}
+\apirow{URL, quyền}{\texttt{GET} \path{/it4788/v1/spaces/{sid}/recipe-suggestions}; thành viên không gian.}
+\apirow{Yêu cầu}{\texttt{date}: ngày nấu dự kiến, mặc định hôm nay, trong cửa sổ của BR18; lô còn hạn và $E$ được tính tại ngày này (UC37); \texttt{mealSlot}: \texttt{breakfast}, \texttt{lunch}, \texttt{dinner}, tùy chọn; \texttt{expiringOnly}: boolean, mặc định \texttt{false}, chỉ giữ món dùng ít nhất một lô sắp hết hạn (UC30 bước 3); \texttt{servings}: 1--20, mặc định bằng số thành viên; \texttt{limit}: 1 đến \texttt{suggest.maxResults} (mặc định 10).}
+\apirow{Phản hồi}{200, 1000: \texttt{items} giảm dần theo \texttt{score} (\texttt{recipe}, \texttt{score}, \texttt{r}, \texttt{e}, \texttt{f}, \texttt{missing}, \texttt{expiringUsed}); \texttt{meta.fallback} là \texttt{none}, \texttt{empty\_pantry} hoặc \texttt{below\_threshold} (kèm MSG31).}
+\apirow{Mã lỗi}{2002 tham số ngoài miền (MSG02; \texttt{date} ngoài cửa sổ kèm MSG28); 4001 không phải thành viên.}
+\tchead
+\tcrow{TC-M05-01}{Ví dụ kiểm chứng chương 2}{Cá lóc còn 1 ngày, dứa 2, cà chua 5, trứng 10; $N = 3$; không có me}{200; canh chua cá lóc ($S = 0{,}75$) đứng trước trứng xào cà chua ($0{,}6$); \texttt{missing} là [Me]}
+\tcrow{TC-M05-02}{Biên ngưỡng $\theta$}{Công thức A có $R = 0{,}6$ (3/5), B có $R = 0{,}5$}{200; A có mặt, B bị loại}
+\tcrow{TC-M05-03}{Hai nhánh dự phòng}{(a) Mọi công thức có $R < 0{,}6$; (b) không có lô \texttt{active}}{(a) \texttt{below\_threshold}, MSG31, đúng 3 món; (b) \texttt{empty\_pantry}, công thức mẫu phổ biến}
+\tcrow{TC-M05-04}{Tham số ngoài miền}{\texttt{servings} bằng 0, 21; \texttt{mealSlot = snack}; \texttt{limit = 11}; \texttt{date} bằng hôm nay + 29; đối chứng \texttt{servings} bằng 1, 20}{400, 2002, \texttt{field} đúng tham số sai; đối chứng: 200}
+\tcrow{TC-M05-05}{Khác người xem, phân quyền}{(a) Hai thành viên có $N = 1$ và $N = 7$; (b) người ngoài không gian}{(a) $E$ khác nhau theo $N$, mỗi người một trường bộ đệm riêng; (b) 404, 4001}
+\tcrow{TC-M05-06}{Chỉ món dùng lô sắp hết hạn, làm mới bộ đệm}{(a) \texttt{expiringOnly = true}, \texttt{limit = 3} như UC30; (b) gọi lại sau khi P05 dùng hết lô cá lóc}{(a) Tối đa 3 món, mọi món có \texttt{expiringUsed} khác rỗng; (b) kết quả được tính lại, canh chua cá lóc không còn $E = 1$}
+\end{apispec}
+
+\apiNeed{3.4cm}\codecaption{Ví dụ yêu cầu và phản hồi của M05}{code:c3-api-m05}
+\begin{Verbatim}[fontsize=\scriptsize]
+GET /it4788/v1/spaces/0192e8b1-.../recipe-suggestions
+    ?date=2026-10-25&mealSlot=dinner&servings=4
+HTTP/1.1 200 OK
+{ "code": 1000, "message": "Thành công", "data": { "items": [
+  { "recipe": { "id": "0192c3d4-...", "name": "Canh chua cá lóc" },
+    "score": 0.75, "r": 0.75, "e": 1.0, "f": 0,
+    "missing": [ { "foodId": "0192a0f1-...", "name": "Me" } ],
+    "expiringUsed": [ { "name": "Cá lóc", "daysLeft": 1 },
+                      { "name": "Dứa", "daysLeft": 2 } ] },
+  { "recipe": { "id": "0192c3e5-...", "name": "Trứng xào cà chua" },
+    "score": 0.6, "r": 1.0, "e": 0, "f": 0, "missing": [] } ] },
+  "meta": { "fallback": "none", "theta": 0.6 } }
+\end{Verbatim}
+
+% ---------------------------------------------------------------------
+\subsection{Y01 – Lấy thay đổi đồng bộ}\label{sssec:api-y01}
+
+Y01 là đường dữ liệu duy nhất để thiết bị bắt kịp thay đổi, cho cả đồng bộ ngoại tuyến (\nfr{NFR11}) lẫn gợi ý thời gian thực (\nfr{NFR10}) (Bảng~\ref{tab:c3-api-y01}). \texttt{seq} là bộ đếm riêng từng không gian, tăng theo thứ tự commit, nên thiết bị chỉ lưu một số nguyên; phần tử mang ảnh chụp thực thể nên áp lại là vô hại (Mã nguồn~\ref{code:c3-api-y01}). Con trỏ cũ hơn 90 ngày nhận 410, mã 4100; thiết bị khi đó đọc \texttt{changeSeq} từ G03, tải lại toàn bộ rồi tiếp tục từ số đó.
+
+\begin{apispec}{Đặc tả và test case dự kiến của API Y01 -- Lấy thay đổi đồng bộ}{tab:c3-api-y01}{tab:c3-tc-y01}
+\apirow{URL, quyền}{\texttt{GET} \path{/it4788/v1/spaces/{sid}/changes}; thành viên không gian, kiểm tra lại ở mỗi lần gọi.}
+\apirow{Yêu cầu}{\texttt{since}: số nguyên $\ge$ 0, bắt buộc, không lớn hơn \texttt{change\_seq} hiện tại; \texttt{limit}: 1--500, mặc định 500.}
+\apirow{Phản hồi}{200, 1000: \texttt{changes} tăng theo \texttt{seq}, mỗi phần tử gồm \texttt{seq}, \texttt{entityType}, \texttt{op} (\texttt{upsert}, \texttt{delete}), \texttt{entityId}, \texttt{version}, \texttt{entity} (vắng mặt khi xóa); \texttt{nextSince}; \texttt{hasMore}.}
+\apirow{Mã lỗi}{2001; 2002 \texttt{since} âm hoặc vượt \texttt{change\_seq}, \texttt{limit} ngoài 1--500; 4001; 4100 \texttt{since} cũ hơn 90 ngày.}
+\tchead
+\tcrow{TC-Y01-01}{Gộp thay đổi, bia mộ}{\texttt{since = 1840}; 1841 và 1843 cùng một mặt hàng; 1845 là xóa mềm}{200; mặt hàng xuất hiện một lần với \texttt{seq} 1843; 1845 có \texttt{op = delete}, không có \texttt{entity}; \texttt{nextSince = 1845}}
+\tcrow{TC-Y01-02}{Biên phân trang}{501 thay đổi sau \texttt{since}, \texttt{limit} mặc định}{200; 500 phần tử, \texttt{hasMore = true}; lần gọi tiếp trả đúng 1 phần tử}
+\tcrow{TC-Y01-03}{Không đổi, ngoài miền}{(a) \texttt{since} bằng \texttt{change\_seq}; (b) \texttt{since} bằng $-$1 hoặc \texttt{change\_seq} + 1; \texttt{limit} bằng 0, 501}{(a) 200, \texttt{changes} rỗng, \texttt{nextSince} bằng \texttt{since}; (b) 400, 2002}
+\tcrow{TC-Y01-04}{Con trỏ quá cũ}{\texttt{since} nhỏ hơn \texttt{seq} nhỏ nhất còn giữ}{410, 4100; không trả dữ liệu}
+\tcrow{TC-Y01-05}{Mất tư cách thành viên}{Người dùng vừa bị xóa khỏi nhóm (UC13)}{404, 4001, kể cả khi \texttt{since} hợp lệ}
+\end{apispec}
+
+\apiNeed{3.4cm}\codecaption{Ví dụ yêu cầu và phản hồi của Y01}{code:c3-api-y01}
+\begin{Verbatim}[fontsize=\scriptsize]
+GET /it4788/v1/spaces/0192e8b1-.../changes?since=1840&limit=500
+HTTP/1.1 200 OK
+{ "code": 1000, "message": "Thành công", "data": { "changes": [
+    { "seq": 1843, "entityType": "shopping_item", "op": "upsert",
+      "entityId": "01929f4e-6c1a-...", "version": 5,
+      "entity": { "status": "assigned", "assigneeId": "0192e7c0-..." } },
+    { "seq": 1845, "entityType": "shopping_item", "op": "delete",
+      "entityId": "01929f4e-80b4-...", "version": 3 } ],
+  "nextSince": 1845, "hasMore": false } }
+\end{Verbatim}
+
+% =====================================================================

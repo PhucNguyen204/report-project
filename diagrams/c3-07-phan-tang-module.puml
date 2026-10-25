@@ -1,0 +1,68 @@
+@startuml c3-07-phan-tang-module
+!include _style-c3.iuml
+top to bottom direction
+skinparam nodesep 30
+skinparam ranksep 60
+skinparam defaultTextAlignment center
+skinparam rectangle {
+  FontStyle normal
+}
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #2F5597
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor #595959
+}
+
+rectangle "Ứng dụng di động\n(HTTPS qua Caddy)" as mob #F2F2F2
+rectangle "Hàng đợi River\n(tác vụ nền, định kỳ)" as rq #F2F2F2
+rectangle "Module khác gọi vào\n(vd mealplan)" as caller #F2F2F2
+
+rectangle "**Adapter vào** (driving)" as IN #FAFAFA {
+  component "adapter/http\nHandler (oapi-codegen)" as h
+  component "adapter/river\nWorker" as w
+}
+
+hexagon " " as CORE #EAF1FB {
+  portin " " as pub
+  rectangle "**Tầng ứng dụng** (app)\nmỗi use case là một phương thức\nranh giới giao dịch (TxManager)\nkiểm tra quyền theo vai trò nhóm" as app #FFFFFF
+  rectangle "**Tầng miền** (domain)\nthực thể, value object,\ndịch vụ miền, lỗi miền;\nkhông import hạ tầng" as dom #FFFFFF
+  rectangle "**Cổng ra** khai báo trong app\nRepository\nChangefeedAppender\nEventPublisher" as ports #FFFFFF
+  portout " " as po
+}
+
+rectangle "**Adapter ra** (driven)" as OUT #FAFAFA {
+  component "adapter/postgres\nRepository (sqlc)" as pg
+  component "platform/events\nRiverPublisher" as rv
+  component "sync\nSyncEngine" as rd
+}
+component "pantry\nPantryService" as pantry
+
+database "PostgreSQL 16" as db
+database "Redis 7" as redis
+
+mob -down-> h
+rq -down-> w
+caller -down-> pub : **cổng vào** <module>/api\n(vd shopping/api.ListComposer)
+
+h -down-> app
+w -down-> app
+app .up.|> pub : hiện thực
+app -down-> dom : sử dụng
+app -down-> ports : gọi qua\ninterface
+app -down-> po : gọi
+
+pg .up.|> ports
+rv .up.|> ports
+rd .up.|> ports
+pantry .up.|> po : **cổng ra tới module khác**\n(vd pantry/api.StockIn)
+
+pg -down-> db : pgx.Tx\ntừ context
+rv -down-> db : river_job, InsertTx\n(cùng giao dịch)
+rd -down-> db : space_changes
+rd -down-> redis : PUBLISH\nsau commit
+
+dom -[hidden]right- ports
+@enduml

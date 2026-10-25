@@ -1,0 +1,72 @@
+% ---------------------------------------------------------------------
+%  3.1. Yêu cầu kiến trúc và định hướng thiết kế
+% ---------------------------------------------------------------------
+\section{Yêu cầu kiến trúc và định hướng thiết kế}\label{sec:yeu-cau-kien-truc}
+
+Mục này xác định các yêu cầu quyết định hình dạng của backend, mức tải phải chịu và các nguyên tắc dùng làm thước đo cho những lựa chọn ở các mục sau.
+
+\subsection{Các yếu tố dẫn dắt kiến trúc}\label{ssec:yeu-to-dan-dat}
+
+Theo Bass và cộng sự~\cite{bass}, yêu cầu có ý nghĩa kiến trúc (architecturally significant requirement – ASR) là yêu cầu mà khi thay đổi buộc phải đổi cách chia thành phần, lưu dữ liệu hay giao tiếp; phần lớn chúng là thuộc tính chất lượng chứ không phải chức năng. “Đánh dấu đã mua” hiện thực được bằng nhiều kiến trúc, nhưng đòi hỏi thao tác đó chạy khi mất mạng và hiện trên máy người khác trong 3 giây thì loại bỏ phần lớn kiến trúc đơn giản. Mỗi yêu cầu chất lượng được diễn đạt thành kịch bản thuộc tính chất lượng (quality attribute scenario) gồm sáu phần: nguồn kích thích, kích thích, đối tượng chịu tác động, môi trường, phản ứng và thước đo phản ứng; mỗi kịch bản được đáp ứng bằng các chiến thuật (tactic), tức quyết định thiết kế đã được kiểm nghiệm.
+
+Bảng~\ref{tab:c3-kich-ban-chat-luong} chuyển các yêu cầu phi chức năng ở mục~\ref{sec:phi-chuc-nang} thành mười kịch bản KB01–KB10; nguồn và đối tượng chịu tác động được gộp vào cột kích thích, thước đo lấy theo Bảng~\ref{tab:tong-hop-nfr}. Các yêu cầu \nfr{NFR01}--\nfr{NFR08} thuộc về giao diện nên không có kịch bản riêng.
+
+{\small
+\begin{longtable}{|C{1.0cm}|L{2.2cm}|L{3.6cm}|L{3.3cm}|L{\dimexpr\textwidth-10\tabcolsep-6\arrayrulewidth-1.0cm-2.2cm-3.6cm-3.3cm\relax}|}
+\caption{Kịch bản thuộc tính chất lượng rút ra từ yêu cầu phi chức năng}\label{tab:c3-kich-ban-chat-luong}\\
+\hline
+\hd{Mã} & \hd{Thuộc tính} & \hd{Kích thích, môi trường} & \hd{Phản ứng, thước đo} & \hd{Chiến thuật (mục)}\\ \hline
+\endfirsthead
+\multicolumn{5}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Mã} & \hd{Thuộc tính} & \hd{Kích thích, môi trường} & \hd{Phản ứng, thước đo} & \hd{Chiến thuật (mục)}\\ \hline
+\endhead
+KB01 & Hiệu năng (\nfr{NFR09}) & Giờ cao điểm, tải đỉnh 50 yêu cầu/giây & 95\% API $\le$ 1 s & Chỉ mục, keyset, cache Redis, worker (\ref{sec:csdl})\\ \hline
+KB02 & Hiệu năng (\nfr{NFR09}) & Gõ tên không dấu, sai chính tả; xin gợi ý món & Gợi ý tên $\le$ 500 ms; gợi ý món $\le$ 2 s & Elasticsearch, edge n-gram (\ref{sec:cong-nghe})\\ \hline
+KB03 & Thời gian thực (\nfr{NFR10}) & A đánh dấu đã mua khi B đang mở cùng danh sách & B ở tiền cảnh thấy thay đổi $\le$ 3 s & Pub/Sub, WebSocket, kéo phần thay đổi; FCM khi ở nền (\ref{sec:thiet-ke-chi-tiet})\\ \hline
+KB04 & Ngoại tuyến (\nfr{NFR11}) & Mất sóng khi đi chợ; có mạng lại, yêu cầu bị gửi lặp & Áp dụng đúng một lần; xung đột theo quy tắc & ID do thiết bị sinh, khóa lũy đẳng (\ref{sec:thiet-ke-chi-tiet})\\ \hline
+KB05 & Toàn vẹn (\nfr{NFR11}, \nfr{NFR13}) & Hai người cùng xác nhận nấu (\uc{UC41}) hoặc nhập tủ (\uc{UC21}) & Không lô âm, không trừ hay nhập trùng; nguyên tử & Một giao dịch, khóa dòng theo thứ tự cố định (\ref{sec:kien-truc})\\ \hline
+KB06 & Nhắc nhở (\nfr{NFR12}) & Đến giờ nhắc; worker khởi động lại, FCM lỗi tạm thời & Tối đa một thông báo nhắc mỗi người mỗi ngày; SLI tạo: $\ge$ 99\% thông báo được tạo trong 15 phút sau giờ nhắc; SLI gửi: tỉ lệ giao tới FCM, thử lại 3 lần & Tác vụ định kỳ mỗi phút, tác vụ duy nhất theo người và ngày, khóa chống trùng, backoff (\ref{sec:thiet-ke-chi-tiet})\\ \hline
+KB07 & Sẵn sàng (\nfr{NFR13}) & Triển khai bản mới, API lỗi, mất dữ liệu & $\ge$ 99\% lúc 06:00–23:00; RPO $\le$ 5 phút, RTO $\le$ 1 giờ & Hai bản API, cuốn chiếu, WAL liên tục (\ref{sec:trien-khai})\\ \hline
+KB08 & Bảo mật (\nfr{NFR14}--\nfr{NFR17}) & Sửa mã không gian trong URL; dò mật khẩu, OTP; dùng lại token & Từ chối sai phạm vi; khóa tạm 15 phút; thu hồi họ phiên & Kiểm tra thành viên, Argon2id, giới hạn tần suất (\ref{sec:bao-mat})\\ \hline
+KB09 & Riêng tư (\nfr{NFR18}) & Người dùng yêu cầu xóa tài khoản & Thu hồi phiên; xóa dữ liệu cá nhân, ảnh & Tác vụ nền dọn dữ liệu (\ref{sec:bao-mat})\\ \hline
+KB10 & Tương thích, bảo trì (\nfr{NFR19}--\nfr{NFR21}) & Đổi API khi bản ứng dụng cũ còn chạy; đổi tham số & Bản quá cũ nhận HTTP 426; tham số áp dụng ngay & Phiên bản trong URL, OpenAPI, cấu hình trong CSDL (\ref{sec:api})\\ \hline
+\end{longtable}
+}
+
+Theo cách xếp hạng trên cây tiện ích (utility tree) của Bass, KB03, KB04 và KB05 cao cả về tầm quan trọng lẫn rủi ro kỹ thuật nên chi phối lựa chọn kiến trúc ở mục~\ref{sec:kien-truc}. Các kịch bản có lúc kéo ngược nhau: khóa dòng của KB05 giảm mức song song cho KB01, còn ghi ngoại tuyến của KB04 buộc máy chủ đôi khi từ chối thao tác người dùng tưởng đã xong; nhóm giữ phạm vi khóa hẹp và trả lỗi xung đột có cấu trúc. Mục tiêu 99\% của KB07 trong khung 17 giờ mỗi ngày cho phép khoảng 5 giờ gián đoạn mỗi tháng, nên một máy chủ duy nhất có thời gian khôi phục một giờ vẫn đáp ứng được ở giai đoạn đầu. Thước đo của KB06 được tách thành hai chỉ số mức dịch vụ (service level indicator – SLI)~\cite{sre}: việc tạo thông báo trong hộp thư nằm trọn trong tầm kiểm soát của hệ thống nên gắn với ngưỡng 99\% trong 15 phút của \nfr{NFR12}, còn việc giao tới thiết bị phụ thuộc FCM, APNs và trạng thái máy nên được đo, cảnh báo riêng để sự cố của bên ngoài không làm sai lệch đánh giá thiết kế. \nfr{NFR21}--\nfr{NFR23} là ràng buộc (constraint) đã định sẵn. Ngoài ra, nền tảng di động áp lên backend ba điều kiện ít gặp ở ứng dụng web: mạng chập chờn, hạn chế chạy nền và cập nhật ứng dụng chậm (mục~\ref{ssec:cn-di-dong}).
+
+\subsection{Giả định quy mô và ước lượng tải}\label{ssec:uoc-luong-tai}
+
+Hệ thống chưa có người dùng thật nên các con số trong Bảng~\ref{tab:c3-uoc-luong-tai} là giả định thiết kế, không phải số liệu đo. Năm đầu có 5.000 tài khoản (khoảng 2.000 không gian gia đình), 30\% hoạt động mỗi ngày với khoảng 60 yêu cầu API mỗi người. Tải dồn vào khung 17:00–19:00 khi các gia đình đi chợ, nấu ăn; giờ bận nhất chiếm khoảng 20\% lượng yêu cầu cả ngày, và hệ số an toàn 10 bù cho đột biến như nhiều thiết bị cùng gửi hàng đợi ngoại tuyến. Thông báo nhắc hạn dùng được gộp mọi không gian thành tối đa một thông báo cho mỗi người mỗi ngày (\br{BR13}), nên số thông báo nhắc bị chặn trên bởi số tài khoản. Định luật Little $L = \lambda W$ với $W = 1$ s cho số yêu cầu đồng thời để định cỡ bể kết nối CSDL; dung lượng PostgreSQL tính với khoảng mười bản ghi lâu dài, mỗi bản ghi khoảng 300 byte kể cả chỉ mục, cho mỗi người dùng hoạt động mỗi ngày.
+
+{\small
+\begin{longtable}{|L{4.6cm}|L{\dimexpr\textwidth-6\tabcolsep-4\arrayrulewidth-4.6cm-3.6cm\relax}|L{3.6cm}|}
+\caption{Giả định thiết kế và ước lượng tải năm đầu}\label{tab:c3-uoc-luong-tai}\\
+\hline
+\hd{Đại lượng} & \hd{Giả định hoặc công thức} & \hd{Giá trị}\\ \hline
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Đại lượng} & \hd{Giả định hoặc công thức} & \hd{Giá trị}\\ \hline
+\endhead
+Người dùng hoạt động/ngày & 30\% × 5.000 tài khoản & 1.500\\ \hline
+Yêu cầu API mỗi ngày & 1.500 × 60 & Khoảng 90.000\\ \hline
+Tải giờ cao điểm & 0,2 × 90.000 / 3.600 s & 5 yêu cầu/giây\\ \hline
+Tải đỉnh thiết kế & 5 × 10 (hệ số an toàn) & 50 yêu cầu/giây\\ \hline
+Yêu cầu xử lý đồng thời & \emph{L} = 50 × 1 s (định luật Little) & $\le$ 50\\ \hline
+Kết nối WebSocket & Cận trên: số người dùng hoạt động & $\le$ 1.500\\ \hline
+Thông báo nhắc mỗi ngày & 5.000 tài khoản × tối đa 1 thông báo gộp mọi không gian (\br{BR13}) & $\le$ 5.000\\ \hline
+Tốc độ tạo thông báo nhắc & 5.000 / 900 s (15 phút, \nfr{NFR12}) & Khoảng 6 thông báo/giây\\ \hline
+Dữ liệu PostgreSQL/năm & 1.500 × 10 × 300 B × 365 & Khoảng 1,6 GB (cận trên 2 GB)\\ \hline
+Ảnh mỗi năm & 20.000 ảnh × 200 KB sau nén & Khoảng 4 GB\\ \hline
+\end{longtable}
+}
+
+Tải này nằm gọn trong một máy chủ ảo nhiều nhân nên giai đoạn đầu chỉ cần một máy chủ (mục~\ref{sec:trien-khai}). Vì giả định có độ bất định cao, kiến trúc vẫn giữ sẵn đường mở rộng ngang với chi phí gần như bằng không: tiến trình API không giữ trạng thái phiên, phát tán thay đổi giữa các bản API đi qua Redis, tác vụ nền chạy ở worker riêng và truy vấn báo cáo có thể chuyển sang bản sao chỉ đọc.
+
+\subsection{Nguyên tắc thiết kế}\label{ssec:nguyen-tac}
+
+Bảy nguyên tắc sau là tiêu chí khi phải chọn giữa các phương án ở những mục tiếp theo. \textbf{PostgreSQL là nguồn sự thật duy nhất.} Dữ liệu nghiệp vụ được ghi vào PostgreSQL trong giao dịch; chỉ mục Elasticsearch, cache Redis và CSDL trên thiết bị là dẫn xuất dựng lại được, ảnh trong kho đối tượng có siêu dữ liệu do PostgreSQL quản lý, nên sự cố ở kho phụ chỉ làm suy giảm hiệu năng chứ không làm sai dữ liệu. \textbf{Máy chủ quyết định quyền và quy tắc nghiệp vụ.} Ứng dụng kiểm tra dữ liệu để phản hồi nhanh, máy chủ kiểm tra lại toàn bộ; ẩn nút trên giao diện không thay thế phân quyền (\br{BR23}, \nfr{NFR16}). \textbf{Mọi thao tác ghi lũy đẳng.} Khóa lũy đẳng ở API, ràng buộc duy nhất trong CSDL và khóa chống trùng ở tác vụ nền khiến cơ chế giao ít nhất một lần (at-least-once) cho hiệu quả như xử lý đúng một lần.
+
+\textbf{Thiết kế cho mạng chập chờn.} Thiết bị di động là khách hàng chính (mobile-first): tạo được dữ liệu khi ngoại tuyến, chỉ kéo phần thay đổi; mọi lời gọi giữa các thành phần có thời hạn chờ. \textbf{Đơn giản trước, ranh giới rõ.} Chỉ thêm thành phần khi có yêu cầu cụ thể; hệ thống bắt đầu bằng một khối triển khai duy nhất~\cite{fowlermonolith} nhưng chia module với giao diện rõ ràng để có thể tách dịch vụ về sau.
+
+\textbf{Quan sát được.} Mỗi yêu cầu mang một mã định danh xuyên suốt nhật ký, số đo và trace; mỗi NFR có số đo đi kèm, như thời gian phản hồi theo route cho \nfr{NFR09}. \textbf{Cấu hình theo Twelve-Factor.} Cấu hình triển khai đọc từ biến môi trường, tiến trình không trạng thái, một image cho mọi môi trường~\cite{twelvefactor}; tham số nghiệp vụ nằm trong CSDL, do quản trị viên đổi qua \uc{UC53} (Bảng~\ref{tab:tham-so-he-thong}).

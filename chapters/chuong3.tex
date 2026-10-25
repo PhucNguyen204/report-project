@@ -1,13 +1,27 @@
 % =====================================================================
-%  CHƯƠNG 3. THIẾT KẾ GIAO DIỆN  (khung — hoàn thiện ở giai đoạn sau)
+%  CHƯƠNG 3. THIẾT KẾ BACKEND
+%  Nội dung chia thành các tệp con trong chapters/c3/ để dễ cộng tác.
 % =====================================================================
-\chapter{THIẾT KẾ GIAO DIỆN}\label{chap:giao-dien}
+\chapter{THIẾT KẾ BACKEND}\label{chap:backend}
 
-\section{Thiết kế giao diện low-fidelity / mid-fidelity prototype}
-% Trình bày theo từng use case ở Chương 2.
-\pending
+Chương~\ref{chap:dac-ta} đã xác định hệ thống cần làm gì thông qua 53 use case, 23 quy tắc nghiệp vụ và 23 yêu cầu phi chức năng. Chương này trình bày cách phần máy chủ (backend) hiện thực các yêu cầu đó: lựa chọn công nghệ, kiến trúc phần mềm, thiết kế chi tiết các thành phần, cơ sở dữ liệu, giao diện lập trình ứng dụng (API), bảo mật và phương án triển khai. Ứng dụng di động được xây dựng bằng Flutter và chạy trên cả Android lẫn iOS (\nfr{NFR19}), vì vậy các quyết định ở phía máy chủ đều tính tới đặc thù của hai nền tảng: thiết bị thường xuyên mất kết nối khi người dùng đi chợ, hệ điều hành hạn chế ứng dụng chạy nền, và phiên bản ứng dụng trên kho ứng dụng được cập nhật chậm hơn máy chủ.
 
-\section{Xây dựng các màn hình giao diện của ứng dụng (high-fidelity)}
-% Mỗi màn hình: bố cục, cây widget, theme và style, xử lý dữ liệu nhập và cử chỉ;
-% sơ đồ điều hướng giữa các màn hình.
-\pending
+Thiết kế được trình bày theo hướng từ tổng quát đến chi tiết. Mục~\ref{sec:yeu-cau-kien-truc} tổng hợp các yếu tố dẫn dắt kiến trúc rút ra từ yêu cầu phi chức năng. Mục~\ref{sec:cong-nghe} giới thiệu nền tảng công nghệ được lựa chọn. Mục~\ref{sec:kien-truc} trình bày kiến trúc tổng thể theo mô hình C4~\cite{c4model} ở mức ngữ cảnh, mức vùng chứa và mức thành phần; mục~\ref{sec:tich-hop-di-dong} đối chiếu thiết kế với kiến trúc tham chiếu chính thức của Android, iOS và Flutter để bảo đảm backend phục vụ đúng chuẩn ứng dụng di động; mục~\ref{sec:thiet-ke-chi-tiet} đi xuống mức lớp, luồng xử lý, máy trạng thái, các kỹ thuật cốt lõi và cách hiện thực hóa từng use case trọng tâm. Ba mục tiếp theo đặc tả cơ sở dữ liệu, API và bảo mật. Mục~\ref{sec:trien-khai} mô tả hạ tầng triển khai, khả năng sẵn sàng và lộ trình mở rộng. Mục~\ref{sec:truy-vet-thiet-ke} khép lại chương bằng ma trận truy vết từ yêu cầu tới quyết định thiết kế và kế hoạch kiểm chứng. Các con số về quy mô trong chương là giả định thiết kế, dùng để định cỡ hệ thống, không phải số liệu đo thực tế.
+
+% Sơ đồ của chương này cao: dùng \usetalldiagrams (khai báo trong config/preamble.tex).
+\begingroup
+\usetalldiagrams
+
+\input{chapters/c3/tong-quan}
+\input{chapters/c3/cong-nghe}
+\input{chapters/c3/kien-truc}
+\InputIfFileExists{chapters/c3/tich-hop-di-dong.tex}{}{}
+\input{chapters/c3/chi-tiet}
+\input{chapters/c3/ky-thuat}
+\input{chapters/c3/hien-thuc-uc}
+\input{chapters/c3/csdl}
+\input{chapters/c3/api}
+\input{chapters/c3/bao-mat}
+\input{chapters/c3/trien-khai}
+\input{chapters/c3/truy-vet}
+\endgroup

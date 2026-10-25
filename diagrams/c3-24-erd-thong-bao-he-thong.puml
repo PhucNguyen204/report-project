@@ -1,0 +1,162 @@
+@startuml c3-24-erd-thong-bao-he-thong
+!pragma layout elk
+!include _style-c3.iuml
+hide circle
+hide methods
+hide stereotype
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 60
+
+package "admin" as pad {
+  entity "system_configs" as cf {
+    * key : varchar(80) <<PK>>
+    --
+    * value : jsonb
+    * value_type : varchar(20)
+    min_value : jsonb
+    max_value : jsonb
+    updated_by : uuid <<FK>>
+    * updated_at : timestamptz
+  }
+  entity "audit_logs" as al {
+    * id : uuid <<PK>>
+    --
+    * actor_id : uuid <<FK>>
+    * action : varchar(60)
+    * target_type : varchar(40)
+    target_id : text
+    old_value : jsonb
+    new_value : jsonb
+    ip : inet
+    * created_at : timestamptz
+  }
+}
+
+package "media" as pmd {
+  entity "objects" as ob {
+    * id : uuid <<PK>>
+    --
+    * owner_user_id : uuid <<FK>>
+    * purpose : media_purpose
+    target_id : uuid
+    * object_key : text <<UQ>>
+    * content_type : varchar(50)
+    size_bytes : bigint
+    * status : object_status
+    variants : jsonb
+    * created_at : timestamptz
+    ..
+    Chỉ ảnh: avatar, space,
+      recipe, food (Y03)
+  }
+}
+
+entity "identity.users (rút gọn)" as us {
+  * id : uuid <<PK>>
+  --
+  * email : citext
+}
+entity "household.spaces (rút gọn)" as sp {
+  * id : uuid <<PK>>
+  --
+  * change_seq : bigint
+}
+
+package "notification" as pnt {
+  entity "notifications" as nt {
+    * id : uuid <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * type : notification_type
+    * title : varchar(120)
+    * body : text
+    ref_type : varchar(40)
+    ref_id : uuid
+    space_id : uuid <<FK>>
+    dedupe_key : text <<UQ>>
+    read_at : timestamptz
+    * created_at : timestamptz
+  }
+  entity "deliveries" as dl {
+    * id : uuid <<PK>>
+    --
+    * notification_id : uuid <<FK>>
+    device_id : uuid
+    * channel : delivery_channel
+    * status : delivery_status
+    * attempts : smallint
+    last_error : text
+    sent_at : timestamptz
+    * created_at : timestamptz
+  }
+}
+
+package "sync" as psy {
+  entity "idempotency_keys" as ik {
+    * user_id : uuid <<PK, FK>>
+    * key : uuid <<PK>>
+    --
+    * request_hash : bytea
+    * status : idem_status
+    status_code : smallint
+    response_body : jsonb
+    * created_at : timestamptz
+    * expires_at : timestamptz
+    ..
+    CK completed → status_code,
+      response_body NOT NULL
+  }
+  entity "space_changes" as sc {
+    * space_id : uuid <<PK, FK>>
+    * seq : bigint <<PK>>
+    --
+    * entity_type : varchar(40)
+    * entity_id : uuid
+    * op : change_op
+    * entity_version : int
+    * changed_by : uuid <<FK>>
+    * changed_at : timestamptz
+  }
+}
+
+package "report" as prp {
+  entity "exports" as ex {
+    * id : uuid <<PK>>
+    --
+    * space_id : uuid <<FK>>
+    * requested_by : uuid <<FK>>
+    * report_type : report_type
+    * date_from : date
+    * date_to : date
+    * format : export_format
+    * status : export_status
+    object_key : text
+    error : text
+    * created_at : timestamptz
+    * expires_at : timestamptz
+  }
+  entity "daily_space_stats\n(materialized view)" as ds {
+    * space_id : uuid
+    * stat_date : date
+    * category_id : uuid
+    * dimension : unit_dimension
+    --
+    spend_amount : bigint
+    purchased_items : int
+    consumed_base_qty : numeric
+    discarded_base_qty : numeric
+    discarded_value : bigint
+  }
+}
+
+al }o--|| us
+cf }o--o| us
+ex }o--|| sp
+ds }o..|| sp : MV, không FK
+us ||--o{ nt
+nt ||--o{ dl
+us ||--o{ ob
+us ||--o{ ik
+sp ||--o{ sc
+@enduml

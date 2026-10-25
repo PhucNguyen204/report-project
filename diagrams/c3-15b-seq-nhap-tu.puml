@@ -1,0 +1,32 @@
+@startuml c3-15b-seq-nhap-tu
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Thiết bị A" as A
+participant "API\n(ShoppingService)" as API
+database "Redis" as RD
+participant "StockIn\n(pantry/api)" as SI
+database "PostgreSQL" as DB
+
+A -> API : POST .../stock\nIdempotency-Key, items[]
+API -> DB : BEGIN; khóa lũy đẳng;\nkhóa shopping_lists
+loop từng mặt hàng, id tăng dần
+  API -> DB : SELECT shopping_items\nFOR UPDATE
+  break không có food_id (2a)
+    API -> DB : ROLLBACK
+    API --> A : 422 (4004)
+  end
+  alt đã stocked (5b)
+    API -> API : outcome =\nalready_stocked(lotId)
+  else purchased
+    API -> SI : StockIn.AddLots(source_item_id,\nhạn mặc định BR11, total_cost)
+    SI -> DB : INSERT food_lots;\nINSERT stock_movements\n(kind = stock_in)
+    SI --> API : lotId
+    API -> DB : UPDATE shopping_items\nSET status = 'stocked', lot_id
+  end
+end
+API -> DB : space_changes; COMMIT
+API -> RD : PUBLISH space:{sid}
+API --> A : 200 (1000), results[i].outcome:\nstocked | already_stocked(lotId)
+@enduml

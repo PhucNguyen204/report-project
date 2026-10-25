@@ -1,0 +1,73 @@
+@startuml c3-26-trien-khai
+!include _style-c3.iuml
+skinparam nodesep 30
+skinparam ranksep 56
+skinparam defaultTextAlignment center
+skinparam node {
+  BackgroundColor #FFFFFF
+  BorderColor #2F5597
+}
+skinparam database {
+  BackgroundColor #EAF1FB
+  BorderColor #2F5597
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #7F7F7F
+}
+skinparam rectangle {
+  FontStyle normal
+}
+hide stereotype
+
+cloud "**Open Food Facts**\n(HTTPS)" as OFF
+node "<<device>>\n**Điện thoại Android / iOS**\nỨng dụng Flutter, SQLite (drift),\nKeychain/Keystore" as PHONE
+cloud "**Dịch vụ thông báo**\nFCM HTTP v1 (→ APNs)\nSMTP relay" as NOTI
+
+' Đệm chữ trắng đẩy tiêu đề sang phải để đường worker → dịch vụ thông báo không cắt qua chữ
+node "<color:#FFFFFF>xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</color><<device>> VPS Ubuntu 24.04 LTS\n<color:#FFFFFF>xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</color><<executionEnvironment>> Docker Engine" as VPS {
+  rectangle "mạng edge <color:#FCFCFC>xxxxxxxxxxxx</color>" as NEDGE #FCFCFC {
+    node "<<container>>\n**caddy** :80, :443\napi. → api :8080\nmedia. → minio :9000\ndicho. → /.well-known/*\n<i>+ mạng app</i>" as CADDY
+  }
+  rectangle "mạng app" as NAPP #FCFCFC {
+    node "<<container>>\n**api ×2**\n:8080 HTTP/WS\n:8081 vận hành\n<i>+ mạng data</i>" as API
+    node "<<container>>\n**minio** :9000\n<i>+ mạng data</i>" as MINIO
+    node "<<container>>\n**worker ×1**\n:8081 vận hành\n<i>+ mạng data</i>" as WK
+    node "<<container>>\n**giám sát**\nprometheus,\ngrafana, loki,\nalloy, exporter\n<i>+ mạng data</i>" as MON
+  }
+  rectangle "mạng data (internal)" as NDATA #FCFCFC {
+    node "<<container>>\n**pgbackrest**" as PGBR
+    database "<<container>>\n**postgres:16**\n:5432" as PG
+    database "<<container>>\n**redis:7**\n:6379" as RD
+    database "<<container>>\n**elasticsearch**\n:9200" as ES
+  }
+}
+
+node "<<device>>\n**Kho sao lưu ngoài máy chủ**\n(bucket S3: WAL, bản đầy đủ,\nbản sao ảnh của minio)" as BK
+
+legend top left
+  Mỗi container nằm ở mạng ngoài cùng của nó; dòng nghiêng ghi mạng thứ hai.
+  Chỉ caddy mở cổng ra Internet; mạng data là mạng internal của Docker.
+endlegend
+
+OFF -[hidden]right- PHONE
+PHONE -[hidden]right- NOTI
+API -[hidden]right- MINIO
+MINIO -[hidden]right- WK
+PGBR -[hidden]right- PG
+PG -[hidden]right- RD
+RD -[hidden]right- ES
+
+PHONE -down-> CADDY : HTTPS/WSS :443
+CADDY -down-> API : HTTP :8080\n(cân bằng tải)
+CADDY -down-> MINIO : media.\n(URL ký sẵn)
+MON .left.> WK : thu :8081/metrics\n(api, worker)
+API -up-> OFF : HTTPS
+WK -up-> NOTI : HTTPS,\nSMTP/TLS
+NOTI -left-> PHONE : đẩy
+API -down-> NDATA : SQL, RESP, HTTPS
+API -right-> MINIO : S3
+WK -left-> MINIO : S3
+WK -down-> NDATA
+PGBR -down-> BK : pgBackRest: WAL + full\n(mã hóa AES-256)
+@enduml

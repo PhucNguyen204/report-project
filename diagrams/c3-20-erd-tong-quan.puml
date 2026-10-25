@@ -1,0 +1,98 @@
+@startuml c3-20-erd-tong-quan
+!pragma layout elk
+!include _style-c3.iuml
+hide circle
+hide methods
+hide stereotype
+hide empty members
+skinparam linetype ortho
+skinparam minClassWidth 115
+
+package "identity" as pid {
+  entity "users" as users
+  entity "user_settings" as usettings
+  entity "refresh_sessions" as rsess
+  entity "devices" as devices
+  entity "otp_challenges" as otp
+}
+package "household" as phh {
+  entity "space_members" as members
+  entity "spaces" as spaces
+  entity "invite_codes" as invites
+}
+package "shopping" as psh {
+  entity "shopping_lists" as lists
+  entity "shopping_items" as items
+}
+package "mealplan" as pmp {
+  entity "meal_entries" as meals
+}
+package "sync" as psy {
+  entity "space_changes" as changes
+  entity "idempotency_keys" as idem
+}
+package "report" as prp {
+  entity "exports" as exports
+  entity "daily_space_stats" as stats
+}
+package "pantry" as ppt {
+  entity "food_lots" as lots
+  entity "stock_movements" as moves
+}
+package "recipe" as prc {
+  entity "recipes" as recipes
+  entity "recipe_ingredients" as ingr
+  entity "favorite_recipes" as favs
+}
+package "catalog" as pct {
+  entity "food_categories" as cats
+  entity "units" as units
+  entity "foods" as foods
+  entity "food_shelf_lives" as shelf
+}
+
+legend bottom right
+  Nét đứt: tham chiếu logic không có FK
+  (spaces → daily_space_stats: nguồn của MV).
+  Ba schema notification, media, admin chỉ
+  tham chiếu users, vẽ ở ERD chi tiết.
+endlegend
+
+' --- identity, household
+usettings |o--|| users
+rsess }o--|| users
+devices }o--|| users
+users ||--o{ members
+invites }o--|| spaces
+members }|--|| spaces
+
+' --- không gian sở hữu dữ liệu nghiệp vụ
+spaces ||--o{ lists
+spaces ||--o{ meals
+spaces ||--o{ lots
+spaces |o--o{ recipes
+spaces |o--o{ foods
+spaces ||--o{ changes
+changes -[hidden]- idem
+users ||--o{ idem
+spaces ||--o{ exports
+spaces ||..o{ stats
+exports -[hidden]- stats
+
+' --- quan hệ trong module và tham chiếu logic (nét đứt)
+lists ||--o{ items
+lots ||--o{ moves
+recipes ||--|{ ingr
+recipes ||--o{ favs
+items |o..o| lots
+meals }o..o| recipes
+meals |o..o{ moves
+
+' --- danh mục
+items }o--o| foods
+lots }o--|| foods
+ingr }o--|| foods
+cats ||--o{ foods
+units ||--o{ foods
+shelf }o--|| foods
+@enduml

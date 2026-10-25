@@ -1,0 +1,98 @@
+@startuml c3-09-lop-mua-sam-ke-hoach
+!include _style-c3.iuml
+top to bottom direction
+skinparam nodesep 34
+skinparam ranksep 45
+skinparam classAttributeIconSize 0
+skinparam wrapWidth 700
+skinparam packageStyle folder
+hide empty members
+hide circle
+set separator none
+
+package "household/api" as HAPI {
+  interface MemberLeaveHook <<interface>> {
+    + OnMemberLeave(sid, userID)
+  }
+}
+package "shopping/api" as SAPI {
+  interface ListComposer <<interface>> {
+    + PendingQuantities(sid, foodIDs) Pending
+    + Compose(ComposeCmd) ComposeResult
+  }
+}
+package "pantry/api" as PAPI {
+  interface StockIn <<interface>> {
+    + AddLots([]NewLot) []uuid.UUID
+  }
+}
+
+package "shopping" as SH {
+  class ShoppingService <<application service>> {
+    + AddItem(AddItemCmd) ItemResult
+    + AssignItem(AssignCmd) *ShoppingItem
+    + MarkPurchased(PurchaseCmd) []ItemOutcome
+    + UndoPurchase(UndoCmd) *ShoppingItem
+    + StockItems(StockCmd) []ItemOutcome
+    + PendingQuantities(sid, foodIDs) Pending
+    + Compose(ComposeCmd) ComposeResult
+    + OnMemberLeave(sid, userID)
+  }
+  class AssignmentPolicy <<domain service>> {
+    + CanAssign(actor, assignee) error
+    + CheckPurchase(actor, it, onBehalf) error
+  }
+  class ShoppingList <<aggregate root>> {
+    + ID : uuid.UUID
+    + SpaceID : uuid.UUID
+    + Name : string
+    + PlannedDate : time.Time
+    + Status : ListStatus
+    + Version : int
+    + AddItem(it) (merged bool, err error)
+    + DeriveStatus() ListStatus
+    + CheckEditable(field) error
+  }
+  enum ListStatus <<enum>> {
+    Drafting
+    Shopping
+    Completed
+  }
+  class ShoppingItem <<entity>> {
+    + ID : uuid.UUID
+    + FoodID : *uuid.UUID
+    + CustomName : *string
+    + Qty : kernel.Quantity
+    + Status : ItemStatus
+    + AssigneeID : *uuid.UUID
+    + PurchasedBy : *uuid.UUID
+    + PurchasedAt : *time.Time
+    + ActualQty : *kernel.Quantity
+    + UnitPrice : *kernel.Money
+    + LotID : *uuid.UUID
+    + Version : int
+    + Assign(to uuid.UUID) error
+    + Unassign() error
+    + MarkPurchased(by, actual, price, at) error
+    + UndoPurchase() error
+    + MarkStocked(lotID uuid.UUID) error
+    + Skip() error
+  }
+  enum ItemStatus <<enum>> {
+    ToBuy
+    Assigned
+    Purchased
+    Stocked
+    Skipped
+  }
+}
+
+ShoppingService .up.|> MemberLeaveHook
+ShoppingService .up.|> ListComposer
+ShoppingService -up-> StockIn
+ShoppingService -left-> AssignmentPolicy
+ShoppingService ..> ShoppingList
+ShoppingList *-down- "0..*" ShoppingItem : items
+ShoppingList -right-> ListStatus
+ShoppingItem -right-> ItemStatus
+@enduml

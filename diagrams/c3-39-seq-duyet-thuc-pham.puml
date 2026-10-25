@@ -1,0 +1,39 @@
+@startuml c3-39-seq-duyet-thuc-pham
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Ứng dụng\n(quản trị viên)" as APP
+participant "API\n(AdminHandler)" as API
+participant "catalog\nService" as SVC
+database "PostgreSQL" as PG
+participant "Worker\n(River)" as WK
+database "Elasticsearch" as ES
+
+group D11 – duyệt thực phẩm riêng (UC49)
+  APP -> API : POST …/foods/{id}/review\n{action, targetFoodId?}
+  API -> SVC : ReviewFood(cmd)
+  SVC -> PG : BEGIN; khóa lũy đẳng;\nfoods (id, target) FOR\nUPDATE theo id
+  break không còn\npending_review
+    API --> APP : 409 (4002), MSG35
+  end
+  alt action = approve
+    break trùng tên trong loại\nhoặc mã vạch bản global
+      API --> APP : 409 (4003), MSG02\n(chỉ được gộp)
+    end
+    SVC -> PG : scope = 'global',\nstatus = 'active',\nbỏ owner_space_id
+  else action = merge
+    break đích không phải bản\nglobal đang hoạt động
+      API --> APP : 400 (2002), MSG02
+    end
+    SVC -> PG : status = 'inactive',\nmerged_into = target;\nInsertTx RemapFood
+  end
+  SVC -> PG : INSERT audit_logs;\nInsertTx IndexFood;\nCOMMIT
+  API --> APP : 200 (1000), MSG10
+end
+
+group Worker – sau commit, lũy đẳng
+  WK -> PG : RemapFood (pantry,\nshopping, recipe):\nfood_id → target;\nspace_changes
+  WK -> ES : IndexFood:\ngộp → xóa;\nduyệt → upsert
+end
+@enduml

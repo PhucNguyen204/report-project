@@ -1,0 +1,111 @@
+% ---------------------------------------------------------------------
+%  3.7. Thiết kế bảo mật
+% ---------------------------------------------------------------------
+\section{Thiết kế bảo mật}\label{sec:bao-mat}
+
+Dữ liệu của hệ thống mang tính riêng tư của từng gia đình, và một lỗi phân quyền có thể làm lộ dữ liệu của nhiều nhóm cùng lúc. Thiết kế theo nguyên tắc phòng thủ nhiều lớp (defense in depth), lấy OWASP MASVS~\cite{masvs} làm chuẩn phía thiết bị và OWASP API Security Top 10 (2023)~\cite{owaspapi} làm danh mục rủi ro phía máy chủ, đáp ứng \nfr{NFR14}--\nfr{NFR18}.
+
+\subsection{Xác thực và quản lý phiên}\label{ssec:xac-thuc-phien}
+
+Mật khẩu được băm bằng Argon2id~\cite{rfc9106} với tham số OWASP khuyến nghị~\cite{owasppassword} ($m = 19$~MiB, $t = 2$, $p = 1$); chuỗi băm định dạng PHC chứa cả tham số nên có thể nâng tham số bằng cách băm lại ở lần đăng nhập kế tiếp. Email không tồn tại vẫn được xác minh trên một chuỗi băm giả để thời gian phản hồi không lộ tài khoản, khớp thông điệp chung \msg{MSG05}.
+
+Mã truy cập (access token) là JWT~\cite{rfc7519} ký EdDSA trên Ed25519~\cite{rfc8032}, sống 30 phút (\br{BR03}), mang \texttt{sub}, \texttt{sid} (họ phiên), \texttt{ver}, \texttt{role}, \texttt{exp}, \texttt{jti} và \texttt{kid} để xoay khóa; chữ ký bất đối xứng cho phép dịch vụ tách ra sau này xác minh bằng khóa công khai. Mã làm mới (refresh token) là chuỗi ngẫu nhiên 256 bit, chỉ lưu SHA-256 trong \texttt{identity.refresh\_sessions}, sống 30 ngày và được xoay vòng mỗi lần dùng trong một giao dịch khóa dòng phiên. Mã đã xoay bị gửi lại là dấu hiệu bị đánh cắp nên cả họ phiên bị thu hồi (mã 3008); ngoại lệ duy nhất là cửa sổ ân hạn 30 giây cho cùng \texttt{device\_id} khi phản hồi trước bị mất trên mạng di động, lúc đó máy chủ chỉ thu hồi phiên kế nhiệm chưa dùng và cấp cặp mã mới trong cùng họ.
+
+Đăng nhập (A04, \uc{UC03}) kiểm tra trạng thái tài khoản theo một thứ tự có chủ đích. Tài khoản đang khóa tạm (\texttt{locked\_until} còn hiệu lực) bị từ chối với HTTP 423, mã 3004 (\msg{MSG06}) trước khi xác minh mật khẩu, nên kẻ dò không thể thử tiếp trong 15 phút khóa. Sai mật khẩu tăng \texttt{failed\_login\_count}; lần sai thứ năm đặt \texttt{locked\_until} (\br{BR03}). Chỉ khi mật khẩu đúng, máy chủ mới cho biết tài khoản bị quản trị viên khóa (403, mã 3005, \msg{MSG21}) hay chưa xác thực email (403, mã 3009, \msg{MSG34}, kèm một OTP mới nếu còn trong giới hạn của \br{BR02}), vì vậy người không biết mật khẩu không dò được trạng thái của một email. Đăng nhập thành công đặt lại bộ đếm, ghi \texttt{last\_login\_at} và tạo phiên trong cùng một giao dịch.
+
+Thu hồi phiên được phân biệt theo ngữ cảnh. Đăng xuất (A06, \uc{UC05}) thu hồi họ phiên của thiết bị hiện tại. Đổi mật khẩu (A11, \uc{UC07}) đòi mật khẩu cũ, thu hồi mọi phiên khác, tăng \texttt{users.token\_version} rồi cấp cặp mã mới cho chính phiên đang dùng, nên người dùng không phải đăng nhập lại trên thiết bị hiện tại. Khôi phục mật khẩu (\uc{UC04}) dùng chung luồng OTP với mục đích \texttt{reset\_password}: A07 luôn trả cùng một phản hồi dù email có tồn tại hay không; A02 xác minh OTP rồi trả \texttt{resetToken} ngẫu nhiên 256 bit, chỉ lưu băm trong \texttt{otp\_challenges}, sống 10 phút và dùng một lần; A08 nhận \texttt{email}, \texttt{resetToken}, \texttt{newPassword}, đặt lại \texttt{failed\_login\_count}, \texttt{locked\_until}, thu hồi mọi phiên và tăng \texttt{token\_version}. Khóa tài khoản bởi quản trị viên (\uc{UC48}) và phát hiện dùng lại cũng tăng \texttt{token\_version}. Middleware so claim \texttt{ver} với bản đệm \path{auth:ver:<userId>} và trả 3002 cho mã mang phiên bản cũ, nên mã bị lộ mất hiệu lực ngay, còn thiết bị hợp lệ chỉ việc làm mới (\nfr{NFR15}). Trên thiết bị, mã làm mới nằm trong Keychain hoặc Keystore qua \texttt{flutter\_secure\_storage}, mã truy cập chỉ ở bộ nhớ. OTP (\br{BR02}) được lưu dạng HMAC-SHA256 với khóa bí mật (pepper) ngoài cơ sở dữ liệu, vì $10^6$ giá trị quá dễ vét cạn nếu chỉ băm. Hình~\ref{fig:seq-dang-nhap-lam-moi} minh họa đăng nhập và làm mới phiên.
+
+\diagram[\textwidth]{c3-25-seq-dang-nhap-lam-moi}{Biểu đồ tuần tự đăng nhập và làm mới phiên xoay vòng}{fig:seq-dang-nhap-lam-moi}
+
+Ba lối thoát của đăng nhập (bước 3, 5--6, 7) đều kết thúc trước khi chạm vào bảng phiên, nên một lần đăng nhập thất bại không để lại phiên dở dang; việc đặt lại bộ đếm, ghi thời điểm đăng nhập và chèn phiên ở bước 8 nằm trong một giao dịch. Ở bước 13--14, câu \texttt{SELECT \ldots{} FOR UPDATE} tuần tự hóa hai lần làm mới đồng thời với cùng một mã: lần sau chờ lần trước commit rồi thấy \texttt{rotated\_at} đã có, và được xử lý theo cửa sổ ân hạn hoặc như một lần dùng lại. Hình~\ref{fig:seq-dung-lai-ma-lam-moi} trình bày trường hợp dùng lại ngoài ân hạn.
+
+\diagram[\textwidth]{c3-25b-seq-dung-lai-ma-lam-moi}{Biểu đồ tuần tự phát hiện dùng lại mã làm mới}{fig:seq-dung-lai-ma-lam-moi}
+
+Ở bước 2--3, RT1 đã xoay bị dùng lại ngoài cửa sổ ân hạn nên họ phiên F bị thu hồi và \texttt{token\_version} tăng trong cùng giao dịch; bước 4 cập nhật bản đệm để mọi bản API từ chối AT2 ngay ở bước 7--8 thay vì chờ 30 phút. Đây là đánh đổi có chủ ý: máy chủ không phân biệt được chủ thật giữa hai bên cùng giữ mã của một họ phiên nên chấm dứt cả hai, và người dùng thật chỉ mất một lần đăng nhập lại.
+
+\subsection{Phân quyền}\label{ssec:phan-quyen}
+
+Phân quyền được kiểm tra ở máy chủ cho mọi API (\nfr{NFR16}) qua ba lớp. Lớp thứ nhất là vai trò hệ thống (RBAC): nhóm \path{/admin/*} chỉ cho \texttt{system\_role = admin} và bị chặn ngay ở bộ định tuyến. Lớp thứ hai là phạm vi tài nguyên: mọi đường dẫn chứa \texttt{\{sid\}}, kể cả gợi ý tên Q02 vì kết quả gồm thực phẩm riêng của không gian, buộc người gọi là thành viên; người ngoài nhận 404, mã 4001, để không lộ sự tồn tại của không gian. Lớp thứ ba là chính sách nhóm ở tầng ứng dụng: mời, xóa thành viên, chuyển quyền, đổi tên nhóm và phân công thuộc về trưởng nhóm, còn sửa hoặc xóa công thức (R04, R05) thuộc về người tạo hoặc trưởng nhóm; người thiếu vai trò nhận 403, mã 3007 (\msg{MSG13}), và công thức mẫu chỉ được sửa qua API quản trị.
+
+Để chống truy cập đối tượng trái phép (BOLA), mọi truy vấn repository đều lọc \texttt{space\_id} lấy từ ngữ cảnh đã kiểm tra, kể cả khi truy vấn theo khóa chính, và mọi truy vấn Elasticsearch luôn kèm bộ lọc \texttt{scope = global} hoặc \texttt{owner\_space\_id} bằng không gian hiện tại, vì chỉ mục chứa cả thực phẩm riêng và công thức của các không gian. Các API không có \texttt{\{sid\}} trong đường dẫn nhưng tác động lên đối tượng của một không gian phải tự tra chủ sở hữu rồi kiểm tra như trên: R06 chỉ nhận công thức mẫu đã công bố hoặc công thức của không gian mà người gọi là thành viên, ngược lại trả 404, mã 4001; Y03 nhận \texttt{purpose} (ảnh đại diện, không gian, công thức, thực phẩm) cùng \texttt{targetId} và chỉ cấp URL ký sẵn khi người gọi có quyền sửa đối tượng đích.
+
+Quản trị viên kế thừa quyền của người dùng: tài khoản quản trị vẫn có không gian cá nhân và có thể tham gia một nhóm như mọi người, với quyền theo vai trò của mình trong không gian đó. Vai trò \texttt{admin} chỉ mở thêm nhóm \path{/admin/*} (tài khoản, danh mục, công thức mẫu, cấu hình, nhật ký), không thay cho tư cách thành viên, nên quản trị viên không đọc được dữ liệu của nhóm khác (\br{BR23}). Bảng~\ref{tab:c3-ma-tran-quyen} tổng hợp ma trận quyền; với các thao tác không gắn không gian, cột Thành viên đại diện cho mọi người dùng đã đăng nhập.
+
+{\small
+\newcommand{\bmok}{\tikz[baseline=-0.3ex,x=1ex,y=1ex,line width=0.16ex]\draw(0,0.1)--(0.4,-0.35)--(1.1,0.55);}
+\newcommand{\bmown}{\bmok\textsuperscript{*}}
+\begin{longtable}{|L{\dimexpr\textwidth-10\tabcolsep-6\arrayrulewidth-6.6cm\relax}|C{1.45cm}|C{1.65cm}|C{1.75cm}|C{1.75cm}|}
+\caption{Ma trận quyền theo nhóm thao tác}\label{tab:c3-ma-tran-quyen}\\
+\hline
+\hd{Nhóm thao tác (mã API)} & \hd{Khách} & \hd{Thành viên} & \hd{Trưởng nhóm} & \hd{Quản trị viên}\\ \hline
+\endfirsthead
+\multicolumn{5}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Nhóm thao tác (mã API)} & \hd{Khách} & \hd{Thành viên} & \hd{Trưởng nhóm} & \hd{Quản trị viên}\\ \hline
+\endhead
+Đăng ký, OTP, đăng nhập, làm mới, khôi phục (A01--A05, A07, A08) & \bmok & \bmok & \bmok & \bmok\\ \hline
+Tài khoản của mình, danh sách không gian, tạo hoặc tham gia nhóm, yêu thích (A06, A09--A18, G01, G02, G07, R06, R07) & — & \bmok & \bmok & \bmok\\ \hline
+Xem không gian, rời nhóm (G03, G10; \br{BR07}) & — & \bmok & \bmok & \bmown\\ \hline
+Đổi tên nhóm, mã mời, xóa thành viên, chuyển quyền (G04--G06, G08, G09) & — & — & \bmok & \bmown\\ \hline
+Dữ liệu không gian: mua sắm, tủ lạnh, công thức, kế hoạch, tìm kiếm, gợi ý tên, báo cáo, đồng bộ (các API S, P, R, M, B có \texttt{\{sid\}} trừ S10, S11, R04, R05; Q01, Q02, Y01) & — & \bmok & \bmok & \bmown\\ \hline
+Sửa, xóa công thức của không gian (R04, R05) & — & Người tạo & \bmok & \bmown\\ \hline
+Phân công mặt hàng (S10, S11; \br{BR10}) & — & — & \bmok & \bmown\\ \hline
+Mã vạch, danh mục, tải ảnh, WebSocket (P08, Q03, Y02--Y04) & — & \bmok & \bmok & \bmok\\ \hline
+Quản trị tài khoản, danh mục, duyệt thực phẩm, công thức mẫu, cấu hình, nhật ký (D01--D11) & — & — & — & \bmok\\ \hline
+\multicolumn{5}{|p{\dimexpr\textwidth-2\tabcolsep-2\arrayrulewidth\relax}|}{\footnotesize \bmown\ Chỉ trong không gian mà quản trị viên là thành viên, theo vai trò của họ ở đó; không gian của người khác trả 404, mã 4001 (\br{BR23}).}\\ \hline
+\end{longtable}
+}
+
+\subsection{Bảo vệ API}\label{ssec:bao-ve-api}
+
+Giới hạn tần suất (\nfr{NFR17}) dùng thuật toán GCRA chạy nguyên tử bằng Lua trên Redis, chủ thể đếm là IP do Caddy ghi hoặc \texttt{userId}; vượt ngưỡng nhận 429, mã 4290, kèm \texttt{Retry-After} và \msg{MSG36}, riêng gửi lại OTP dùng \msg{MSG30} (Bảng~\ref{tab:c3-gioi-han-tan-suat}). Trạng thái khóa tài khoản lưu trong PostgreSQL để khởi động lại Redis không xóa được; khi Redis lỗi, bộ đếm tạm chuyển vào bộ nhớ từng tiến trình.
+
+{\small
+\begin{longtable}{|L{3.9cm}|L{2.9cm}|L{4.3cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-11.1cm\relax}|}
+\caption{Các luật giới hạn tần suất}\label{tab:c3-gioi-han-tan-suat}\\
+\hline
+\hd{Đối tượng} & \hd{Giới hạn} & \hd{Khóa đếm} & \hd{Phản hồi}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Đối tượng} & \hd{Giới hạn} & \hd{Khóa đếm} & \hd{Phản hồi}\\ \hline
+\endhead
+Đăng nhập theo IP (A04) & 10/phút/IP & \path{rl:login:<ip>} & 429/4290, MSG36\\ \hline
+Đăng nhập sai (\br{BR03}) & 5 lần, khóa 15 phút & \texttt{users.locked\_until} & 423/3004, MSG06\\ \hline
+Gửi lại OTP (A03, A07; \br{BR02}) & 1 lần/60 s, 5 lần/giờ & \path{otp:cooldown:<email>:<purpose>}, \path{otp:hourly:<email>} & 429/4290, MSG30\\ \hline
+Nhập OTP sai (A02; \br{BR02}) & 5 lần mỗi mã & \texttt{failed\_attempts} & 400/3006, MSG04\\ \hline
+Đăng ký (A01) & 5/giờ/IP & \path{rl:register:<ip>} & 429/4290, MSG36\\ \hline
+Nhập mã mời (G07) & 10/giờ/người & \path{rl:join:<userId>} & 429/4290, MSG36\\ \hline
+API chung & 120/phút/người & \path{rl:api:<userId>} & 429/4290, MSG36\\ \hline
+Gợi ý tên (Q02) & 20/giây/người & \path{rl:suggest:<userId>} & 429/4290, MSG36\\ \hline
+Tra mã vạch (P08) & 30/phút/người & \path{rl:barcode:<userId>} & 429/4290, MSG36\\ \hline
+\end{longtable}
+}
+
+Khóa lũy đẳng cũng là một bề mặt tấn công nên được ràng buộc chặt. Khóa chính \texttt{(user\_id, key)} gắn khóa với người gửi, nên đoán được khóa của người khác cũng không nhận được phản hồi của họ; băm thân yêu cầu \texttt{request\_hash} chặn việc dùng lại một khóa cho nội dung khác (400, mã 2002). Khóa được chèn ở câu đầu tiên của giao dịch với trạng thái \texttt{in\_progress}, nên hai lần gửi đồng thời không cùng chạy: lần sau nhận 409, mã 4002 và thử lại sau. Chỉ kết quả thành công được lưu; lỗi làm giao dịch rollback và khóa biến mất, nên không thể “ghim” một phản hồi lỗi. API công khai A01--A05, A07, A08 không nhận \texttt{Idempotency-Key}, vì đã có giới hạn tần suất, OTP và cửa sổ ân hạn của A05, đồng thời tránh lưu phản hồi chứa mã phiên. Bảng~\ref{tab:c3-owasp} đối chiếu thiết kế với từng rủi ro của OWASP API Security Top 10 (2023).
+
+{\small
+\begin{longtable}{|L{3.3cm}|L{\dimexpr\textwidth-4\tabcolsep-3\arrayrulewidth-3.3cm\relax}|}
+\caption{Ánh xạ OWASP API Security Top 10 (2023) sang biện pháp thiết kế}\label{tab:c3-owasp}\\
+\hline
+\hd{Rủi ro} & \hd{Biện pháp trong thiết kế}\\ \hline
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Rủi ro} & \hd{Biện pháp trong thiết kế}\\ \hline
+\endhead
+API1 BOLA & Kiểm tra thành viên theo \texttt{\{sid\}}, người ngoài nhận 404; mọi truy vấn lọc \texttt{space\_id}, truy vấn Elasticsearch lọc theo \texttt{scope}, \texttt{owner\_space\_id}; R06, Y03 tra chủ sở hữu đối tượng đích; khóa lũy đẳng gắn \texttt{user\_id}; kiểm thử truy cập chéo không gian.\\ \hline
+API2 Lỗi xác thực & Argon2id, băm giả khi không có email; JWT cố định \texttt{EdDSA}; mã làm mới xoay vòng, phát hiện dùng lại; trạng thái tài khoản chỉ lộ sau khi mật khẩu đúng; \texttt{resetToken} dùng một lần, sống 10 phút; khóa tạm \br{BR03}.\\ \hline
+API3 BOPLA & DTO tường minh sinh từ OpenAPI (\texttt{additionalProperties: false}) chống gán hàng loạt \texttt{system\_role}, \texttt{space\_id}; DTO ra không có \texttt{password\_hash}.\\ \hline
+API4 Tiêu thụ tài nguyên & Thân yêu cầu $\le$ 1 MB (vượt: 413, mã 2002); \texttt{limit} $\le$ 100; ảnh qua URL ký sẵn (5 phút, $\le$ 5 MB, JPEG/PNG); báo cáo $\le$ 12 tháng; \texttt{statement\_timeout}.\\ \hline
+API5 BFLA & \path{/admin/*} kiểm tra \texttt{system\_role} ở bộ định tuyến; vai trò quản trị không mở quyền vào không gian khác (\br{BR23}); chính sách trưởng nhóm, người tạo công thức ở tầng ứng dụng.\\ \hline
+API6 Luồng nhạy cảm & Giới hạn riêng cho đăng ký, gửi OTP, mã mời ($32^8$ tổ hợp, 10 lần/giờ), tra mã vạch; cùng khóa lũy đẳng khác thân yêu cầu bị từ chối.\\ \hline
+API7 SSRF & Danh sách host cho phép (FCM, SMTP, Open Food Facts); không tải URL do người dùng gửi; mã vạch phải là 8--14 chữ số.\\ \hline
+API8 Cấu hình sai & TLS $\ge$ 1.2, HSTS; distroless, không chạy root; cổng vận hành nội bộ; lỗi 5000 chỉ trả \texttt{traceId}.\\ \hline
+API9 Kiểm kê API & OpenAPI 3.1 là nguồn duy nhất, CI so tuyến đã đăng ký với đặc tả; phiên bản \texttt{/v1}.\\ \hline
+API10 API bên thứ ba & Dữ liệu Open Food Facts được kiểm tra lược đồ, làm sạch; thời gian chờ, bộ ngắt mạch (Hình~\ref{fig:seq-ma-vach}); phản hồi \texttt{invalid\_token} của FCM làm xóa thiết bị.\\ \hline
+\end{longtable}
+}
+
+\subsection{Bảo vệ dữ liệu và quyền riêng tư}\label{ssec:bao-ve-du-lieu}
+
+Caddy~\cite{caddy} kết thúc TLS từ phiên bản 1.2 kèm HSTS (\nfr{NFR14}). Bí mật (khóa ký, pepper, mật khẩu cơ sở dữ liệu, khóa MinIO, FCM, SMTP) được cấp qua Docker secrets và biến được che của GitLab, không nằm trong Git hay image; ứng dụng dùng vai trò PostgreSQL không có quyền đổi lược đồ. Ổ đĩa mã hóa ở mức khối, kho pgBackRest~\cite{pgbackrest} mã hóa AES-256, bucket ảnh ở chế độ riêng tư. Về quyền riêng tư (\nfr{NFR18}), hệ thống chỉ thu email, họ tên, ảnh tùy chọn và mã thiết bị; log che mật khẩu, mã phiên, OTP, \texttt{resetToken} và header \texttt{Authorization}. Mọi thao tác quản trị được ghi vào bảng chỉ ghi thêm \texttt{admin.audit\_logs}.
+
+Xóa tài khoản (A16) đòi nhập lại mật khẩu và chỉ được thực hiện khi người dùng không là trưởng nhóm của một nhóm còn thành viên khác; nếu có, máy chủ trả 422, mã 4004 (\br{BR07}, \msg{MSG24}) để người dùng chuyển quyền trước. Ngay khi xác nhận, trong một giao dịch, máy chủ thu hồi mọi phiên, tăng \texttt{token\_version}, đặt \texttt{deleted\_at} để chặn đăng nhập và xóa các thiết bị để tài khoản không còn nhận thông báo đẩy. Sau 30 ngày chờ, tác vụ nền thay email, họ tên bằng giá trị ẩn danh, xóa ảnh trên MinIO, xóa dữ liệu của không gian cá nhân cùng tài liệu Elasticsearch liên quan. Dữ liệu đã đóng góp trong nhóm như mặt hàng đã mua, lô đã nhập hay nhật ký thay đổi được giữ lại để lịch sử chung không gãy tham chiếu, và người thực hiện hiển thị là “Người dùng đã xóa”. Tương tự, khi một nhóm giải tán, tác vụ \texttt{PurgeSpace} xóa mềm dữ liệu chung và xóa tài liệu Elasticsearch của nhóm, nên dữ liệu riêng tư không còn tìm thấy được qua chỉ mục tìm kiếm.

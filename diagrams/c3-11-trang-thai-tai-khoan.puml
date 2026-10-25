@@ -1,0 +1,32 @@
+@startuml c3-11-trang-thai-tai-khoan
+!include _style-c3.iuml
+skinparam nodesep 40
+skinparam ranksep 60
+skinparam wrapWidth 420
+
+state "Chờ xác thực\n<i>pending</i>" as P
+state "Hoạt động\n<i>active</i>" as A
+state "Khóa tạm\n<i>locked</i>" as L
+state "Bị vô hiệu hóa\n<i>disabled</i>" as D
+state "Đã xóa\n<i>deleted_at ≠ NULL</i>" as X
+
+P : A01 [email đang pending] / gửi lại OTP
+P : A03 [≥ 60 s, ≤ 5 lần/giờ] / sinh OTP mới
+P : A04 / 403 (3009), gửi lại OTP
+A : A04 đúng / failed_login_count = 0
+A : A04 sai [số lần sai < 5] / failed_login_count + 1
+A : A16 [là trưởng nhóm còn thành viên] / 422 (4004)
+L : A04 [now < locked_until] / 423 (3004)
+D : A04 / 403 (3005)
+X : A04 / 401 (3003)
+
+[*] -down-> P : A01 đăng ký\n/ sinh OTP, user.registered
+P -down-> A : A02 [OTP hợp lệ]\n/ ActivationHook: tạo\nkhông gian cá nhân
+A -up-> X : A16 [mật khẩu đúng,\nthỏa BR07] / thu hồi\nmọi phiên, xóa thiết bị
+X -down-> [*] : sau 30 ngày / ẩn danh\nemail, họ tên; xóa ảnh,\ndữ liệu cá nhân, tài liệu ES
+A -down-> L : A04 sai lần thứ 5\n/ locked_until = now\n+ 15 phút
+L -up-> A : A04 [now ≥ locked_until]\nhoặc A08 [resetToken hợp lệ]\n/ đặt lại bộ đếm
+A -down-> D : D02 khóa / lock_reason,\nthu hồi phiên,\ntoken_version + 1
+D -up-> A : D02 mở khóa
+L -right-> D : D02 khóa
+@enduml

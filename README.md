@@ -1,7 +1,7 @@
 # Báo cáo LaTeX – Ứng dụng “Đi chợ tiện lợi” (IT4788)
 
 Báo cáo bài tập lớn môn Phát triển ứng dụng đa nền tảng của **Nhóm 7**, mục lục bám theo mẫu `dsds.docx`.
-Hiện đã hoàn thiện **Chương 1** (Khảo sát bài toán), **Chương 2** (Đặc tả yêu cầu bài toán) và các phụ lục liên quan; Chương 3–6 và phần Kết luận vẫn đang ở dạng khung, được ẩn mặc định khỏi bản biên dịch.
+Hiện đã hoàn thiện **Chương 1** (Khảo sát bài toán), **Chương 2** (Đặc tả yêu cầu bài toán), **Chương 3** (Thiết kế backend) và các phụ lục liên quan; Chương 4–6 và phần Kết luận vẫn đang ở dạng khung, được ẩn mặc định khỏi bản biên dịch.
 
 ## Chạy nhanh trên macOS
 
@@ -67,9 +67,9 @@ các môi trường còn lại cần tự chuẩn bị bộ biên dịch và fon
 
 ## Slide báo cáo chương 1 và chương 2
 
-Nội dung 13 slide đã điền trực tiếp vào mẫu HUST Beamer tại
+Nội dung 20 slide đã điền trực tiếp vào mẫu HUST Beamer tại
 `HUST_THEME_BEAMER___LATEX_BY_FRC/Slide_HUST.tex`. Bộ slide có trang bìa đủ
-thành viên, sơ đồ phân rã, bảng 53 use case theo 9 nhóm và các use case tiêu biểu.
+thành viên, sơ đồ phân rã, bảng 53 use case theo 9 nhóm, các use case tiêu biểu và hỏi đáp AI tạo danh sách nguyên liệu. Các sơ đồ dùng trực tiếp ảnh gốc trong báo cáo.
 Lời dẫn và lịch trình 10 phút nằm trong
 `HUST_THEME_BEAMER___LATEX_BY_FRC/THUYET_TRINH_10_PHUT.md`.
 
@@ -121,12 +121,15 @@ output/pdf/bao-cao.pdf     báo cáo sau khi biên dịch
 build/                    tệp trung gian và log
 config/preamble.tex       bố cục trang, phông, tiêu đề, mục lục, đầu/chân trang
 config/ucspec.tex         môi trường bảng: ucspec, fieldtable, nvtable, ddtable
+config/apispec.tex        môi trường bảng đặc tả API (Chương 3 và phụ lục F)
 frontmatter/              trang bìa, thuật ngữ, lời nói đầu, phân công
 chapters/chuong1.tex      Chương 1
 chapters/chuong2.tex      Chương 2 (nội dung chia trong chapters/c2/*.tex)
-chapters/chuong3..6.tex   khung các chương sau
+chapters/chuong3.tex      Chương 3 Thiết kế backend (nội dung chia trong chapters/c3/*.tex)
+chapters/chuong4..6.tex   khung các chương sau (Chương 4: Thiết kế giao diện)
 backmatter/               kết luận, tài liệu tham khảo, phụ lục (backmatter/pl/*.tex)
-diagrams/*.puml           mã nguồn PlantUML của mọi sơ đồ (_style.iuml là kiểu dáng chung)
+diagrams/*.puml           mã nguồn PlantUML của mọi sơ đồ (_style.iuml là kiểu dáng chung;
+                          sơ đồ Chương 3 dùng _style-c3.iuml, cỡ chữ lớn hơn để in rõ)
 figures/diagrams/*.png    ảnh sơ đồ đã kết xuất (được \includegraphics)
 figures/logo-hust.png     (tùy chọn) logo trên trang bìa – chưa có thì hiện khung giữ chỗ
 ```

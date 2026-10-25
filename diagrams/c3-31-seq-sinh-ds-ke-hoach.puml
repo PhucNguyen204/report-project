@@ -1,0 +1,48 @@
+@startuml c3-31-seq-sinh-ds-ke-hoach
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Ứng dụng\nFlutter" as APP
+participant "API\n(MealHandler)" as API
+participant "MealPlanService\n(GenerateList)" as SVC
+participant "Cổng module\n(RecipeQuery, StockQuery,\nListComposer)" as PORT
+database "PostgreSQL" as PG
+
+group S15 – xem trước phần thiếu (chỉ đọc, bước 2–5)
+  APP -> API : POST .../generate\n{from, to, dryRun}
+  break khoảng ngày sai
+    API --> APP : 400 (2002), MSG02
+  end
+  API -> SVC : GenerateList(dryRun)
+  SVC -> PG : BEGIN REPEATABLE READ\nREAD ONLY; món planned
+  SVC -> PORT : Ingredients, Pending-\nQuantities, Available
+  PORT -> PG : nguyên liệu, hàng\nchờ mua, lô còn hạn
+  SVC -> PG : COMMIT
+  SVC -> SVC : ShortageCalculator.Compute\n(miền, BR16, BR20): dòng\nthiếu, món tự do (2a)
+  API --> APP : 200 (1000): lines, ngày mua\nđề xuất; rỗng + MSG15 (5a)
+end
+
+group S15 – xác nhận (một giao dịch ghi, bước 6–7)
+  APP -> API : POST .../generate {lines, name,\nplannedDate | targetListId}
+  break số lượng sai (BR14) |\nplannedDate < $today (BR08)
+    API --> APP : 400 (2002),\nMSG16 / MSG02
+  end
+  API -> SVC : GenerateList(cmd)
+  SVC -> PG : BEGIN; khóa lũy đẳng
+  SVC -> PORT : Compose(lines, đích)
+  alt tạo danh sách mới (7)
+    PORT -> PG : INSERT shopping_lists\n(meal_plan), items
+  else gộp vào danh sách có sẵn (6a)
+    PORT -> PG : SELECT danh sách\nđích FOR UPDATE
+    break danh sách đích đã Hoàn tất
+      SVC -> PG : ROLLBACK
+      API --> APP : 422 (4004), BR08
+    end
+    PORT -> PG : gộp theo BR09
+  end
+  SVC -> PG : space_changes; COMMIT
+  note left : sau commit:\nPUBLISH space:{sid}
+  API --> APP : 201 (1000), MSG10\n(MSG11 nếu đã gộp)
+end
+@enduml

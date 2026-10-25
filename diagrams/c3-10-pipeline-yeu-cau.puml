@@ -1,0 +1,60 @@
+@startuml c3-10-pipeline-yeu-cau
+!include _style-c3.iuml
+top to bottom direction
+skinparam nodesep 26
+skinparam ranksep 38
+skinparam defaultTextAlignment center
+skinparam rectangle {
+  BackgroundColor #EAF1FB
+  BorderColor #2F5597
+  FontStyle normal
+  RoundCorner 14
+}
+
+rectangle "Ứng dụng di động\n(HTTPS)" as app #FFFFFF
+rectangle "<b>Caddy</b>\nkết thúc TLS ≥ 1.2\nHTTP/2, chia tải" as caddy #F2F2F2
+rectangle "<b>1.</b> RequestID\nđọc hoặc sinh\nX-Request-Id" as m1
+rectangle "<b>2.</b> Recoverer\nbắt panic\n<i>→ 500 / 5000</i>" as m2
+
+rectangle "<b>3.</b> Log truy cập\n+ span OpenTelemetry\n(đo RED)" as m3
+rectangle "<b>4.</b> Giới hạn thân 1 MB\n<i>→ 413 / 2002</i>" as m4
+rectangle "<b>5.</b> Phiên bản ứng dụng\nX-App-Version\n<i>→ 426 / 4260</i>" as m5
+rectangle "<b>6.</b> Tần suất theo IP\n(tuyến công khai)\n<i>→ 429 / 4290</i>" as m6
+
+rectangle "<b>7.</b> Xác thực JWT\n+ token_version\n<i>→ 401 / 3001, 3002</i>\n/admin/*: system_role\n<i>→ 403 / 3007</i>" as m7
+rectangle "<b>7b.</b> Tần suất\ntheo người dùng\n<i>→ 429 / 4290</i>" as m7b
+rectangle "<b>8.</b> Phạm vi không gian\nkiểm tra thành viên,\nđặt vai trò vào context\n<i>→ 404 / 4001</i>" as m8
+rectangle "<b>9.</b> Lũy đẳng\nđọc Idempotency-Key,\nbăm yêu cầu\n(kiểm ở bước 11)" as m9
+
+rectangle "<b>10.</b> Handler\ngiải mã, kiểm tra\ntheo OpenAPI\n<i>→ 400 / 2001, 2002</i>" as h #E2F0D9
+rectangle "<b>11.</b> Dịch vụ ứng dụng\nBEGIN; INSERT khóa lũy đẳng\n<i>khác băm → 400 / 2002</i>\n<i>in_progress → 409 / 4002</i>\nvai trò nhóm <i>→ 403 / 3007</i>\nIf-Match <i>→ 409 / 4002</i>\nlogic miền · sqlc · changefeed\nInsertTx · khóa = completed" as tx #FFF4D6
+rectangle "<b>12.</b> COMMIT" as cm #FFF4D6
+rectangle "<b>13.</b> Hook sau commit\nPUBLISH space:<sid>\n(DEL suggest:<sid>)" as hook #EDE3F5
+rectangle "<b>14.</b> Bao phản hồi\n{code, message (i18n),\ndata, meta}" as env #EDE3F5
+
+app -right-> caddy
+caddy -right-> m1
+m1 -right-> m2
+m2 -down-> m3
+m3 -left-> m4
+m4 -left-> m5
+m5 -left-> m6
+m6 -down-> m7
+m7 -right-> m7b
+m7b -right-> m8
+m8 -right-> m9
+m9 -down-> h
+h -left-> tx
+tx -left-> cm
+cm -left-> hook
+hook -down-> env
+tx -down-> env : lỗi miền: ROLLBACK → 4xx\nkhóa completed: phát lại
+note bottom of tx
+  TxManager: 40P01, 55P03 → chạy lại
+  cả giao dịch ≤ 3 lần, chờ lũy thừa
+  + jitter; hết lượt <i>→ 503 / 5003</i>
+end note
+
+rectangle "<b>Chú giải</b>\n|<#F2F2F2>     | Caddy (reverse proxy) |\n|<#EAF1FB>     | Middleware chung (platform/httpx) |\n|<#E2F0D9>     | Handler (adapter/http) |\n|<#FFF4D6>     | Trong một giao dịch (TxManager) |\n|<#EDE3F5>     | Sau commit / sau rollback |\n<i>→ x / y</i>: mã HTTP / mã phản hồi" as lg #FFFFFF
+env -right[hidden]- lg
+@enduml

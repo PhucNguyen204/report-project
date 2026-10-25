@@ -1,0 +1,135 @@
+@startuml c3-21-erd-tai-khoan-nhom
+!include _style-c3.iuml
+hide circle
+hide methods
+hide stereotype
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 55
+
+package "identity" as pid {
+  entity "users" as users {
+    * id : uuid <<PK>>
+    --
+    * email : citext <<UQ>> (≤ 100)
+    * password_hash : text
+    * full_name : varchar(50)
+    avatar_key : text
+    * system_role : system_role
+    * status : user_status
+    * failed_login_count : smallint
+    locked_until : timestamptz
+    lock_reason : varchar(200)
+    last_login_at : timestamptz
+    * locale : app_locale
+    last_space_id : uuid
+    * token_version : int
+    deleted_at : timestamptz
+  }
+  entity "user_settings" as us {
+    * user_id : uuid <<PK, FK>>
+    --
+    reminder_days : smallint
+    * expiry_reminder_on : bool
+    * assignment_notify_on : bool
+    * group_activity_notify_on : bool
+  }
+  entity "otp_challenges" as otp {
+    * id : uuid <<PK>>
+    --
+    * email : citext
+    * purpose : otp_purpose
+    * code_hash : bytea
+    * expires_at : timestamptz
+    * failed_attempts : smallint
+    * resend_count : smallint
+    consumed_at : timestamptz
+    reset_token_hash : bytea <<UQ>>
+    reset_expires_at : timestamptz
+  }
+  entity "refresh_sessions" as rs {
+    * id : uuid <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * family_id : uuid
+    * token_hash : bytea <<UQ>>
+    * device_id : uuid
+    * platform : platform
+    user_agent : text
+    ip : inet
+    * expires_at : timestamptz
+    rotated_at : timestamptz
+    revoked_at : timestamptz
+    revoke_reason : text
+  }
+  entity "devices" as dev {
+    * id : uuid <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * fcm_token : text <<UQ>>
+    * platform : platform
+    app_version : varchar(20)
+    * locale : app_locale
+    * last_seen_at : timestamptz
+  }
+}
+
+package "household" as phh {
+  entity "space_members" as sm {
+    * space_id : uuid <<PK, FK>>
+    * user_id : uuid <<PK, FK>>
+    --
+    * space_kind : space_kind <<FK>>
+    * role : member_role
+    * joined_at : timestamptz
+  }
+  entity "spaces" as sp {
+    * id : uuid <<PK>>
+    --
+    * kind : space_kind
+    * name : varchar(50)
+    avatar_key : text
+    * change_seq : bigint
+    * created_by : uuid <<FK>>
+    dissolved_at : timestamptz
+    * version : int
+  }
+  entity "invite_codes" as ic {
+    * id : uuid <<PK>>
+    --
+    * space_id : uuid <<FK>>
+    * code : char(8) <<UQ>>
+    * created_by : uuid <<FK>>
+    * expires_at : timestamptz
+    * status : invite_status
+  }
+}
+
+note bottom of sm
+  <b>uq_space_leader</b>: UQ (space_id)
+    WHERE role = 'leader' (BR05)
+  <b>uq_member_family</b>: UQ (user_id)
+    WHERE space_kind = 'family' (BR04)
+  <b>uq_member_personal</b>: tương tự
+    với 'personal' (BR04)
+  FK ghép (space_id, space_kind)
+    → spaces (id, kind)
+end note
+note bottom of sp
+  UQ (id, kind): đích của FK ghép
+end note
+note bottom of ic
+  UQ (space_id)
+    WHERE status = 'active' (BR06)
+end note
+
+users ||-left-o| us
+users ||-right-o{ rs
+users ||-down-o{ dev
+us -[hidden]down- otp
+otp -[hidden]right- dev
+users ||-down-o{ sm
+dev -[hidden]down- sm
+sm }|-left-|| sp
+sp ||-left-o{ ic
+@enduml

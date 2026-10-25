@@ -1,0 +1,30 @@
+@startuml c3-17-seq-thoi-gian-thuc
+!include _style-c3.iuml
+autonumber "<b>0."
+hide footbox
+
+participant "Thiết bị B\n(tiền cảnh)" as B
+participant "API\nbản 2" as API2
+database "Redis\nPub/Sub" as RD
+participant "API\nbản 1" as API1
+database "PostgreSQL" as DB
+participant "Worker\n(River)" as W
+participant "FCM\n(APNs)" as F
+
+B -> API2 : GET /ws\n(Upgrade),\naccess token
+API2 -> DB : xác thực JWT; nạp các\nkhông gian là thành viên
+API2 -> RD : SUBSCRIBE\nspace:{sid}…,\nuser:{uid}
+[-> API1 : PUT .../assignee\n(thiết bị A)
+API1 -> DB : BEGIN; khóa\nlũy đẳng;\nghi phân công
+API1 -> DB : InsertTx\nAssignmentDigest\n(duy nhất theo\nassignee+list,\nlùi 5 s)
+API1 -> DB : space_changes\n(seq 1843);\nCOMMIT
+API1 -> RD : PUBLISH\nspace:{sid}\n{seq, entityTypes}
+[<-- API1 : 200 (1000)
+RD -> API2 : thông điệp
+API2 -> B : gợi ý thay đổi\n{"seq": 1843}
+B -> API2 : GET .../changes\n?since=1842
+API2 --> B : delta (1 thay đổi)
+W -> DB : AssignmentDigest\n(sau 5 s): đếm k\nmặt hàng đang\ngiao; InsertTx\nPushNotification\n(item.assigned:\nk, mốc đợt)
+W -> DB : NotifyWorker:\nđọc assignment_\nnotify_on,\ndevices; INSERT\nnotifications\n(dedupe_key gồm\nmốc đợt)
+W -> F : “Bạn được giao\nmua k mặt hàng”\n→ thiết bị C
+@enduml
