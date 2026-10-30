@@ -11,9 +11,9 @@ Mật khẩu được băm bằng Argon2id~\cite{rfc9106} với tham số OWASP 
 
 Mã truy cập (access token) là JWT~\cite{rfc7519} ký EdDSA trên Ed25519~\cite{rfc8032}, sống 30 phút (\br{BR03}), mang \texttt{sub}, \texttt{sid} (họ phiên), \texttt{ver}, \texttt{role}, \texttt{exp}, \texttt{jti} và \texttt{kid} để xoay khóa; chữ ký bất đối xứng cho phép dịch vụ tách ra sau này xác minh bằng khóa công khai. Mã làm mới (refresh token) là chuỗi ngẫu nhiên 256 bit, chỉ lưu SHA-256 trong \texttt{identity.refresh\_sessions}, sống 30 ngày và được xoay vòng mỗi lần dùng trong một giao dịch khóa dòng phiên. Mã đã xoay bị gửi lại là dấu hiệu bị đánh cắp nên cả họ phiên bị thu hồi (mã 3008); ngoại lệ duy nhất là cửa sổ ân hạn 30 giây cho cùng \texttt{device\_id} khi phản hồi trước bị mất trên mạng di động, lúc đó máy chủ chỉ thu hồi phiên kế nhiệm chưa dùng và cấp cặp mã mới trong cùng họ.
 
-Đăng nhập (A04, \uc{UC03}) kiểm tra trạng thái tài khoản theo một thứ tự có chủ đích. Tài khoản đang khóa tạm (\texttt{locked\_until} còn hiệu lực) bị từ chối với HTTP 423, mã 3004 (\msg{MSG06}) trước khi xác minh mật khẩu, nên kẻ dò không thể thử tiếp trong 15 phút khóa. Sai mật khẩu tăng \texttt{failed\_login\_count}; lần sai thứ năm đặt \texttt{locked\_until} (\br{BR03}). Chỉ khi mật khẩu đúng, máy chủ mới cho biết tài khoản bị quản trị viên khóa (403, mã 3005, \msg{MSG21}) hay chưa xác thực email (403, mã 3009, \msg{MSG34}, kèm một OTP mới nếu còn trong giới hạn của \br{BR02}), vì vậy người không biết mật khẩu không dò được trạng thái của một email. Đăng nhập thành công đặt lại bộ đếm, ghi \texttt{last\_login\_at} và tạo phiên trong cùng một giao dịch.
+Đăng nhập (A04, \uc{UC02}) kiểm tra trạng thái tài khoản theo một thứ tự có chủ đích. Tài khoản đang khóa tạm (\texttt{locked\_until} còn hiệu lực) bị từ chối với HTTP 423, mã 3004 (\msg{MSG06}) trước khi xác minh mật khẩu, nên kẻ dò không thể thử tiếp trong 15 phút khóa. Sai mật khẩu tăng \texttt{failed\_login\_count}; lần sai thứ năm đặt \texttt{locked\_until} (\br{BR03}). Chỉ khi mật khẩu đúng, máy chủ mới cho biết tài khoản bị quản trị viên khóa (403, mã 3005, \msg{MSG21}) hay chưa xác thực email (403, mã 3009, \msg{MSG34}, kèm một OTP mới nếu còn trong giới hạn của \br{BR02}), vì vậy người không biết mật khẩu không dò được trạng thái của một email. Đăng nhập thành công đặt lại bộ đếm, ghi \texttt{last\_login\_at} và tạo phiên trong cùng một giao dịch.
 
-Thu hồi phiên được phân biệt theo ngữ cảnh. Đăng xuất (A06, \uc{UC05}) thu hồi họ phiên của thiết bị hiện tại. Đổi mật khẩu (A11, \uc{UC07}) đòi mật khẩu cũ, thu hồi mọi phiên khác, tăng \texttt{users.token\_version} rồi cấp cặp mã mới cho chính phiên đang dùng, nên người dùng không phải đăng nhập lại trên thiết bị hiện tại. Khôi phục mật khẩu (\uc{UC04}) dùng chung luồng OTP với mục đích \texttt{reset\_password}: A07 luôn trả cùng một phản hồi dù email có tồn tại hay không; A02 xác minh OTP rồi trả \texttt{resetToken} ngẫu nhiên 256 bit, chỉ lưu băm trong \texttt{otp\_challenges}, sống 10 phút và dùng một lần; A08 nhận \texttt{email}, \texttt{resetToken}, \texttt{newPassword}, đặt lại \texttt{failed\_login\_count}, \texttt{locked\_until}, thu hồi mọi phiên và tăng \texttt{token\_version}. Khóa tài khoản bởi quản trị viên (\uc{UC48}) và phát hiện dùng lại cũng tăng \texttt{token\_version}. Middleware so claim \texttt{ver} với bản đệm \path{auth:ver:<userId>} và trả 3002 cho mã mang phiên bản cũ, nên mã bị lộ mất hiệu lực ngay, còn thiết bị hợp lệ chỉ việc làm mới (\nfr{NFR15}). Trên thiết bị, mã làm mới nằm trong Keychain hoặc Keystore qua \texttt{flutter\_secure\_storage}, mã truy cập chỉ ở bộ nhớ. OTP (\br{BR02}) được lưu dạng HMAC-SHA256 với khóa bí mật (pepper) ngoài cơ sở dữ liệu, vì $10^6$ giá trị quá dễ vét cạn nếu chỉ băm. Hình~\ref{fig:seq-dang-nhap-lam-moi} minh họa đăng nhập và làm mới phiên.
+Thu hồi phiên được phân biệt theo ngữ cảnh. Đăng xuất (A06, \uc{UC02}) thu hồi họ phiên của thiết bị hiện tại. Đổi mật khẩu (A11, \uc{UC03}) đòi mật khẩu cũ, thu hồi mọi phiên khác, tăng \texttt{users.token\_version} rồi cấp cặp mã mới cho chính phiên đang dùng, nên người dùng không phải đăng nhập lại trên thiết bị hiện tại. Khôi phục mật khẩu (\uc{UC03}) dùng chung luồng OTP với mục đích \texttt{reset\_password}: A07 luôn trả cùng một phản hồi dù email có tồn tại hay không; A02 xác minh OTP rồi trả \texttt{resetToken} ngẫu nhiên 256 bit, chỉ lưu băm trong \texttt{otp\_challenges}, sống 10 phút và dùng một lần; A08 nhận \texttt{email}, \texttt{resetToken}, \texttt{newPassword}, đặt lại \texttt{failed\_login\_count}, \texttt{locked\_until}, thu hồi mọi phiên và tăng \texttt{token\_version}. Khóa tài khoản bởi quản trị viên (\uc{UC24}) và phát hiện dùng lại cũng tăng \texttt{token\_version}. Middleware so claim \texttt{ver} với bản đệm \path{auth:ver:<userId>} và trả 3002 cho mã mang phiên bản cũ, nên mã bị lộ mất hiệu lực ngay, còn thiết bị hợp lệ chỉ việc làm mới (\nfr{NFR15}). Trên thiết bị, mã làm mới nằm trong Keychain hoặc Keystore qua \texttt{flutter\_secure\_storage}, mã truy cập chỉ ở bộ nhớ. OTP (\br{BR02}) được lưu dạng HMAC-SHA256 với khóa bí mật (pepper) ngoài cơ sở dữ liệu, vì $10^6$ giá trị quá dễ vét cạn nếu chỉ băm. Hình~\ref{fig:seq-dang-nhap-lam-moi} minh họa đăng nhập và làm mới phiên.
 
 \diagram[\textwidth]{c3-25-seq-dang-nhap-lam-moi}{Biểu đồ tuần tự đăng nhập và làm mới phiên xoay vòng}{fig:seq-dang-nhap-lam-moi}
 
@@ -49,7 +49,7 @@ Xem không gian, rời nhóm (G03, G10; \br{BR07}) & — & \bmok & \bmok & \bmow
 Dữ liệu không gian: mua sắm, tủ lạnh, công thức, kế hoạch, tìm kiếm, gợi ý tên, báo cáo, đồng bộ (các API S, P, R, M, B có \texttt{\{sid\}} trừ S10, S11, R04, R05; Q01, Q02, Y01) & — & \bmok & \bmok & \bmown\\ \hline
 Sửa, xóa công thức của không gian (R04, R05) & — & Người tạo & \bmok & \bmown\\ \hline
 Phân công mặt hàng (S10, S11; \br{BR10}) & — & — & \bmok & \bmown\\ \hline
-Mã vạch, danh mục, tải ảnh, WebSocket (P08, Q03, Y02--Y04) & — & \bmok & \bmok & \bmok\\ \hline
+Danh mục, tải ảnh, WebSocket (Q03, Y02--Y04) & — & \bmok & \bmok & \bmok\\ \hline
 Quản trị tài khoản, danh mục, duyệt thực phẩm, công thức mẫu, cấu hình, nhật ký (D01--D11) & — & — & — & \bmok\\ \hline
 \multicolumn{5}{|p{\dimexpr\textwidth-2\tabcolsep-2\arrayrulewidth\relax}|}{\footnotesize \bmown\ Chỉ trong không gian mà quản trị viên là thành viên, theo vai trò của họ ở đó; không gian của người khác trả 404, mã 4001 (\br{BR23}).}\\ \hline
 \end{longtable}
@@ -76,7 +76,6 @@ Nhập OTP sai (A02; \br{BR02}) & 5 lần mỗi mã & \texttt{failed\_attempts} 
 Nhập mã mời (G07) & 10/giờ/người & \path{rl:join:<userId>} & 429/4290, MSG36\\ \hline
 API chung & 120/phút/người & \path{rl:api:<userId>} & 429/4290, MSG36\\ \hline
 Gợi ý tên (Q02) & 20/giây/người & \path{rl:suggest:<userId>} & 429/4290, MSG36\\ \hline
-Tra mã vạch (P08) & 30/phút/người & \path{rl:barcode:<userId>} & 429/4290, MSG36\\ \hline
 \end{longtable}
 }
 
@@ -96,11 +95,11 @@ API2 Lỗi xác thực & Argon2id, băm giả khi không có email; JWT cố đ�
 API3 BOPLA & DTO tường minh sinh từ OpenAPI (\texttt{additionalProperties: false}) chống gán hàng loạt \texttt{system\_role}, \texttt{space\_id}; DTO ra không có \texttt{password\_hash}.\\ \hline
 API4 Tiêu thụ tài nguyên & Thân yêu cầu $\le$ 1 MB (vượt: 413, mã 2002); \texttt{limit} $\le$ 100; ảnh qua URL ký sẵn (5 phút, $\le$ 5 MB, JPEG/PNG); báo cáo $\le$ 12 tháng; \texttt{statement\_timeout}.\\ \hline
 API5 BFLA & \path{/admin/*} kiểm tra \texttt{system\_role} ở bộ định tuyến; vai trò quản trị không mở quyền vào không gian khác (\br{BR23}); chính sách trưởng nhóm, người tạo công thức ở tầng ứng dụng.\\ \hline
-API6 Luồng nhạy cảm & Giới hạn riêng cho đăng ký, gửi OTP, mã mời ($32^8$ tổ hợp, 10 lần/giờ), tra mã vạch; cùng khóa lũy đẳng khác thân yêu cầu bị từ chối.\\ \hline
-API7 SSRF & Danh sách host cho phép (FCM, SMTP, Open Food Facts); không tải URL do người dùng gửi; mã vạch phải là 8--14 chữ số.\\ \hline
+API6 Luồng nhạy cảm & Giới hạn riêng cho đăng ký, gửi OTP, mã mời ($32^8$ tổ hợp, 10 lần/giờ); cùng khóa lũy đẳng khác thân yêu cầu bị từ chối.\\ \hline
+API7 SSRF & Danh sách host cho phép (FCM, SMTP); không tải URL do người dùng gửi.\\ \hline
 API8 Cấu hình sai & TLS $\ge$ 1.2, HSTS; distroless, không chạy root; cổng vận hành nội bộ; lỗi 5000 chỉ trả \texttt{traceId}.\\ \hline
 API9 Kiểm kê API & OpenAPI 3.1 là nguồn duy nhất, CI so tuyến đã đăng ký với đặc tả; phiên bản \texttt{/v1}.\\ \hline
-API10 API bên thứ ba & Dữ liệu Open Food Facts được kiểm tra lược đồ, làm sạch; thời gian chờ, bộ ngắt mạch (Hình~\ref{fig:seq-ma-vach}); phản hồi \texttt{invalid\_token} của FCM làm xóa thiết bị.\\ \hline
+API10 API bên thứ ba & Phản hồi \texttt{invalid\_token} của FCM làm xóa thiết bị.\\ \hline
 \end{longtable}
 }
 

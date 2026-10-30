@@ -26,7 +26,7 @@ group A01 – đăng ký (UC01); A03 gửi lại mã lặp bước 4–8
   API --> APP : 201 (1000): chờ xác thực
 end
 
-group A02 – xác thực OTP (UC02)
+group A02 – xác thực OTP (UC01)
   APP -> API : POST /auth/otp/verify\n{email, purpose, code, deviceId}
   API -> SVC : VerifyOtp(cmd)
   SVC -> PG : BEGIN; SELECT otp_challenges\nFOR UPDATE; so HMAC, hạn, lần sai
@@ -40,7 +40,7 @@ group A02 – xác thực OTP (UC02)
     HK -> PG : INSERT spaces,\nspace_members (leader)
     SVC -> PG : last_space_id, phiên mới; COMMIT
     API --> APP : 200 (1000): token, không gian
-  else purpose = reset_password (UC04)
+  else purpose = reset_password (UC03)
     SVC -> PG : consumed_at; băm resetToken\n(sống 10 phút); COMMIT
     API --> APP : 200 (1000): resetToken
   end

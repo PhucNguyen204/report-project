@@ -21,8 +21,8 @@ Bảng~\ref{tab:c3-dac-ta-bang} đặc tả các bảng trọng tâm (PK, FK, NN
 \path{system_role} & enum & NN, DF & \texttt{user}, \texttt{admin}\\ \hline
 \path{status} & enum & NN, DF & \texttt{pending} (chờ OTP), \texttt{active}, \texttt{locked} (khóa tạm), \texttt{disabled} (quản trị viên khóa)\\ \hline
 \path{failed_login_count} & smallint & NN, DF, CK & Số lần sai liên tiếp, 0--5 (\br{BR03})\\ \hline
-\path{locked_until}, \path{lock_reason} & timestamptz; varchar(200) & -- & Hết khóa tạm 15 phút (\br{BR03}); lý do quản trị viên khóa (\uc{UC48})\\ \hline
-\path{last_login_at} & timestamptz & -- & Lần đăng nhập thành công gần nhất (\uc{UC48})\\ \hline
+\path{locked_until}, \path{lock_reason} & timestamptz; varchar(200) & -- & Hết khóa tạm 15 phút (\br{BR03}); lý do quản trị viên khóa (\uc{UC24})\\ \hline
+\path{last_login_at} & timestamptz & -- & Lần đăng nhập thành công gần nhất (\uc{UC24})\\ \hline
 \path{locale}, \path{avatar_key} & enum; text & NN; -- & \texttt{vi} hoặc \texttt{en}; khóa ảnh trong MinIO\\ \hline
 \path{last_space_id} & uuid & -- & Không gian mở khi đăng nhập\\ \hline
 \path{token_version} & int & NN, DF 0 & Tăng khi đăng xuất, đổi mật khẩu, bị khóa\\ \hline
@@ -58,14 +58,14 @@ Bảng~\ref{tab:c3-dac-ta-bang} đặc tả các bảng trọng tâm (PK, FK, NN
 \path{kind} & enum & NN & \texttt{stock\_in}, \texttt{consume}, \texttt{cook}, \texttt{discard}, \texttt{adjust}\\ \hline
 \path{quantity}, \path{unit_id} & numeric(12,2); uuid & NN, CK; FK & Theo đơn vị lô, $\neq$ 0; dương trừ \texttt{adjust} (chênh lệch có dấu khi P04 sửa lượng còn)\\ \hline
 \path{reason} & enum & CK & \texttt{expired}, \texttt{spoiled}, \texttt{other}; bắt buộc khi loại bỏ\\ \hline
-\path{meal_entry_id} & uuid & CK & Bắt buộc khi \texttt{cook} (\uc{UC41}); logic\\ \hline
+\path{meal_entry_id} & uuid & CK & Bắt buộc khi \texttt{cook} (\uc{UC19}); logic\\ \hline
 \path{actor_id}, \path{occurred_at} & uuid; timestamptz & NN, FK; DF & Người thực hiện; thời điểm\\ \hline
 \multicolumn{4}{|l|}{\hs{\texttt{mealplan.meal\_entries} -- đủ cột chung}}\\ \hline
 \path{space_id}, \path{meal_date} & uuid; date & NN, FK; NN & Không gian; ngày ăn\\ \hline
 \path{meal_slot}, \path{status} & enum & NN & \texttt{breakfast}, \texttt{lunch}, \texttt{dinner}; \texttt{planned}, \texttt{cooked}\\ \hline
 \path{recipe_id}, \path{custom_name} & uuid; varchar(100) & CK & Công thức (logic) hoặc tên tự do\\ \hline
 \path{servings}, \path{position} & smallint & NN, CK & 1--20 khẩu phần; thứ tự trong bữa\\ \hline
-\path{cooked_at}, \path{cooked_by} & timestamptz; uuid & CK; FK & Bắt buộc khi đã nấu (\uc{UC41}, \br{BR18})\\ \hline
+\path{cooked_at}, \path{cooked_by} & timestamptz; uuid & CK; FK & Bắt buộc khi đã nấu (\uc{UC19}, \br{BR18})\\ \hline
 \path{created_by} & uuid & NN, FK & Người lập kế hoạch\\ \hline
 \multicolumn{4}{|l|}{\hs{\texttt{sync.space\_changes} -- không dùng cột chung; giữ 90 ngày}}\\ \hline
 \path{space_id}, \path{seq} & uuid; bigint & PK, FK & \texttt{seq} lấy từ \texttt{spaces.change\_seq}\\ \hline
@@ -96,7 +96,7 @@ Bảng~\ref{tab:c3-dac-ta-bang} đặc tả các bảng trọng tâm (PK, FK, NN
 \path{invite_codes} & Mã mời & \path{space_id}, \path{code} & UQ từng phần (\br{BR06})\\ \hline
 \path{food_categories} & Loại thực phẩm & \path{default_storage} & UQ \texttt{lower(name)} (\br{BR22})\\ \hline
 \path{units} & Đơn vị đo & \path{factor_to_base}, \path{is_base} & CK hệ số $>$ 0; một đơn vị cơ sở mỗi nhóm (\br{BR16})\\ \hline
-\path{foods} & Thực phẩm chung và riêng & \path{barcode}, \path{scope}, \path{merged_into} & UQ từng phần theo \texttt{scope} (\br{BR22}); CK gộp thì \texttt{inactive}\\ \hline
+\path{foods} & Thực phẩm chung và riêng & \path{scope}, \path{merged_into} & UQ từng phần theo \texttt{scope} (\br{BR22}); CK gộp thì \texttt{inactive}\\ \hline
 \path{food_shelf_lives} & Hạn dùng gợi ý & \path{storage_location} & PK phức hợp\\ \hline
 \path{shopping_lists} & Danh sách mua sắm & \path{planned_date}, \path{status} & \texttt{status} theo \br{BR08}\\ \hline
 \path{recipes} & Công thức & \path{kind}, \path{status}, \path{steps} & CK \texttt{space\_id} theo \texttt{kind}; công thức không gian luôn \texttt{published}\\ \hline
@@ -104,10 +104,10 @@ Bảng~\ref{tab:c3-dac-ta-bang} đặc tả các bảng trọng tâm (PK, FK, NN
 \path{favorite_recipes} & Công thức yêu thích & \path{user_id}, \path{recipe_id} & PK phức hợp\\ \hline
 \path{notifications} & Hộp thư thông báo & \path{dedupe_key} & UQ khóa chống trùng (\br{BR13})\\ \hline
 \path{deliveries} & Lần gửi đẩy, thư & \path{device_id}, \path{status} & UQ theo thông báo, thiết bị, kênh\\ \hline
-\path{system_configs} & Tham số (\uc{UC53}) & \path{key}, \path{value} & PK \path{key}; miền ở Bảng~\ref{tab:c3-tham-so}\\ \hline
+\path{system_configs} & Tham số (\uc{UC25}) & \path{key}, \path{value} & PK \path{key}; miền ở Bảng~\ref{tab:c3-tham-so}\\ \hline
 \path{audit_logs} & Nhật ký quản trị & \path{old_value}, \path{new_value} & Chỉ ghi thêm\\ \hline
 \path{objects} & Ảnh tải lên (Y03, Y04) & \path{purpose}, \path{target_id} & \texttt{pending}, \texttt{ready}, \texttt{failed}, \texttt{deleted}\\ \hline
-\path{exports} & Tệp báo cáo xuất (\uc{UC47}) & \path{requested_by}, \path{status} & \texttt{pending}, \texttt{ready}, \texttt{failed}; hạn 7 ngày\\ \hline
+\path{exports} & Tệp báo cáo xuất (\uc{UC22}) & \path{requested_by}, \path{status} & \texttt{pending}, \texttt{ready}, \texttt{failed}; hạn 7 ngày\\ \hline
 \path{daily_space_stats} & Tổng hợp báo cáo & \path{stat_date} & Materialized view\\ \hline
 \path{report.v_*} & Mô hình đọc & -- & View chỉ đọc trên schema khác\\ \hline
 \path{river.*} & Hàng đợi~\cite{river} & \path{river_job} & Do River di trú\\ \hline

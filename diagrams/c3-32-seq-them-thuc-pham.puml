@@ -10,7 +10,6 @@ database "PostgreSQL" as PG
 database "Redis" as RD
 database "MinIO" as S3
 
-ref over APP, API : UC26 – quét mã vạch (P08)
 APP -> API : GET .../foods/suggest?q= (Q02)
 API --> APP : ứng viên + đơn vị, vị trí,\nhạn dùng theo vị trí (BR11)
 

@@ -4,27 +4,25 @@ left to right direction
 
 actor "Khách" as G
 actor "Người dùng" as U
+actor "Quản trị viên" as A
 actor "Dịch vụ\nthư điện tử" as MAIL <<hệ thống ngoài>>
 
 rectangle "Xác thực và quản lý tài khoản" as B {
-  usecase "UC01\nĐăng ký tài khoản" as UC01
-  usecase "UC03\nĐăng nhập" as UC03
-  usecase "UC04\nKhôi phục mật khẩu" as UC04
-  usecase "UC05\nĐăng xuất" as UC05
-  usecase "UC06\nCập nhật hồ sơ cá nhân" as UC06
-  usecase "UC07\nĐổi mật khẩu" as UC07
-  usecase "UC08\nThiết lập thông báo\nnhắc nhở" as UC08
-  usecase "UC02\nXác thực mã OTP" as UC02
+  usecase "UC01\nĐăng ký và xác thực\ntài khoản" as UC01
+  usecase "UC02\nĐăng nhập và đăng xuất" as UC02
+  usecase "UC03\nĐặt lại và đổi mật khẩu" as UC03
+  usecase "UC04\nQuản lý hồ sơ và\nthiết lập nhắc nhở" as UC04
 }
 
 G -- UC01
+G -- UC02
 G -- UC03
-G -- UC04
-U -- UC05
-U -- UC06
-U -- UC07
-U -- UC08
-UC01 ..> UC02 : <<include>>
-UC04 ..> UC02 : <<include>>
-UC02 -- MAIL
+U -- UC02
+U -- UC03
+U -- UC04
+A -- UC02
+A -- UC03
+A -- UC04
+UC01 -- MAIL
+UC03 -- MAIL
 @enduml

@@ -12,7 +12,7 @@ database "Redis" as RD
 
 note over APP, API : bước 1–3: chọn ngày, bữa;\nchọn món từ thẻ Gợi ý (M05),\nYêu thích hoặc Tất cả (R01)
 
-group M02 – lên lịch bữa ăn (UC37)
+group M02 – lên lịch bữa ăn (UC17)
   APP -> API : POST .../meals {mealDate,\nmealSlot, items[{id, recipeId |\ncustomName, servings}]},\nIdempotency-Key
   API -> SVC : PlanMeals(sid, uid, cmd)
   break mealDate ngoài [$today, $today + 28] (4a)\nhoặc servings ngoài 1–20 (BR18)

@@ -1,7 +1,7 @@
 \subsubsection{Tìm kiếm và phân loại thực phẩm}\label{sssec:pr-tim-kiem}
 
-Tìm kiếm (\uc{UC42}) và lọc (\uc{UC43}) là các bước hỗ trợ chọn dữ liệu cho mua sắm, tủ lạnh và công thức. Người dùng đã đăng nhập nhập từ khóa có hoặc không dấu; hệ thống chuẩn hóa và tìm trong phạm vi được phép truy cập theo \br{BR23}.
+Tìm kiếm và lọc (\uc{UC20}) là bước hỗ trợ chọn dữ liệu cho mua sắm, tủ lạnh và công thức; \uc{UC18} được vẽ trong Hình~\ref{fig:uc-tim-kiem} vì dùng chung cơ chế chấm điểm. \uc{UC20} thuộc tầng 3 và chỉ cài đặt tối giản. Người dùng đã đăng nhập nhập từ khóa có hoặc không dấu; hệ thống chuẩn hóa và tìm trong phạm vi được phép truy cập theo \br{BR23}.
 
 \diagram[0.82\textwidth]{c2-17-uc-tim-kiem}{Biểu đồ use case phân rã gói Tìm kiếm và phân loại thực phẩm}{fig:uc-tim-kiem}
 
-Kết quả được nhóm thành thực phẩm trong tủ, công thức và danh mục; ưu tiên khớp chính xác, rồi khớp tiền tố và khớp một phần. Bộ lọc kết hợp loại thực phẩm, vị trí và trạng thái hạn dùng. Chọn kết quả mở \uc{UC24}, \uc{UC34} hoặc biểu mẫu \uc{UC25}; tìm kiếm không tự thay đổi dữ liệu nghiệp vụ. Không có kết quả thì hiển thị \msg{MSG18}; mất mạng thì chỉ tìm trong dữ liệu đã lưu đệm và nêu rõ giới hạn. Gợi ý món dùng chung \uc{UC40}, không xây dựng một luồng chấm điểm khác. Chi tiết bộ lọc nằm tại Phụ lục~\ref{pl:dac-ta-bo-sung}.
+Kết quả được nhóm thành thực phẩm trong tủ, công thức và danh mục; ưu tiên khớp chính xác, rồi khớp tiền tố và khớp một phần. Bộ lọc kết hợp loại thực phẩm, vị trí và trạng thái hạn dùng. Chọn kết quả mở \uc{UC12}, \uc{UC16} hoặc biểu mẫu \uc{UC11}; tìm kiếm không tự thay đổi dữ liệu nghiệp vụ. Không có kết quả thì hiển thị \msg{MSG18}; mất mạng thì hiển thị \msg{MSG33}. Gợi ý món dùng chung \uc{UC18}, không xây dựng một luồng chấm điểm khác. Chi tiết bộ lọc nằm tại Phụ lục~\ref{pl:dac-ta-bo-sung}. Cả hai use case thuộc tầng 3 và chỉ cài đặt tối giản: tìm theo tên không dấu và một bộ lọc theo loại thực phẩm.

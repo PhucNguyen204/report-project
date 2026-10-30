@@ -10,7 +10,7 @@ database "PostgreSQL" as PG
 database "Redis" as RD
 participant "Các bản\nAPI, worker" as OTH
 
-group UC53 – cập nhật tham số hệ thống
+group UC25 – cập nhật tham số hệ thống
   APP -> API : PUT /admin/configs\n{values: {khóa: giá trị}}
   break system_role khác admin
     API --> APP : 403 (3007), MSG13
@@ -28,7 +28,7 @@ group UC53 – cập nhật tham số hệ thống
   API --> APP : 200 (1000), MSG10
 end
 
-group UC48 – khóa tài khoản
+group UC24 – khóa tài khoản
   APP -> API : PATCH /admin/users/{uid}\n{action: disable, reason}
   API -> SVC : DisableUser(cmd)
   SVC -> PG : BEGIN; SELECT users\nFOR UPDATE (cổng identity)

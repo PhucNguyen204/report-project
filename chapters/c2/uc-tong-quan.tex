@@ -5,16 +5,35 @@
 
 \subsection{Biểu đồ use case tổng quan}\label{ssec:uc-tong-quan}
 
-Hình~\ref{fig:uc-tong-quan} thể hiện các chức năng của hệ thống và tác nhân tương ứng. Để biểu đồ dễ đọc, mỗi gói được biểu diễn bằng một use case tổng hợp, kèm mã các use case thành phần sẽ được phân rã tại mục~\ref{ssec:uc-phan-ra}. Quan hệ tổng quát hóa giữa các tác nhân đã trình bày ở Hình~\ref{fig:quan-he-tac-nhan} nên không lặp lại. Thành viên nhóm và Trưởng nhóm được đặt bên phải, gần các gói có liên kết riêng, để hạn chế giao cắt đường nối.
+Hình~\ref{fig:uc-tong-quan} thể hiện các chức năng của hệ thống và tác nhân tương ứng. Để biểu đồ dễ đọc, mỗi gói được biểu diễn bằng một use case tổng hợp, kèm mã các use case mục tiêu sẽ được phân rã tại mục~\ref{ssec:uc-phan-ra}. Quan hệ tổng quát hóa giữa các tác nhân đã trình bày ở Hình~\ref{fig:quan-he-tac-nhan} nên không lặp lại. Thành viên nhóm và Trưởng nhóm được đặt bên phải, gần các gói có liên kết riêng, để hạn chế giao cắt đường nối.
 
 \diagram[0.82\textwidth]{c2-02-uc-tong-quan}{Biểu đồ use case tổng quan của hệ thống}{fig:uc-tong-quan}
 
-Người dùng là tác nhân trung tâm, tham gia tám trong chín gói chức năng; ngoại lệ là gói Quản trị hệ thống. Thành viên nhóm và Trưởng nhóm kế thừa các liên kết của Người dùng, đồng thời có liên kết riêng với gói Quản lý nhóm gia đình. Trưởng nhóm còn tham gia gói Quản lý danh sách mua sắm để phân công công việc. Khách chỉ truy cập gói Xác thực và quản lý tài khoản, còn Quản trị viên sử dụng gói Quản trị hệ thống. Trong số các tác nhân phụ, Dịch vụ thư điện tử hỗ trợ các chức năng tài khoản; Dịch vụ thông báo đẩy gửi thông báo phân công, hoạt động nhóm và nhắc hạn dùng; Cơ sở dữ liệu sản phẩm mở phục vụ tra cứu mã vạch. Bộ lập lịch khởi chạy tác vụ nhắc hạn dùng hằng ngày mà không cần người dùng thao tác.
+Người dùng là tác nhân trung tâm, tham gia tám trong chín gói chức năng; ngoại lệ là gói Quản trị hệ thống, chỉ dành cho Quản trị viên. Thành viên nhóm và Trưởng nhóm kế thừa các liên kết của Người dùng, đồng thời có liên kết riêng với gói Quản lý nhóm gia đình. Trưởng nhóm còn tham gia gói Quản lý danh sách mua sắm để phân công công việc. Khách chỉ truy cập gói Xác thực và quản lý tài khoản. Quản trị viên là tác nhân độc lập, sử dụng gói Quản trị hệ thống và các use case tài khoản dùng chung (\uc{UC02}--\uc{UC04}), nhưng không kế thừa Người dùng để không truy cập dữ liệu của các nhóm (\br{BR23}). Trong số các tác nhân phụ, Dịch vụ thư điện tử hỗ trợ các chức năng tài khoản; Dịch vụ thông báo đẩy gửi thông báo hoạt động nhóm và nhắc hạn dùng. Bộ lập lịch khởi chạy tác vụ nhắc hạn dùng hằng ngày mà không cần người dùng thao tác.
 
 Ngoài các liên kết trên biểu đồ, các gói còn phụ thuộc nhau về dữ liệu. Gói danh sách mua sắm, tủ lạnh và kế hoạch bữa ăn cùng sử dụng dữ liệu của không gian hiện hành; gói công thức và tìm kiếm cung cấp dữ liệu tham chiếu cho các gói này. Gói thống kê chỉ đọc dữ liệu do các gói khác tạo ra, không làm thay đổi trạng thái hệ thống.
 
 \subsection{Biểu đồ use case phân rã mức 2}\label{ssec:uc-phan-ra}
 
-Mục này giữ chín gói để bao phủ phạm vi, nhưng chỉ đặc tả đầy đủ 12 use case có quyết định nghiệp vụ, phối hợp nhiều người hoặc cập nhật dữ liệu liên phân hệ: \uc{UC11}, \uc{UC19}--\uc{UC22}, \uc{UC25}, \uc{UC28}, \uc{UC31}, \uc{UC37}, \uc{UC40}, \uc{UC41} và \uc{UC46}. Trọng tâm là gia nhập nhóm đúng quyền; phân công và mua hộ; chuyển hàng thành lô; tính phần thiếu từ kế hoạch; theo dõi hạn dùng; gợi ý món và trừ kho khi nấu.
+Mục này giữ chín gói để bao phủ phạm vi và để mỗi biểu đồ phân rã đủ nhỏ để đọc; mỗi gói chứa từ một đến bốn use case (Bảng~\ref{tab:danh-sach-uc}). Độ sâu đặc tả không chia đều theo gói mà theo ba tầng ưu tiên. Các use case tầng 1 nằm rải rác ở nhiều gói vì chúng thuộc cùng một dòng giá trị: gia đình cùng tham gia, mua sắm và cất thực phẩm, lập kế hoạch và bù phần thiếu, nấu từ thực phẩm sẵn có, rồi nhìn lại lãng phí. Bảng~\ref{tab:kich-ban-gia-tri} nhóm use case theo năm kịch bản này, gồm cả các use case tầng 2 mà mỗi kịch bản cần để chạy được.
 
-Mười hai use case hỗ trợ (\uc{UC01}, \uc{UC03}, \uc{UC09}, \uc{UC10}, \uc{UC16}, \uc{UC17}, \uc{UC32}, \uc{UC34}, \uc{UC42}, \uc{UC44}, \uc{UC49}, \uc{UC53}) được gộp theo mục tiêu, nêu đầu vào, quy tắc, kết quả và ngoại lệ chính. Các bước giao diện lặp lại như mở biểu mẫu, nhấn lưu hay hiển thị thành công không tách thành bảng riêng. Biểu đồ hoạt động và tuần tự chỉ dùng cho luồng cần làm rõ quyết định hoặc tương tác.
+{\small
+\begin{longtable}{|L{3.3cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-3.3cm-3.3cm-3.7cm\relax}|L{3.3cm}|L{3.7cm}|}
+\caption{Năm kịch bản giá trị và các use case tầng 1, tầng 2 tương ứng}\label{tab:kich-ban-gia-tri}\\
+\hline
+\hd{Kịch bản} & \hd{Mục tiêu người dùng} & \hd{Tầng 1 (đặc tả đầy đủ)} & \hd{Tầng 2 (nền tảng)}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Kịch bản} & \hd{Mục tiêu người dùng} & \hd{Tầng 1 (đặc tả đầy đủ)} & \hd{Tầng 2 (nền tảng)}\\ \hline
+\endhead
+K1. Gia đình cùng tham gia & Mời người thân vào nhóm, gia nhập bằng mã, và chọn ngưỡng nhắc riêng cho mình & \uc{UC04}, \uc{UC06} (NV01.4, NV01.6) & \uc{UC01}, \uc{UC02}, \uc{UC05}, \uc{UC07}\\ \hline
+K2. Đi chợ về, cất vào tủ & Từ mặt hàng đã mua hoặc nhập tay, tạo lô thực phẩm có hạn dùng & \uc{UC11} (NV02.6, NV03.1) & \uc{UC08}, \uc{UC09}, \uc{UC12}\\ \hline
+K3. Lập kế hoạch, bù phần thiếu & Chỉ mua phần nguyên liệu còn thiếu cho một món hoặc một khoảng ngày & \uc{UC10} (NV02.7, NV04.3) & \uc{UC15}, \uc{UC16}, \uc{UC17}\\ \hline
+K4. Nấu từ đồ sẵn có & Chọn món theo thực phẩm sắp hết hạn, rồi xác nhận đã nấu để trừ kho & \uc{UC18}, \uc{UC19} (NV05.3, NV05.4) & \uc{UC16}, \uc{UC17}\\ \hline
+K5. Nhìn lại lãng phí & Biết thực phẩm nào bị bỏ, giá trị bao nhiêu, và xuất báo cáo & \uc{UC21}, \uc{UC22} (NV07.3, NV07.4) & \uc{UC13}, \uc{UC14}\\ \hline
+\end{longtable}
+}
+
+Tám use case tầng 1 được đặc tả đầy đủ trong các gói tương ứng. Năm use case tầng 1 gộp nhiều thao tác: \uc{UC04} (hồ sơ và thiết lập nhắc), \uc{UC06} (mời và tham gia bằng mã mời), \uc{UC10} (bù phần thiếu từ công thức hoặc từ lịch), \uc{UC11} (nhập từ đơn mua hoặc nhập tay) và \uc{UC21} (ba tab báo cáo); mỗi biến thể được ghi thành luồng riêng trong cùng bảng đặc tả. Trong tầng 2, \uc{UC09} cung cấp đơn giá và nguồn gốc lô cho \uc{UC11} và \uc{UC21}; \uc{UC17} tạo bữa ăn cho \uc{UC10} và \uc{UC19}; \uc{UC14} biến thiết lập của \uc{UC04} thành thông báo. Các use case tầng 2 còn lại được mô tả gọn hoặc ở Phụ lục~\ref{pl:dac-ta-bo-sung}. Use case tầng 3 chỉ có mô tả ngắn, không có luồng thực thi; các bản đặc tả đã có được giữ ở phụ lục để tham khảo. Các bước giao diện lặp lại như mở biểu mẫu, nhấn lưu hay hiển thị thành công không tách thành bảng riêng. Biểu đồ hoạt động và tuần tự chỉ dùng cho luồng cần làm rõ quyết định hoặc tương tác.
+
+Hoạt động ngoại tuyến và đồng bộ thời gian thực (MR10, \nfr{NFR10}, \nfr{NFR11}) không thuộc tiêu chí chấp nhận của tầng 1, và quét mã vạch không thuộc phạm vi. Các luồng ở mục này giả định thiết bị có kết nối mạng; khi mất kết nối, ứng dụng chỉ cần báo lỗi và cho phép thử lại.

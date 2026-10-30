@@ -37,9 +37,9 @@ lấy tối đa 10 món;
 và các thực phẩm sắp hết hạn được dùng;
 |Người dùng|
 if (Chọn món?) then (thêm vào lịch)
-  :Chọn ngày, bữa → UC37;
+  :Chọn ngày, bữa → UC17;
 else (xem công thức)
-  :Mở chi tiết → UC34;
+  :Mở chi tiết → UC16;
 endif
 stop
 @enduml

@@ -1,14 +1,57 @@
 % Gói hỗ trợ: giữ hợp đồng nghiệp vụ, không tách luồng CRUD.
 \subsubsection{Xác thực và quản lý tài khoản}\label{sssec:pr-tai-khoan}
 
-Tài khoản cung cấp danh tính và phiên làm việc cho mọi nghiệp vụ. Hình~\ref{fig:uc-tai-khoan} giữ quan hệ giữa tám use case; đăng ký và đăng nhập được mô tả ngắn theo đầu vào, điều kiện xử lý và kết quả, vì không phải trọng tâm nghiệp vụ của đề tài.
+Tài khoản cung cấp danh tính và phiên làm việc cho mọi nghiệp vụ. Hình~\ref{fig:uc-tai-khoan} thể hiện bốn use case: \uc{UC01} Đăng ký và xác thực tài khoản, \uc{UC02} Đăng nhập và đăng xuất, \uc{UC03} Đặt lại và đổi mật khẩu, \uc{UC04} Quản lý hồ sơ và thiết lập nhắc nhở. Quản trị viên dùng chung \uc{UC02}, \uc{UC03}, \uc{UC04} nhưng không kế thừa Người dùng. \uc{UC04} thuộc tầng 1 vì ngưỡng nhắc $N$ chi phối cả trạng thái hạn dùng (\br{BR12}) lẫn nội dung thông báo (\br{BR13}); việc gửi nhắc thực tế do \uc{UC14} (tầng 2) đảm nhiệm. Đăng ký và đăng nhập được mô tả ngắn theo đầu vào, điều kiện xử lý và kết quả, vì không phải trọng tâm nghiệp vụ của đề tài.
 
 \diagram[0.85\textwidth]{c2-03-uc-tai-khoan}{Biểu đồ use case phân rã gói Xác thực và quản lý tài khoản}{fig:uc-tai-khoan}
 
-\paragraph{Đăng ký tài khoản (\uc{UC01})}
-Khách nhập họ tên, email, mật khẩu và xác nhận đồng ý điều khoản. Hệ thống kiểm tra \br{BR01}, tạo tài khoản Chờ xác thực và gọi \uc{UC02}; chỉ khi OTP hợp lệ mới kích hoạt tài khoản và tạo không gian cá nhân theo \br{BR04}. Email đã hoạt động bị từ chối; email đang chờ xác thực được tiếp tục xác minh. Lỗi định dạng, OTP hết hạn hoặc mất mạng không được tạo tài khoản hoạt động. Giới hạn gửi và nhập OTP tuân theo \br{BR02}.
 
-\paragraph{Đăng nhập (\uc{UC03})}
-Khách cung cấp email và mật khẩu. Máy chủ kiểm tra thông tin cùng trạng thái tài khoản, cấp phiên theo \br{BR03} và mở không gian gần nhất. Sai thông tin dùng thông báo chung \msg{MSG05}; sai năm lần thì khóa tạm 15 phút. Tài khoản chưa xác thực chuyển sang \uc{UC02}, tài khoản bị khóa không được cấp phiên. Mã phiên phải được lưu an toàn và thu hồi khi đăng xuất hoặc đổi mật khẩu.
+\ucgoal{UC01}{Đăng ký và xác thực tài khoản}{2}{Khách; Dịch vụ thư điện tử}{đăng ký, xác thực OTP}
+Khách tạo tài khoản bằng email và kích hoạt bằng mã OTP; xác thực là một bước bắt buộc của use case.
 
-Các thao tác khôi phục, hồ sơ và thiết lập nhắc nhở dùng cùng cơ chế xác thực, kiểm tra dữ liệu và lưu thay đổi. Đặc tả bổ sung của \uc{UC02}, \uc{UC04}--\uc{UC08} nằm tại Phụ lục~\ref{pl:dac-ta-bo-sung}.
+\paragraph*{Đăng ký tài khoản (\uc{UC01})}
+Khách nhập họ tên, email, mật khẩu và xác nhận đồng ý điều khoản. Hệ thống kiểm tra \br{BR01}, tạo tài khoản Chờ xác thực và gọi \uc{UC01}; chỉ khi OTP hợp lệ mới kích hoạt tài khoản và tạo không gian cá nhân theo \br{BR04}. Email đã hoạt động bị từ chối; email đang chờ xác thực được tiếp tục xác minh. Lỗi định dạng, OTP hết hạn hoặc mất mạng không được tạo tài khoản hoạt động. Giới hạn gửi và nhập OTP tuân theo \br{BR02}.
+
+
+\ucgoal{UC02}{Đăng nhập và đăng xuất}{2}{Khách, Người dùng, Quản trị viên}{đăng nhập, đăng xuất}
+
+\paragraph*{Đăng nhập (\uc{UC02})}
+Khách cung cấp email và mật khẩu. Máy chủ kiểm tra thông tin cùng trạng thái tài khoản, cấp phiên theo \br{BR03} và mở không gian gần nhất. Sai thông tin dùng thông báo chung \msg{MSG05}; sai năm lần thì khóa tạm 15 phút. Tài khoản chưa xác thực chuyển sang \uc{UC01}, tài khoản bị khóa không được cấp phiên. Mã phiên phải được lưu an toàn và thu hồi khi đăng xuất hoặc đổi mật khẩu.
+
+
+\ucgoal{UC03}{Đặt lại và đổi mật khẩu}{3}{Khách, Người dùng; Dịch vụ thư điện tử}{khôi phục mật khẩu bằng OTP, đổi mật khẩu khi đã đăng nhập}
+Hai cách đặt mật khẩu mới: quên mật khẩu (xác thực bằng OTP, dùng lại cơ chế của \uc{UC01}) và đổi khi đã đăng nhập (xác thực bằng mật khẩu cũ). Use case thuộc tầng 3, chỉ cài đặt tối giản; đặc tả ở Phụ lục~\ref{pl:dac-ta-bo-sung}.
+
+\ucgoal{UC04}{Quản lý hồ sơ và thiết lập nhắc nhở}{1}{Người dùng, Quản trị viên}{sửa hồ sơ, thiết lập ngưỡng nhắc}
+Màn hình Tài khoản gom hai thao tác: sửa hồ sơ (biến thể A) và chọn ngưỡng nhắc và loại thông báo (biến thể B).
+
+\begin{ucspec}{UC04}{Quản lý hồ sơ và thiết lập nhắc nhở}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{\textbf{A.} Cho phép người dùng sửa họ tên, ảnh đại diện và ngôn ngữ hiển thị. \textbf{B.} Cho phép người dùng điều chỉnh ngưỡng nhắc hạn dùng và bật, tắt từng loại thông báo.}
+\ucfield{Điều kiện trước}{Người dùng đang đăng nhập.}
+\ucflow{Biến thể A – Cập nhật hồ sơ cá nhân: luồng thực thi chính}
+\ucstep{1}{Người dùng}{Mở màn hình Tài khoản, chọn “Hồ sơ”.}
+\ucstep{2}{Hệ thống}{Hiển thị họ tên, email (chỉ đọc), ảnh đại diện và ngôn ngữ.}
+\ucstep{3}{Người dùng}{Sửa thông tin, chọn ảnh từ thư viện hoặc chụp mới, nhấn “Lưu”.}
+\ucstep{4}{Hệ thống}{Kiểm tra họ tên theo \br{BR01}, ảnh đúng định dạng và dung lượng; nén ảnh; lưu thông tin; hiển thị \msg{MSG10}.}
+\ucflow{Biến thể A – Cập nhật hồ sơ cá nhân: luồng thực thi mở rộng}
+\ucstep{4a}{Hệ thống}{Dữ liệu không hợp lệ: hiển thị \msg{MSG02}; quay lại bước 3.}
+\ucstep{3a}{Người dùng}{Chọn ảnh quá dung lượng hoặc sai định dạng: hiển thị \msg{MSG02}, giữ nguyên ảnh cũ; quay lại bước 3.}
+\ucstep{4b}{Hệ thống}{Đổi ngôn ngữ: áp dụng ngay cho toàn bộ giao diện mà không cần khởi động lại (\nfr{NFR07}).}
+\ucstep{4c}{Hệ thống}{Mất kết nối hoặc máy chủ từ chối: hiển thị \msg{MSG33}, giữ lại thay đổi trên biểu mẫu để người dùng thử lại.}
+\ucflow{Biến thể B – Thiết lập thông báo nhắc nhở: luồng thực thi chính}
+\ucstep{B1}{Người dùng}{Mở “Cài đặt thông báo”.}
+\ucstep{B2}{Hệ thống}{Hiển thị thanh trượt ngưỡng nhắc N từ 1 đến 7 ngày (mặc định 3), công tắc cho ba loại thông báo: nhắc hạn dùng, phân công mua sắm, hoạt động nhóm, và khung giờ nhắc hằng ngày của hệ thống (chỉ đọc).}
+\ucstep{B3}{Người dùng}{Thay đổi thiết lập.}
+\ucstep{B4}{Hệ thống}{Lưu thiết lập ngay khi thay đổi và hiển thị ví dụ “Bạn sẽ được nhắc từ ngày 07/12 cho thực phẩm hết hạn ngày 10/12”.}
+\ucflow{Biến thể B – Thiết lập thông báo nhắc nhở: luồng thực thi mở rộng}
+\ucstep{B2a}{Hệ thống}{Quyền thông báo của hệ điều hành đang tắt: hiển thị hướng dẫn và nút mở trang cài đặt của hệ điều hành.}
+\ucstep{B3a}{Người dùng}{Tắt cả ba loại thông báo: vẫn lưu thiết lập; hệ thống nhắc rằng người dùng sẽ không nhận cảnh báo hết hạn nhưng trạng thái hạn dùng vẫn hiển thị trong tủ lạnh.}
+\ucstep{B4a}{Hệ thống}{Mất kết nối hoặc máy chủ từ chối: hiển thị \msg{MSG33}, khôi phục công tắc về giá trị đã lưu.}
+\ucfield{Điều kiện sau}{\textbf{A.} Hồ sơ được cập nhật và hiển thị mới với các thành viên cùng nhóm. \textbf{B.} Thiết lập mới được áp dụng từ lần chạy kế tiếp của \uc{UC14}; trạng thái hạn dùng hiển thị cho người dùng được tính theo N mới.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR01}, \br{BR12}, \br{BR13}}
+\end{ucspec}
+
+
+Đặc tả bổ sung của \uc{UC01}, \uc{UC03} và \uc{UC02} nằm tại Phụ lục~\ref{pl:dac-ta-bo-sung}.
+

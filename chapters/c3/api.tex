@@ -105,11 +105,10 @@ Bảng~\ref{tab:c3-ma-phan-hoi} liệt kê bộ mã phản hồi dùng chung, m�
 \multicolumn{4}{|l|}{\hs{5xxx -- Hệ thống}}\\ \hline
 5000 & 500 & Lỗi hệ thống & MSG33\\ \hline
 5003 & 503 & Dịch vụ tạm thời không khả dụng, kể cả khi hết lượt thử lại do khóa chết & MSG33\\ \hline
-5004 & 504 & Dịch vụ bên ngoài quá thời gian & MSG23 (tra mã vạch)\\ \hline
 \end{longtable}
 }
 
-Chữ số đầu xác định nhóm và bên cần hành động: 1xxx thành công, trong đó 1001 dành cho xuất báo cáo (B04 trả \texttt{exportId}, ứng dụng hỏi B05 đến khi tệp sẵn sàng), còn các thông điệp thông tin như \msg{MSG15} hay \msg{MSG31} đi cùng mã 1000 vì không phải lỗi; 2xxx là lỗi người dùng sửa được bằng cách đổi dữ liệu vào; 3xxx là danh tính và quyền, phần lớn được ứng dụng xử lý tự động; 4xxx là dữ liệu đúng nhưng không thực hiện được ở trạng thái hiện tại, với 4004 thì \texttt{rule} chỉ rõ quy tắc bị vi phạm; 5xxx là lỗi phía hệ thống, riêng 5004 chỉ dùng cho P08 khi Open Food Facts không trả lời trong 3 giây hoặc bộ ngắt mạch đang mở (sau 5 lỗi liên tiếp, mở 30 giây).
+Chữ số đầu xác định nhóm và bên cần hành động: 1xxx thành công, trong đó 1001 dành cho xuất báo cáo (B04 trả \texttt{exportId}, ứng dụng hỏi B05 đến khi tệp sẵn sàng), còn các thông điệp thông tin như \msg{MSG15} hay \msg{MSG31} đi cùng mã 1000 vì không phải lỗi; 2xxx là lỗi người dùng sửa được bằng cách đổi dữ liệu vào; 3xxx là danh tính và quyền, phần lớn được ứng dụng xử lý tự động; 4xxx là dữ liệu đúng nhưng không thực hiện được ở trạng thái hiện tại, với 4004 thì \texttt{rule} chỉ rõ quy tắc bị vi phạm; 5xxx là lỗi phía hệ thống.
 
 Hai ranh giới được giữ nhất quán. Ranh giới thứ nhất phân 2xxx với 4xxx theo cách người dùng sửa lỗi. Mã 2001, 2002 phát hiện được chỉ từ nội dung yêu cầu; mã 2003 phải đọc lượng còn lại trong cơ sở dữ liệu nhưng vẫn thuộc nhóm 2xxx, vì lượng gửi lên vượt trạng thái mà người dùng đang thấy và chỉ cần nhập lượng nhỏ hơn trên cùng biểu mẫu (P05, P06). M06 cũng có thể thiếu lượng nhưng trả 4002, vì lượng xác nhận được tính từ bản xem trước và tồn kho đã bị thành viên khác đổi sau đó, nên người dùng phải xem lại cả bản xem trước. Ranh giới thứ hai phân 409 với 422: 409 báo yêu cầu đụng độ một thay đổi khác và có thể hợp lệ sau khi tải lại (\msg{MSG35} nêu tên người vừa thay đổi), còn 422 báo yêu cầu sai quy tắc dù gửi bao nhiêu lần.
 
@@ -126,7 +125,7 @@ Tầng dịch vụ kiểm tra trước để trả lỗi theo từng trường, 
 \endhead
 \texttt{uq\_users\_email}: email đã được đăng ký & 23505 & 409, 4003 & MSG03, BR01 & A01\\ \hline
 Khóa chính \texttt{id} do thiết bị sinh đã tồn tại & 23505 & 409, 4003 & -- & P02, S02, S07, M02\\ \hline
-Tên trùng trong danh mục (loại, ký hiệu đơn vị, tên thực phẩm trong cùng loại), mã vạch trùng trong cùng phạm vi & 23505 & 409, 4003 & MSG02, BR22 & D03--D06, D11\\ \hline
+Tên trùng trong danh mục (loại, ký hiệu đơn vị, tên thực phẩm trong cùng loại) & 23505 & 409, 4003 & MSG02, BR22 & D03--D06, D11\\ \hline
 \texttt{uq\_member\_family}: đã thuộc một nhóm gia đình & 23505 & 422, 4004 & MSG08, BR04 & G02, G07\\ \hline
 \texttt{uq\_space\_leader}: nhóm đã có trưởng nhóm khác & 23505 & 409, 4002 & MSG35, BR05 & G09\\ \hline
 \texttt{ck\_lot\_dates}: ngày hết hạn trước ngày mua & 23514 & 400, 2002 & MSG14, BR11 & P02, P04, S14\\ \hline
@@ -138,7 +137,7 @@ Chờ khóa quá \texttt{lock\_timeout} hoặc khóa chết, sau ba lần chạy
 
 Bảng~\ref{tab:c3-anh-xa-loi} cho thấy cùng mã 23505 có thể thành ba mã phản hồi tùy ý nghĩa nghiệp vụ. Trùng email hay trùng tên là dữ liệu đã tồn tại (4003); trùng chỉ mục một nhóm gia đình là vi phạm \br{BR04} mà gửi lại bao nhiêu lần vẫn sai (4004); còn trùng chỉ mục một trưởng nhóm chỉ xảy ra khi hai yêu cầu chuyển quyền chạy đồng thời, nên là xung đột (4002). Khóa chính trùng thường do thiết bị gửi lại một lệnh tạo mà mất khóa lũy đẳng, nên ứng dụng xử lý 4003 trên lệnh tạo như đã thành công và tải lại thực thể.
 
-Phía ứng dụng, bộ chặn (interceptor) của dio xử lý mã theo một bảng quyết định. Gặp 3002, ứng dụng gọi A05 (các yêu cầu song song chờ chung một lần làm mới) rồi gửi lại yêu cầu gốc đúng một lần; nhận tiếp 3002, 3001 hoặc 3008 thì xóa phiên; gặp 3009 ở A04 thì chuyển sang màn hình nhập OTP (\uc{UC02}). Gặp 4290, 5003, 5004, 4002 của khóa lũy đẳng đang xử lý hay lỗi mạng, yêu cầu được thử lại theo \texttt{Retry-After} hoặc độ trễ lũy thừa có nhiễu, giữ nguyên \texttt{Idempotency-Key}. Gặp 4002 khác khi phát lại hàng đợi ngoại tuyến, ứng dụng áp trạng thái \texttt{current} và báo người dùng bằng \msg{MSG35}; mã 2xxx và 4004 không bao giờ được thử lại tự động.
+Phía ứng dụng, bộ chặn (interceptor) của dio xử lý mã theo một bảng quyết định. Gặp 3002, ứng dụng gọi A05 (các yêu cầu song song chờ chung một lần làm mới) rồi gửi lại yêu cầu gốc đúng một lần; nhận tiếp 3002, 3001 hoặc 3008 thì xóa phiên; gặp 3009 ở A04 thì chuyển sang màn hình nhập OTP (\uc{UC01}). Gặp 4290, 5003, 4002 của khóa lũy đẳng đang xử lý hay lỗi mạng, yêu cầu được thử lại theo \texttt{Retry-After} hoặc độ trễ lũy thừa có nhiễu, giữ nguyên \texttt{Idempotency-Key}. Gặp 4002 khác khi phát lại hàng đợi ngoại tuyến, ứng dụng áp trạng thái \texttt{current} và báo người dùng bằng \msg{MSG35}; mã 2xxx và 4004 không bao giờ được thử lại tự động.
 
 % =====================================================================
 \subsection{Danh sách API}\label{ssec:danh-sach-api}
@@ -156,107 +155,106 @@ Backend cung cấp 89 mã API chia thành mười nhóm theo module; một số 
 \endhead
 \multicolumn{5}{|l|}{\hs{Xác thực và tài khoản (module identity)}}\\ \hline
 A01 & POST & \apiPath{/auth/register} & Đăng ký, gửi OTP & UC01\\ \hline
-A02 & POST & \apiPath{/auth/otp/verify} & Xác thực OTP; trả \texttt{resetToken} khi khôi phục & UC02, UC04\\ \hline
-A03 & POST & \apiPath{/auth/otp/resend} & Gửi lại OTP & UC02\\ \hline
-A04 & POST & \apiPath{/auth/login} & Đăng nhập, cấp phiên & UC03\\ \hline
+A02 & POST & \apiPath{/auth/otp/verify} & Xác thực OTP; trả \texttt{resetToken} khi khôi phục & UC01, UC03\\ \hline
+A03 & POST & \apiPath{/auth/otp/resend} & Gửi lại OTP & UC01\\ \hline
+A04 & POST & \apiPath{/auth/login} & Đăng nhập, cấp phiên & UC02\\ \hline
 A05 & POST & \apiPath{/auth/refresh} & Làm mới phiên & BR03\\ \hline
-A06 & POST & \apiPath{/auth/logout} & Đăng xuất, thu hồi phiên & UC05\\ \hline
-A07 & POST & \apiPath{/auth/password/forgot} & Yêu cầu OTP khôi phục & UC04\\ \hline
-A08 & POST & \apiPath{/auth/password/reset} & Đặt lại mật khẩu bằng \texttt{resetToken} & UC04\\ \hline
-A09 & GET & \apiPath{/me} & Xem hồ sơ & UC06\\ \hline
-A10 & PATCH & \apiPath{/me} & Cập nhật hồ sơ & UC06\\ \hline
-A11 & PUT & \apiPath{/me/password} & Đổi mật khẩu, cấp phiên mới & UC07\\ \hline
-A12 & GET & \apiPath{/me/settings} & Xem thiết lập, khung giờ nhắc & UC08\\ \hline
-A13 & PUT & \apiPath{/me/settings} & Lưu thiết lập nhắc nhở & UC08\\ \hline
-A14 & POST & \apiPath{/me/devices} & Đăng ký mã thiết bị FCM & UC31\\ \hline
-A15 & DELETE & \apiPath{/me/devices/{deviceId}} & Hủy đăng ký thiết bị & UC05\\ \hline
+A06 & POST & \apiPath{/auth/logout} & Đăng xuất, thu hồi phiên & UC02\\ \hline
+A07 & POST & \apiPath{/auth/password/forgot} & Yêu cầu OTP khôi phục & UC03\\ \hline
+A08 & POST & \apiPath{/auth/password/reset} & Đặt lại mật khẩu bằng \texttt{resetToken} & UC03\\ \hline
+A09 & GET & \apiPath{/me} & Xem hồ sơ & UC04\\ \hline
+A10 & PATCH & \apiPath{/me} & Cập nhật hồ sơ & UC04\\ \hline
+A11 & PUT & \apiPath{/me/password} & Đổi mật khẩu, cấp phiên mới & UC03\\ \hline
+A12 & GET & \apiPath{/me/settings} & Xem thiết lập, khung giờ nhắc & UC04\\ \hline
+A13 & PUT & \apiPath{/me/settings} & Lưu thiết lập nhắc nhở & UC04\\ \hline
+A14 & POST & \apiPath{/me/devices} & Đăng ký mã thiết bị FCM & UC14\\ \hline
+A15 & DELETE & \apiPath{/me/devices/{deviceId}} & Hủy đăng ký thiết bị & UC02\\ \hline
 A16 & DELETE & \apiPath{/me} & Xóa tài khoản và dữ liệu & NFR18\\ \hline
-A17 & GET & \apiPath{/me/notifications} & Hộp thư thông báo & UC31\\ \hline
-A18 & POST & \apiPath{/me/notifications/read} & Đánh dấu đã đọc & UC31\\ \hline
+A17 & GET & \apiPath{/me/notifications} & Hộp thư thông báo & UC14\\ \hline
+A18 & POST & \apiPath{/me/notifications/read} & Đánh dấu đã đọc & UC14\\ \hline
 \multicolumn{5}{|l|}{\hs{Không gian và nhóm gia đình (module household)}}\\ \hline
 G01 & GET & \apiPath{/spaces} & Các không gian của người dùng & BR04\\ \hline
-G02 & POST & \apiPath{/spaces} & Tạo nhóm, sao chép dữ liệu cá nhân & UC09\\ \hline
-G03 & GET & \ldots & Nhóm, thành viên, hoạt động gần đây & UC12\\ \hline
-G04 & PATCH & \ldots & Đổi tên, ảnh nhóm & UC12\\ \hline
-G05 & POST & \ldots\apiPath{/invites} & Tạo mã mời mới & UC10\\ \hline
-G06 & DELETE & \ldots\apiPath{/invites/current} & Thu hồi mã mời & UC10\\ \hline
-G07 & POST & \apiPath{/spaces/join} & Tham gia nhóm bằng mã mời & UC11\\ \hline
-G08 & DELETE & \ldots\apiPath{/members/{userId}} & Xóa thành viên & UC13\\ \hline
-G09 & POST & \ldots\apiPath{/leader-transfer} & Chuyển quyền trưởng nhóm & UC14\\ \hline
-G10 & POST & \ldots\apiPath{/leave} & Rời nhóm & UC15\\ \hline
+G02 & POST & \apiPath{/spaces} & Tạo nhóm, sao chép dữ liệu cá nhân & UC05\\ \hline
+G03 & GET & \ldots & Nhóm, thành viên, hoạt động gần đây & UC05\\ \hline
+G04 & PATCH & \ldots & Đổi tên, ảnh nhóm & UC05\\ \hline
+G05 & POST & \ldots\apiPath{/invites} & Tạo mã mời mới & UC06\\ \hline
+G06 & DELETE & \ldots\apiPath{/invites/current} & Thu hồi mã mời & UC06\\ \hline
+G07 & POST & \apiPath{/spaces/join} & Tham gia nhóm bằng mã mời & UC06\\ \hline
+G08 & DELETE & \ldots\apiPath{/members/{userId}} & Xóa thành viên & UC07\\ \hline
+G09 & POST & \ldots\apiPath{/leader-transfer} & Chuyển quyền trưởng nhóm & UC07\\ \hline
+G10 & POST & \ldots\apiPath{/leave} & Rời nhóm & UC07\\ \hline
 \multicolumn{5}{|l|}{\hs{Mua sắm (module shopping)}}\\ \hline
-S01 & GET & \ldots\apiPath{/shopping-lists} & Danh sách, lịch sử theo tháng & UC16, UC22, UC23\\ \hline
-S02 & POST & \ldots\apiPath{/shopping-lists} & Tạo danh sách & UC16\\ \hline
-S03 & GET & \ldots\apiPath{/shopping-lists/{listId}} & Chi tiết danh sách & UC16, UC23\\ \hline
-S04 & PATCH & \ldots\apiPath{/shopping-lists/{listId}} & Sửa tên, ngày, ghi chú & UC16\\ \hline
-S05 & DELETE & \ldots\apiPath{/shopping-lists/{listId}} & Xóa danh sách & UC16\\ \hline
-S06 & POST & \ldots\apiPath{/shopping-lists/{listId}/copy} & Sao chép danh sách & UC18\\ \hline
-S07 & POST & \ldots\apiPath{/shopping-lists/{listId}/items} & Thêm mặt hàng, gộp trùng & UC17\\ \hline
-S08 & PATCH & \ldots\apiPath{/shopping-items/{itemId}} & Sửa mặt hàng & UC17\\ \hline
-S09 & DELETE & \ldots\apiPath{/shopping-items/{itemId}} & Xóa mặt hàng & UC17\\ \hline
-S10 & PUT & \ldots\apiPath{/shopping-items/{itemId}/assignee} & Phân công người mua & UC19\\ \hline
-S11 & DELETE & \ldots\apiPath{/shopping-items/{itemId}/assignee} & Bỏ phân công & UC19\\ \hline
-S12 & POST & \ldots\apiPath{/shopping-items/purchase} & Đánh dấu đã mua & UC20\\ \hline
-S13 & POST & \ldots\apiPath{/shopping-items/{itemId}/undo-purchase} & Hoàn tác đã mua & UC20\\ \hline
-S14 & POST & \ldots\apiPath{/shopping-items/stock} & Chuyển vào tủ lạnh & UC21\\ \hline
-S15 & POST & \ldots\apiPath{/shopping-lists/generate} & Sinh danh sách từ kế hoạch & UC22\\ \hline
+S01 & GET & \ldots\apiPath{/shopping-lists} & Danh sách, lịch sử theo tháng & UC08, UC10, UC08\\ \hline
+S02 & POST & \ldots\apiPath{/shopping-lists} & Tạo danh sách & UC08\\ \hline
+S03 & GET & \ldots\apiPath{/shopping-lists/{listId}} & Chi tiết danh sách & UC08, UC08\\ \hline
+S04 & PATCH & \ldots\apiPath{/shopping-lists/{listId}} & Sửa tên, ngày, ghi chú & UC08\\ \hline
+S05 & DELETE & \ldots\apiPath{/shopping-lists/{listId}} & Xóa danh sách & UC08\\ \hline
+S06 & POST & \ldots\apiPath{/shopping-lists/{listId}/copy} & Sao chép danh sách & UC08\\ \hline
+S07 & POST & \ldots\apiPath{/shopping-lists/{listId}/items} & Thêm mặt hàng, gộp trùng & UC08\\ \hline
+S08 & PATCH & \ldots\apiPath{/shopping-items/{itemId}} & Sửa mặt hàng & UC08\\ \hline
+S09 & DELETE & \ldots\apiPath{/shopping-items/{itemId}} & Xóa mặt hàng & UC08\\ \hline
+S10 & PUT & \ldots\apiPath{/shopping-items/{itemId}/assignee} & Phân công người mua & UC08\\ \hline
+S11 & DELETE & \ldots\apiPath{/shopping-items/{itemId}/assignee} & Bỏ phân công & UC08\\ \hline
+S12 & POST & \ldots\apiPath{/shopping-items/purchase} & Đánh dấu đã mua & UC09\\ \hline
+S13 & POST & \ldots\apiPath{/shopping-items/{itemId}/undo-purchase} & Hoàn tác đã mua & UC09\\ \hline
+S14 & POST & \ldots\apiPath{/shopping-items/stock} & Chuyển vào tủ lạnh & UC11\\ \hline
+S15 & POST & \ldots\apiPath{/shopping-lists/generate} & Sinh danh sách từ kế hoạch & UC10\\ \hline
 \multicolumn{5}{|l|}{\hs{Tủ lạnh (module pantry, catalog)}}\\ \hline
-P01 & GET & \ldots\apiPath{/lots} & Danh sách lô, bộ lọc, đếm theo loại & UC24, UC43\\ \hline
-P02 & POST & \ldots\apiPath{/lots} & Thêm thực phẩm & UC25\\ \hline
-P03 & GET & \ldots\apiPath{/lots/{lotId}} & Chi tiết lô, biến động & UC24\\ \hline
-P04 & PATCH & \ldots\apiPath{/lots/{lotId}} & Cập nhật lô & UC27\\ \hline
-P05 & POST & \ldots\apiPath{/lots/{lotId}/consume} & Ghi nhận sử dụng (FEFO) & UC28\\ \hline
-P06 & POST & \ldots\apiPath{/lots/{lotId}/discard} & Loại bỏ thực phẩm & UC29\\ \hline
-P07 & GET & \ldots\apiPath{/lots/expiring} & Lô sắp hoặc đã hết hạn & UC30\\ \hline
-P08 & GET & \apiPath{/barcodes/{code}} & Tra cứu mã vạch & UC26\\ \hline
+P01 & GET & \ldots\apiPath{/lots} & Danh sách lô, bộ lọc, đếm theo loại & UC12, UC20\\ \hline
+P02 & POST & \ldots\apiPath{/lots} & Thêm thực phẩm & UC11\\ \hline
+P03 & GET & \ldots\apiPath{/lots/{lotId}} & Chi tiết lô, biến động & UC12\\ \hline
+P04 & PATCH & \ldots\apiPath{/lots/{lotId}} & Cập nhật lô & UC13\\ \hline
+P05 & POST & \ldots\apiPath{/lots/{lotId}/consume} & Ghi nhận sử dụng (FEFO) & UC13\\ \hline
+P06 & POST & \ldots\apiPath{/lots/{lotId}/discard} & Loại bỏ thực phẩm & UC13\\ \hline
+P07 & GET & \ldots\apiPath{/lots/expiring} & Lô sắp hoặc đã hết hạn & UC12\\ \hline
 \multicolumn{5}{|l|}{\hs{Công thức nấu ăn (module recipe)}}\\ \hline
-R01 & GET & \ldots\apiPath{/recipes} & Bộ sưu tập, công thức mẫu & UC34, UC37\\ \hline
-R02 & POST & \ldots\apiPath{/recipes} & Thêm công thức & UC32\\ \hline
-R03 & GET & \ldots\apiPath{/recipes/{recipeId}} & Chi tiết, đối chiếu tủ lạnh & UC34\\ \hline
-R04 & PUT & \ldots\apiPath{/recipes/{recipeId}} & Cập nhật công thức & UC33\\ \hline
-R05 & DELETE & \ldots\apiPath{/recipes/{recipeId}} & Xóa công thức & UC33\\ \hline
-R06 & PUT & \apiPath{/me/favorite-recipes/{recipeId}} & Đánh dấu yêu thích & UC35\\ \hline
-R07 & DELETE & \apiPath{/me/favorite-recipes/{recipeId}} & Bỏ yêu thích & UC35\\ \hline
-R08 & POST & \ldots\apiPath{/recipes/{recipeId}/missing-to-list} & Bổ sung nguyên liệu thiếu & UC36\\ \hline
-R09 & POST & \ldots\apiPath{/recipes/{recipeId}/copy} & Sao chép công thức mẫu vào không gian & UC32, UC52\\ \hline
+R01 & GET & \ldots\apiPath{/recipes} & Bộ sưu tập, công thức mẫu & UC16, UC17\\ \hline
+R02 & POST & \ldots\apiPath{/recipes} & Thêm công thức & UC15\\ \hline
+R03 & GET & \ldots\apiPath{/recipes/{recipeId}} & Chi tiết, đối chiếu tủ lạnh & UC16\\ \hline
+R04 & PUT & \ldots\apiPath{/recipes/{recipeId}} & Cập nhật công thức & UC15\\ \hline
+R05 & DELETE & \ldots\apiPath{/recipes/{recipeId}} & Xóa công thức & UC15\\ \hline
+R06 & PUT & \apiPath{/me/favorite-recipes/{recipeId}} & Đánh dấu yêu thích & UC15\\ \hline
+R07 & DELETE & \apiPath{/me/favorite-recipes/{recipeId}} & Bỏ yêu thích & UC15\\ \hline
+R08 & POST & \ldots\apiPath{/recipes/{recipeId}/missing-to-list} & Bổ sung nguyên liệu thiếu & UC10\\ \hline
+R09 & POST & \ldots\apiPath{/recipes/{recipeId}/copy} & Sao chép công thức mẫu vào không gian & UC15, UC23\\ \hline
 \multicolumn{5}{|l|}{\hs{Kế hoạch bữa ăn (module mealplan)}}\\ \hline
-M01 & GET & \ldots\apiPath{/meals} & Lịch bữa ăn theo khoảng ngày & UC38\\ \hline
-M02 & POST & \ldots\apiPath{/meals} & Thêm món vào bữa & UC37\\ \hline
-M03 & PATCH & \ldots\apiPath{/meals/{mealId}} & Sửa món trong lịch & UC39\\ \hline
-M04 & DELETE & \ldots\apiPath{/meals/{mealId}} & Xóa món khỏi lịch & UC39\\ \hline
-M05 & GET & \ldots\apiPath{/recipe-suggestions} & Gợi ý món ăn & UC30, UC40\\ \hline
-M06 & POST & \ldots\apiPath{/meals/{mealId}/cook} & Xác nhận đã nấu & UC41\\ \hline
+M01 & GET & \ldots\apiPath{/meals} & Lịch bữa ăn theo khoảng ngày & UC17\\ \hline
+M02 & POST & \ldots\apiPath{/meals} & Thêm món vào bữa & UC17\\ \hline
+M03 & PATCH & \ldots\apiPath{/meals/{mealId}} & Sửa món trong lịch & UC17\\ \hline
+M04 & DELETE & \ldots\apiPath{/meals/{mealId}} & Xóa món khỏi lịch & UC17\\ \hline
+M05 & GET & \ldots\apiPath{/recipe-suggestions} & Gợi ý món ăn & UC12, UC18\\ \hline
+M06 & POST & \ldots\apiPath{/meals/{mealId}/cook} & Xác nhận đã nấu & UC19\\ \hline
 \multicolumn{5}{|l|}{\hs{Tìm kiếm và danh mục (module search, catalog)}}\\ \hline
-Q01 & GET & \ldots\apiPath{/search} & Tìm thực phẩm, món ăn, bộ lọc & UC42, UC43\\ \hline
-Q02 & GET & \ldots\apiPath{/foods/suggest} & Gợi ý tên khi gõ & UC25, UC42\\ \hline
-Q03 & GET & \apiPath{/catalog} & Loại, đơn vị, vị trí lưu trữ & UC25, UC43\\ \hline
+Q01 & GET & \ldots\apiPath{/search} & Tìm thực phẩm, món ăn, bộ lọc & UC20, UC20\\ \hline
+Q02 & GET & \ldots\apiPath{/foods/suggest} & Gợi ý tên khi gõ & UC11, UC20\\ \hline
+Q03 & GET & \apiPath{/catalog} & Loại, đơn vị, vị trí lưu trữ & UC11, UC20\\ \hline
 \multicolumn{5}{|l|}{\hs{Báo cáo (module report)}}\\ \hline
-B01 & GET & \ldots\apiPath{/reports/spending} & Báo cáo chi tiêu & UC44\\ \hline
-B02 & GET & \ldots\apiPath{/reports/consumption} & Báo cáo tiêu thụ & UC45\\ \hline
-B03 & GET & \ldots\apiPath{/reports/waste} & Báo cáo lãng phí & UC46\\ \hline
-B04 & POST & \ldots\apiPath{/reports/exports} & Yêu cầu xuất PDF, CSV (202) & UC47\\ \hline
-B05 & GET & \ldots\apiPath{/reports/exports/{exportId}} & Trạng thái, URL ký sẵn của tệp & UC47\\ \hline
+B01 & GET & \ldots\apiPath{/reports/spending} & Báo cáo chi tiêu & UC21\\ \hline
+B02 & GET & \ldots\apiPath{/reports/consumption} & Báo cáo tiêu thụ & UC21\\ \hline
+B03 & GET & \ldots\apiPath{/reports/waste} & Báo cáo lãng phí & UC21\\ \hline
+B04 & POST & \ldots\apiPath{/reports/exports} & Yêu cầu xuất PDF, CSV (202) & UC22\\ \hline
+B05 & GET & \ldots\apiPath{/reports/exports/{exportId}} & Trạng thái, URL ký sẵn của tệp & UC22\\ \hline
 \multicolumn{5}{|l|}{\hs{Đồng bộ và tệp (module sync, media)}}\\ \hline
 Y01 & GET & \ldots\apiPath{/changes} & Kéo thay đổi theo \texttt{seq} & NFR11\\ \hline
 Y02 & GET & \apiPath{/ws} & WebSocket gợi ý thay đổi & NFR10\\ \hline
-Y03 & POST & \apiPath{/media/upload-urls} & Cấp URL ký sẵn tải ảnh & UC06, UC25, UC32\\ \hline
-Y04 & POST & \apiPath{/media/{objectId}/complete} & Xác nhận tải ảnh xong & UC06, UC25, UC32\\ \hline
+Y03 & POST & \apiPath{/media/upload-urls} & Cấp URL ký sẵn tải ảnh & UC04, UC11, UC15\\ \hline
+Y04 & POST & \apiPath{/media/{objectId}/complete} & Xác nhận tải ảnh xong & UC04, UC11, UC15\\ \hline
 \multicolumn{5}{|l|}{\hs{Quản trị hệ thống (module admin, catalog, recipe)}}\\ \hline
-D01 & GET & \apiPath{/admin/users} & Tra cứu tài khoản & UC48\\ \hline
-D02 & PATCH & \apiPath{/admin/users/{userId}} & Khóa, mở khóa; cấp, thu hồi quyền quản trị & UC48\\ \hline
-D03 & GET, POST & \apiPath{/admin/foods} & Xem, thêm thực phẩm & UC49\\ \hline
-D04 & PUT, DELETE & \apiPath{/admin/foods/{foodId}} & Sửa, ngừng thực phẩm & UC49\\ \hline
-D05 & GET, POST, PUT, DELETE & \apiPath{/admin/food-categories[/{id}]} & Quản lý loại mặt hàng & UC50\\ \hline
-D06 & GET, POST, PUT, DELETE & \apiPath{/admin/units[/{id}]} & Quản lý đơn vị đo & UC51\\ \hline
-D07 & GET, POST, PUT, DELETE & \apiPath{/admin/recipe-templates[/{id}]} & Quản lý công thức mẫu & UC52\\ \hline
-D08 & GET & \apiPath{/admin/configs} & Xem tham số hệ thống & UC53\\ \hline
-D09 & PUT & \apiPath{/admin/configs} & Cập nhật nhiều tham số trong một giao dịch & UC53\\ \hline
-D10 & GET & \apiPath{/admin/audit-logs} & Nhật ký quản trị & UC48, UC53\\ \hline
-D11 & POST & \apiPath{/admin/foods/{foodId}/review} & Duyệt hoặc gộp thực phẩm riêng & UC49\\ \hline
+D01 & GET & \apiPath{/admin/users} & Tra cứu tài khoản & UC24\\ \hline
+D02 & PATCH & \apiPath{/admin/users/{userId}} & Khóa, mở khóa; cấp, thu hồi quyền quản trị & UC24\\ \hline
+D03 & GET, POST & \apiPath{/admin/foods} & Xem, thêm thực phẩm & UC23\\ \hline
+D04 & PUT, DELETE & \apiPath{/admin/foods/{foodId}} & Sửa, ngừng thực phẩm & UC23\\ \hline
+D05 & GET, POST, PUT, DELETE & \apiPath{/admin/food-categories[/{id}]} & Quản lý loại mặt hàng & UC23\\ \hline
+D06 & GET, POST, PUT, DELETE & \apiPath{/admin/units[/{id}]} & Quản lý đơn vị đo & UC23\\ \hline
+D07 & GET, POST, PUT, DELETE & \apiPath{/admin/recipe-templates[/{id}]} & Quản lý công thức mẫu & UC23\\ \hline
+D08 & GET & \apiPath{/admin/configs} & Xem tham số hệ thống & UC25\\ \hline
+D09 & PUT & \apiPath{/admin/configs} & Cập nhật nhiều tham số trong một giao dịch & UC25\\ \hline
+D10 & GET & \apiPath{/admin/audit-logs} & Nhật ký quản trị & UC24, UC25\\ \hline
+D11 & POST & \apiPath{/admin/foods/{foodId}/review} & Duyệt hoặc gộp thực phẩm riêng & UC23\\ \hline
 \end{longtable}
 }
 
-Quyền truy cập được gắn theo nhóm đường dẫn ngay ở bộ định tuyến, với năm mức. API công khai A01--A05, A07, A08 chỉ chịu giới hạn tần suất theo địa chỉ IP. API của người dùng đã đăng nhập gồm phần còn lại của nhóm A cùng G01, G02, G07, R06, R07, P08, Q03, Y02--Y04, chỉ chạm tới dữ liệu của chính người gọi hoặc danh mục dùng chung; R06 và Y03 kiểm tra thêm quyền trên đối tượng đích. API của thành viên không gian là mọi đường dẫn chứa \texttt{\{sid\}}, kể cả Q02 vì gợi ý gồm thực phẩm riêng của không gian; người không phải thành viên nhận 404, mã 4001, thay vì 403 để không xác nhận không gian có tồn tại (\br{BR23}). API của trưởng nhóm gồm G04--G06, G08, G09, S10, S11, còn R04, R05 cho phép người tạo công thức hoặc trưởng nhóm; người thiếu vai trò nhận 403, mã 3007 (\msg{MSG13}). API quản trị D01--D11 yêu cầu \texttt{system\_role = admin}. Quản trị viên vẫn là người dùng nên dùng được không gian của chính mình, nhưng vai trò hệ thống không thay cho tư cách thành viên nên không đọc được dữ liệu của nhóm khác. Y02 nâng cấp lên WebSocket sau khi xác thực; máy chủ gửi \texttt{ping} mỗi 25 giây, đóng kết nối nếu không có \texttt{pong} sau 10 giây và đóng với mã 4401 khi mã truy cập hết hạn. Các điểm cuối vận hành \path{/healthz}, \path{/readyz}, \path{/metrics} chỉ mở trong mạng nội bộ Docker.
+Quyền truy cập được gắn theo nhóm đường dẫn ngay ở bộ định tuyến, với năm mức. API công khai A01--A05, A07, A08 chỉ chịu giới hạn tần suất theo địa chỉ IP. API của người dùng đã đăng nhập gồm phần còn lại của nhóm A cùng G01, G02, G07, R06, R07, Q03, Y02--Y04, chỉ chạm tới dữ liệu của chính người gọi hoặc danh mục dùng chung; R06 và Y03 kiểm tra thêm quyền trên đối tượng đích. API của thành viên không gian là mọi đường dẫn chứa \texttt{\{sid\}}, kể cả Q02 vì gợi ý gồm thực phẩm riêng của không gian; người không phải thành viên nhận 404, mã 4001, thay vì 403 để không xác nhận không gian có tồn tại (\br{BR23}). API của trưởng nhóm gồm G04--G06, G08, G09, S10, S11, còn R04, R05 cho phép người tạo công thức hoặc trưởng nhóm; người thiếu vai trò nhận 403, mã 3007 (\msg{MSG13}). API quản trị D01--D11 yêu cầu \texttt{system\_role = admin}. Quản trị viên vẫn là người dùng nên dùng được không gian của chính mình, nhưng vai trò hệ thống không thay cho tư cách thành viên nên không đọc được dữ liệu của nhóm khác. Y02 nâng cấp lên WebSocket sau khi xác thực; máy chủ gửi \texttt{ping} mỗi 25 giây, đóng kết nối nếu không có \texttt{pong} sau 10 giây và đóng với mã 4401 khi mã truy cập hết hạn. Các điểm cuối vận hành \path{/healthz}, \path{/readyz}, \path{/metrics} chỉ mở trong mạng nội bộ Docker.
 
 
 \subsection{Đặc tả chi tiết API}\label{ssec:dac-ta-api}
@@ -266,7 +264,7 @@ Mục này đặc tả chi tiết hai API tiêu biểu theo đúng mẫu của h
 % ---------------------------------------------------------------------
 \subsubsection{A04 – Đăng nhập}\label{sssec:api-a04}
 
-A04 hiện thực \uc{UC03} (Bảng~\ref{tab:c3-api-a04}, Mã nguồn~\ref{code:c3-api-a04}). Email không tồn tại vẫn được xác minh trên một chuỗi băm giả, còn trạng thái bị quản trị viên khóa (\texttt{disabled}) hay chưa xác thực (\texttt{pending}) chỉ lộ ra sau khi mật khẩu đúng, nên người không biết mật khẩu không dò được tình trạng tài khoản. Ngược lại, khóa tạm do sai mật khẩu (\texttt{locked}) trả 423 trước cả bước xác minh: nếu vẫn so mật khẩu, khác biệt giữa 401 và 423 sẽ cho kẻ dò biết mật khẩu đúng ngay trong thời gian khóa. Mỗi lần đăng nhập thu hồi họ phiên cũ của cùng thiết bị, nên đăng nhập lại sau khi mất phản hồi là vô hại.
+A04 hiện thực \uc{UC02} (Bảng~\ref{tab:c3-api-a04}, Mã nguồn~\ref{code:c3-api-a04}). Email không tồn tại vẫn được xác minh trên một chuỗi băm giả, còn trạng thái bị quản trị viên khóa (\texttt{disabled}) hay chưa xác thực (\texttt{pending}) chỉ lộ ra sau khi mật khẩu đúng, nên người không biết mật khẩu không dò được tình trạng tài khoản. Ngược lại, khóa tạm do sai mật khẩu (\texttt{locked}) trả 423 trước cả bước xác minh: nếu vẫn so mật khẩu, khác biệt giữa 401 và 423 sẽ cho kẻ dò biết mật khẩu đúng ngay trong thời gian khóa. Mỗi lần đăng nhập thu hồi họ phiên cũ của cùng thiết bị, nên đăng nhập lại sau khi mất phản hồi là vô hại.
 
 \begin{apispec}{Đặc tả và test case dự kiến của API A04 -- Đăng nhập}{tab:c3-api-a04}{tab:c3-tc-a04}
 \apirow{URL, quyền}{\texttt{POST} \path{/it4788/v1/auth/login}; công khai, 10 yêu cầu/phút/IP; không dùng \texttt{Idempotency-Key}.}
@@ -296,7 +294,7 @@ HTTP/1.1 200 OK
 % ---------------------------------------------------------------------
 \subsubsection{M06 – Xác nhận đã nấu}\label{sssec:api-m06}
 
-M06 hiện thực \uc{UC41} theo Hình~\ref{fig:seq-xac-nhan-nau} (Bảng~\ref{tab:c3-api-m06}). Bản xem trước do ứng dụng tính từ bản sao cục bộ, nên yêu cầu mang lượng trừ đã xác nhận cho từng nguyên liệu: 0 là lấy ngoài tủ, \texttt{lotIds} chọn rõ lô quá hạn. Nếu tồn kho đã giảm, máy chủ trả 409, mã 4002, kèm lượng mới chứ không phải 2003 như P05, vì lượng xác nhận được tính từ bản xem trước mà tồn kho đã bị người khác đổi sau đó (Mã nguồn~\ref{code:c3-api-m06}). Món đã \texttt{cooked} được xét trước \texttt{If-Match} và nhận 200 với \texttt{alreadyCooked = true}, không trừ kho lần hai. Giao dịch theo thứ tự khóa toàn cục: khóa lũy đẳng, món, các lô theo \texttt{food\_id} rồi \texttt{(expires\_on, id)}, cuối cùng mới tăng \texttt{change\_seq}. Giao dịch đặt \texttt{lock\_timeout} 3 giây và tự chạy lại tối đa ba lần khi gặp khóa chết (40P01) hoặc chờ khóa quá hạn (55P03), hết lượt thì trả 503, mã 5003. Mức cô lập là READ COMMITTED với khóa dòng tường minh, nên lỗi tuần tự hóa 40001 không phát sinh.
+M06 hiện thực \uc{UC19} theo Hình~\ref{fig:seq-xac-nhan-nau} (Bảng~\ref{tab:c3-api-m06}). Bản xem trước do ứng dụng tính từ bản sao cục bộ, nên yêu cầu mang lượng trừ đã xác nhận cho từng nguyên liệu: 0 là lấy ngoài tủ, \texttt{lotIds} chọn rõ lô quá hạn. Nếu tồn kho đã giảm, máy chủ trả 409, mã 4002, kèm lượng mới chứ không phải 2003 như P05, vì lượng xác nhận được tính từ bản xem trước mà tồn kho đã bị người khác đổi sau đó (Mã nguồn~\ref{code:c3-api-m06}). Món đã \texttt{cooked} được xét trước \texttt{If-Match} và nhận 200 với \texttt{alreadyCooked = true}, không trừ kho lần hai. Giao dịch theo thứ tự khóa toàn cục: khóa lũy đẳng, món, các lô theo \texttt{food\_id} rồi \texttt{(expires\_on, id)}, cuối cùng mới tăng \texttt{change\_seq}. Giao dịch đặt \texttt{lock\_timeout} 3 giây và tự chạy lại tối đa ba lần khi gặp khóa chết (40P01) hoặc chờ khóa quá hạn (55P03), hết lượt thì trả 503, mã 5003. Mức cô lập là READ COMMITTED với khóa dòng tường minh, nên lỗi tuần tự hóa 40001 không phát sinh.
 
 \begin{apispec}{Đặc tả và test case dự kiến của API M06 -- Xác nhận đã nấu}{tab:c3-api-m06}{tab:c3-tc-m06}
 \apirow{URL, quyền}{\texttt{POST} \path{/it4788/v1/spaces/{sid}/meals/{mealId}/cook}; thành viên không gian; \texttt{Idempotency-Key}, \texttt{If-Match: "<version>"}.}
@@ -334,7 +332,7 @@ Tệp \path{api/openapi.yaml} theo OpenAPI 3.1~\cite{openapi} là nguồn sự t
 /spaces/{sid}/lots/{lotId}/consume:
   post:
     operationId: consumeLot
-    x-api-id: P05                      # UC28; BR14, BR15, BR16
+    x-api-id: P05                      # UC13; BR14, BR15, BR16
     security: [ { bearerAuth: [] } ]
     parameters:
       - $ref: '#/components/parameters/SpaceId'

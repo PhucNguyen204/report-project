@@ -1,14 +1,18 @@
 % Công thức là dữ liệu đầu vào cho lập kế hoạch và đối chiếu tồn kho.
 \subsubsection{Công thức và đối chiếu nguyên liệu}\label{sssec:pr-cong-thuc}
 
-Gói công thức cung cấp nguyên liệu có định lượng cho \uc{UC22}, \uc{UC40} và \uc{UC41}. Hình~\ref{fig:uc-cong-thuc} thể hiện các thao tác từ một công thức; phần này tập trung vào dữ liệu và kết quả đối chiếu, không lặp lại các bước mở biểu mẫu, lưu và thông báo.
+Gói công thức cung cấp nguyên liệu có định lượng cho \uc{UC10}, \uc{UC18} và \uc{UC19}. Hình~\ref{fig:uc-cong-thuc} thể hiện hai use case tầng 2: \uc{UC15} Quản lý công thức nấu ăn (tạo, sửa, xóa, đánh dấu yêu thích) và \uc{UC16} Xem công thức và đối chiếu nguyên liệu với tủ lạnh. Công thức mẫu được nạp sẵn làm dữ liệu khởi tạo; sửa, xóa và yêu thích cài đặt tối giản, yêu thích chỉ là một cờ dữ liệu. Từ màn hình đối chiếu, người dùng chuyển sang \uc{UC10} (tầng 1) để đưa phần thiếu vào danh sách mua; \uc{UC10} được vẽ ở đây để thể hiện mối liên hệ và được đặc tả ở gói mua sắm (Bảng~\ref{tab:UC10}). Phần này tập trung vào dữ liệu và kết quả đối chiếu, không lặp lại các bước mở biểu mẫu, lưu và thông báo.
 
 \diagram[0.78\textwidth]{c2-13-uc-cong-thuc}{Biểu đồ use case phân rã gói Quản lý công thức nấu ăn}{fig:uc-cong-thuc}
 
-\paragraph{Tạo công thức (\uc{UC32})}
+\ucgoal{UC15}{Quản lý công thức nấu ăn}{2}{Người dùng}{tạo, sửa, xóa, yêu thích công thức}
+
+\paragraph*{Tạo công thức (\uc{UC15})}
 Người dùng nhập tên món dài 2--100 ký tự, khẩu phần chuẩn từ 1 đến 20 và ít nhất một nguyên liệu có định lượng dương; ảnh, thời gian, các bước nấu và ghi chú là tùy chọn. Mỗi nguyên liệu phải gắn với danh mục thực phẩm, đơn vị đo và cờ bắt buộc hoặc tùy chọn. Dữ liệu hợp lệ tạo công thức trong bộ sưu tập cá nhân; thiếu nguyên liệu, khẩu phần sai hoặc đơn vị không hợp lệ thì từ chối lưu theo \br{BR16}, \br{BR17}. Công thức mẫu chỉ được xem hoặc sao chép thành bản riêng.
 
-\paragraph{Đối chiếu nguyên liệu (\uc{UC34})}
+\ucgoal{UC16}{Xem công thức và đối chiếu nguyên liệu}{2}{Người dùng}{xem chi tiết công thức, đối chiếu với tủ lạnh}
+
+\paragraph*{Đối chiếu nguyên liệu (\uc{UC16})}
 Hệ thống nhân định lượng với tỷ lệ khẩu phần mong muốn trên khẩu phần chuẩn, quy đổi về cùng nhóm đại lượng và đối chiếu với các lô chưa hết hạn của không gian hiện hành. Mỗi nguyên liệu nhận nhãn Đủ, Thiếu một lượng cụ thể hoặc Không có; lô sắp hết hạn được đánh dấu để ưu tiên dùng. Ví dụ, công thức cho 2 người cần 200 g thịt thì bữa 4 người cần 400 g; nếu tủ có 0,25 kg thịt còn hạn, phần thiếu là 150 g. Đơn vị không quy đổi được phải báo riêng, không được coi là đủ.
 
-Xem hoặc đổi khẩu phần không trừ kho. Người dùng có thể đưa phần thiếu vào danh sách qua \uc{UC36}, thêm món vào lịch qua \uc{UC37}, hoặc xác nhận đã nấu qua \uc{UC41} để thực sự ghi nhận tiêu thụ. \uc{UC33}, \uc{UC35}, \uc{UC36} được bổ sung tại Phụ lục~\ref{pl:dac-ta-bo-sung}.
+Xem hoặc đổi khẩu phần không trừ kho. Người dùng có thể đưa phần thiếu vào danh sách qua \uc{UC10}, thêm món vào lịch qua \uc{UC17}, hoặc xác nhận đã nấu qua \uc{UC19} để thực sự ghi nhận tiêu thụ. \uc{UC15} được ghi ở Phụ lục~\ref{pl:dac-ta-bo-sung}.

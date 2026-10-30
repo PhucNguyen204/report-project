@@ -72,7 +72,6 @@ class "Mặt hàng mua sắm" as MH {
 }
 class "Thực phẩm (danh mục)" as TP {
   tên
-  mã vạch
   {field} hạn dùng gợi ý (ngày)
 }
 class "Loại thực phẩm" as LT {

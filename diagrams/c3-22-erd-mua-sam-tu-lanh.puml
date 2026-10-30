@@ -101,7 +101,7 @@ legend bottom right
   ● NOT NULL    «GEN»: cột sinh
   ─ ─  nét đứt: tham chiếu logic, không FK
   stock_movements chỉ ghi thêm; kind = adjust:
-  quantity là chênh lệch có dấu (P04, UC27)
+  quantity là chênh lệch có dấu (P04, UC13)
 endlegend
 
 sl ||-right-o{ si

@@ -3,32 +3,66 @@
 % ---------------------------------------------------------------------
 \subsubsection{Phân rã use case “Thống kê báo cáo”}\label{sssec:pr-thong-ke}
 
-Gói Thống kê báo cáo gồm ba loại báo cáo và chức năng xuất dữ liệu, được phân rã tại Hình~\ref{fig:uc-thong-ke}. Ba use case \uc{UC44}, \uc{UC45} và \uc{UC46} dùng chung bộ chọn thời gian, các thẻ chỉ số và biểu đồ chi tiết, nhưng khai thác các nguồn dữ liệu khác nhau (Bảng~\ref{tab:chi-so-bao-cao}). Use case \uc{UC47} cho phép xuất từng báo cáo. Số liệu được tính theo không gian hiện hành; trong không gian gia đình, báo cáo phản ánh hoạt động chung của các thành viên.
+Gói Thống kê báo cáo có hai use case, được phân rã tại Hình~\ref{fig:uc-thong-ke}: \uc{UC21} Xem báo cáo mua sắm, tiêu thụ và lãng phí, và \uc{UC22} Xuất báo cáo (cả hai thuộc tầng 1). \uc{UC21} là một màn hình ba tab dùng chung bộ chọn thời gian, các thẻ chỉ số và biểu đồ chi tiết, khai thác ba nguồn dữ liệu khác nhau (Bảng~\ref{tab:chi-so-bao-cao}); tab lãng phí được đặc tả đầy đủ, hai tab mua sắm và tiêu thụ chỉ cài đặt tối giản. \uc{UC22} mở rộng \uc{UC21}, cho phép xuất báo cáo đang xem ra tệp. Số liệu được tính theo không gian hiện hành; trong không gian gia đình, báo cáo phản ánh hoạt động chung của các thành viên.
 
 \diagram[0.62\textwidth]{c2-18-uc-thong-ke}{Biểu đồ use case phân rã gói Thống kê báo cáo}{fig:uc-thong-ke}
 
-\paragraph{Báo cáo mua sắm (\uc{UC44})}
-Người dùng chọn khoảng thời gian không quá 12 tháng và cách nhóm theo ngày, tuần hoặc tháng. Hệ thống tổng hợp mặt hàng đã mua, kể cả đã nhập tủ, để trả tổng chi tiêu, cơ cấu theo loại và xu hướng. Mặt hàng thiếu đơn giá chỉ tính vào số lượng và được nêu riêng; khoảng ngày sai báo \msg{MSG25}, không có dữ liệu báo \msg{MSG26}. Xem báo cáo không thay đổi dữ liệu; xuất tệp dùng \uc{UC47}.
+\ucgoal{UC21}{Xem báo cáo mua sắm, tiêu thụ và lãng phí}{1}{Người dùng}{tab mua sắm và chi tiêu, tab tiêu thụ, tab lãng phí}
+
+\paragraph*{Báo cáo mua sắm (\uc{UC21})}
+Người dùng chọn khoảng thời gian không quá 12 tháng và cách nhóm theo ngày, tuần hoặc tháng. Hệ thống tổng hợp mặt hàng đã mua, kể cả đã nhập tủ, để trả tổng chi tiêu, cơ cấu theo loại và xu hướng. Mặt hàng thiếu đơn giá chỉ tính vào số lượng và được nêu riêng; khoảng ngày sai báo \msg{MSG25}, không có dữ liệu báo \msg{MSG26}. Xem báo cáo không thay đổi dữ liệu; xuất tệp dùng \uc{UC22}.
+
 
 Báo cáo lãng phí dưới đây được đặc tả sâu hơn vì liên kết nhật ký loại bỏ với nguồn nhập và giá mua để hỗ trợ điều chỉnh lượng mua.
 
-\begin{ucspec}{UC46}{Xem báo cáo lãng phí thực phẩm}
+\begin{ucspec}{UC21}{Xem báo cáo mua sắm, tiêu thụ và lãng phí}
 \ucfield{Tác nhân}{Người dùng}
-\ucfield{Mô tả}{Cho phép người dùng xem số lượng, giá trị ước tính và tỷ lệ thực phẩm bị loại bỏ do hỏng hoặc hết hạn, cùng danh sách thực phẩm hay bị lãng phí.}
-\ucfield{Điều kiện trước}{Người dùng đã đăng nhập.}
-\ucflow{Luồng thực thi chính}
-\ucstep{1}{Người dùng}{Mở màn hình Thống kê, chọn thẻ “Lãng phí”.}
-\ucstep{2}{Hệ thống}{Hiển thị bộ chọn tuần này, tháng này hoặc khoảng ngày tùy chọn; mặc định là tháng này.}
-\ucstep{3}{Người dùng}{Chọn khoảng thời gian.}
-\ucstep{4}{Hệ thống}{Kiểm tra khoảng thời gian không quá 12 tháng (\br{BR21}).}
-\ucstep{5}{Hệ thống}{Tổng hợp nhật ký loại bỏ: số lô bị loại bỏ, giá trị lãng phí theo đơn giá của mặt hàng nguồn, tỷ lệ lãng phí theo Bảng~\ref{tab:chi-so-bao-cao}, phân bổ theo lý do (hết hạn, hỏng, khác).}
-\ucstep{6}{Hệ thống}{Hiển thị các thẻ chỉ số kèm mức thay đổi so với kỳ trước, biểu đồ xu hướng theo tuần và danh sách năm thực phẩm bị loại bỏ nhiều nhất cùng gợi ý giảm lượng mua.}
-\ucflow{Luồng thực thi mở rộng}
-\ucstep{4a}{Hệ thống}{Khoảng thời gian không hợp lệ: hiển thị \msg{MSG25}; quay lại bước 3.}
-\ucstep{5a}{Hệ thống}{Không có thực phẩm nào bị loại bỏ: hiển thị thông điệp khích lệ thay cho biểu đồ.}
-\ucstep{6a}{Người dùng}{Chọn “Xuất báo cáo”: thực hiện \uc{UC47}.}
+\ucfield{Mô tả}{\textbf{A.} Cho phép người dùng xem lượng thực phẩm đã tiêu thụ theo thời gian, theo loại và theo bữa ăn. \textbf{B.} Cho phép người dùng xem số lượng, giá trị ước tính và tỷ lệ thực phẩm bị loại bỏ do hỏng hoặc hết hạn, cùng danh sách thực phẩm hay bị lãng phí.}
+\ucfield{Điều kiện trước}{\textbf{A.} Người dùng đang đăng nhập. \textbf{B.} Người dùng đã đăng nhập.}
+\ucflow{Biến thể A – Xem báo cáo tiêu thụ thực phẩm: luồng thực thi chính}
+\ucstep{1}{Người dùng}{Mở màn hình Thống kê, chọn thẻ “Tiêu thụ”.}
+\ucstep{2}{Hệ thống}{Hiển thị bộ chọn khoảng thời gian như \uc{UC21}.}
+\ucstep{3}{Người dùng}{Chọn khoảng thời gian và, tùy chọn, một loại thực phẩm.}
+\ucstep{4}{Hệ thống}{Kiểm tra khoảng thời gian (\br{BR21}); tổng hợp nhật ký tiêu thụ, quy đổi về đơn vị cơ sở (\br{BR16}).}
+\ucstep{5}{Hệ thống}{Hiển thị biểu đồ đường xu hướng tiêu thụ, biểu đồ cơ cấu theo loại, mười thực phẩm tiêu thụ nhiều nhất và số bữa đã nấu trong kỳ.}
+\ucflow{Biến thể A – Xem báo cáo tiêu thụ thực phẩm: luồng thực thi mở rộng}
+\ucstep{4a}{Hệ thống}{Khoảng thời gian không hợp lệ: hiển thị \msg{MSG25}.}
+\ucstep{4b}{Hệ thống}{Không có dữ liệu: hiển thị \msg{MSG26}.}
+\ucstep{5a}{Người dùng}{Chọn “Xuất báo cáo”: thực hiện \uc{UC22}.}
+\ucflow{Biến thể B – Xem báo cáo lãng phí thực phẩm: luồng thực thi chính}
+\ucstep{B1}{Người dùng}{Mở màn hình Thống kê, chọn thẻ “Lãng phí”.}
+\ucstep{B2}{Hệ thống}{Hiển thị bộ chọn tuần này, tháng này hoặc khoảng ngày tùy chọn; mặc định là tháng này.}
+\ucstep{B3}{Người dùng}{Chọn khoảng thời gian.}
+\ucstep{B4}{Hệ thống}{Kiểm tra khoảng thời gian không quá 12 tháng (\br{BR21}).}
+\ucstep{B5}{Hệ thống}{Tổng hợp nhật ký loại bỏ: số lô bị loại bỏ, giá trị lãng phí theo đơn giá của mặt hàng nguồn, tỷ lệ lãng phí theo Bảng~\ref{tab:chi-so-bao-cao}, phân bổ theo lý do (hết hạn, hỏng, khác).}
+\ucstep{B6}{Hệ thống}{Hiển thị các thẻ chỉ số kèm mức thay đổi so với kỳ trước, biểu đồ xu hướng theo tuần và danh sách năm thực phẩm bị loại bỏ nhiều nhất cùng gợi ý giảm lượng mua.}
+\ucflow{Biến thể B – Xem báo cáo lãng phí thực phẩm: luồng thực thi mở rộng}
+\ucstep{B4a}{Hệ thống}{Khoảng thời gian không hợp lệ: hiển thị \msg{MSG25}; quay lại bước B3.}
+\ucstep{B5a}{Hệ thống}{Không có thực phẩm nào bị loại bỏ: hiển thị thông điệp khích lệ thay cho biểu đồ.}
+\ucstep{B6a}{Người dùng}{Chọn “Xuất báo cáo”: thực hiện \uc{UC22}.}
 \ucfield{Điều kiện sau}{Không thay đổi dữ liệu.}
-\ucfield{Quy tắc nghiệp vụ}{\br{BR21}, \br{BR23}}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR16}, \br{BR21}, \br{BR23}}
 \end{ucspec}
 
-Các use case \uc{UC45} và \uc{UC47} được đặc tả tại Phụ lục~\ref{pl:dac-ta-bo-sung}.
+
+\ucgoal{UC22}{Xuất báo cáo}{1}{Người dùng}{xuất PDF hoặc CSV}
+
+Xuất báo cáo (\uc{UC22}) là bước cuối của kịch bản nhìn lại lãng phí: dữ liệu giá trị và tỷ lệ lấy từ \uc{UC21}, còn tệp chỉ phản ánh khoảng thời gian đang xem.
+
+\begin{ucspec}{UC22}{Xuất báo cáo}
+\ucfield{Tác nhân}{Người dùng}
+\ucfield{Mô tả}{Cho phép người dùng kết xuất báo cáo đang xem ra tệp để lưu trữ hoặc chia sẻ.}
+\ucfield{Điều kiện trước}{Người dùng đang xem báo cáo lãng phí \uc{UC21} và báo cáo có dữ liệu; \uc{UC21} dùng lại cùng thành phần xuất.}
+\ucflow{Luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chọn “Xuất báo cáo” và chọn định dạng PDF hoặc CSV.}
+\ucstep{2}{Hệ thống}{Với PDF: kết xuất tiêu đề, khoảng thời gian, các chỉ số, biểu đồ và bảng chi tiết; với CSV: kết xuất bảng dữ liệu chi tiết mã hóa UTF-8. Tên tệp gồm loại báo cáo và khoảng thời gian, ví dụ \texttt{lang-phi\_2025-12-01\_2025-12-31}.}
+\ucstep{3}{Hệ thống}{Mở bảng chia sẻ của hệ điều hành để người dùng lưu hoặc gửi tệp.}
+\ucflow{Luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Kết xuất thất bại (hết bộ nhớ hoặc lỗi ghi tệp): hiển thị lỗi và cho phép thử lại, không để lại tệp dở dang.}
+\ucstep{2b}{Hệ thống}{Báo cáo có lô thiếu đơn giá: tệp vẫn được tạo, các dòng đó ghi chú “chưa đủ thông tin giá” và không cộng vào giá trị lãng phí (\br{BR21}).}
+\ucstep{3a}{Người dùng}{Đóng bảng chia sẻ mà không lưu: kết thúc use case, xóa tệp tạm.}
+\ucfield{Điều kiện sau}{Tệp báo cáo được tạo trên thiết bị; dữ liệu hệ thống không thay đổi.}
+\ucfield{Quy tắc nghiệp vụ}{\br{BR21}}
+\end{ucspec}
+
+\uc{UC21} được ghi ở Phụ lục~\ref{pl:dac-ta-bo-sung}.

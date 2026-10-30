@@ -18,7 +18,6 @@ UpdateContainerBoundaryStyle($legendText="ranh giới vùng chứa")
 
 Container_Boundary(api, "API") {
   Component(svc, "Dịch vụ ứng dụng", "Go, mỗi module", "Ca sử dụng, BR, ranh giới giao dịch (TxManager)")
-  Component(bc, "BarcodeService + bộ ngắt mạch", "catalog", "Cache → foods global (Repository) → OFF")
   Component(cache, "Bộ đệm cấu hình, gợi ý", "bộ nhớ + Redis", "cfg:all 5 phút, suggest:{sid}")
   Component(cf, "ChangefeedAppender", "sync: SyncEngine", "Cuối giao dịch; PUBLISH sau commit")
   Component(pub, "Event publisher", "River InsertTx", "Chèn tác vụ cùng giao dịch")
@@ -26,20 +25,16 @@ Container_Boundary(api, "API") {
   Component(ext, "Search client, S3 presigner", "go-elasticsearch, minio-go", "Lọc theo không gian; ký URL")
 }
 
-System_Ext(off, "Open Food Facts", "Tra cứu mã vạch")
-ContainerDb(redis, "Redis", "Redis 7", "cfg:all, suggest, barcode, Pub/Sub")
+ContainerDb(redis, "Redis", "Redis 7", "cfg:all, suggest, Pub/Sub")
 ContainerDb(pg, "PostgreSQL", "PostgreSQL 16", "Schema module, river_job")
 ContainerDb(es, "Elasticsearch", "8.15", "foods, recipes")
 ContainerDb(minio, "MinIO", "S3", "Bucket media")
 
-Rel(svc, bc, "Tra mã vạch (P08)")
 Rel(svc, cache, "Đọc tham số, gợi ý")
 Rel(svc, cf, "Ghi thay đổi")
 Rel(svc, pub, "Phát sự kiện")
 Rel(svc, repo, "Đọc/ghi")
 Rel(svc, ext, "Tìm kiếm, xin URL")
-Rel(bc, off, "GET sản phẩm", "HTTPS, 3 s")
-Rel(bc, redis, "barcode:{code}")
 Rel(cache, redis, "cfg:all, SUBSCRIBE cfg")
 Rel(cf, redis, "PUBLISH space:{id}")
 Rel(cf, pg, "change_seq, space_changes")

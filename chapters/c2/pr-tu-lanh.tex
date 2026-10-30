@@ -3,35 +3,52 @@
 % ---------------------------------------------------------------------
 \subsubsection{Phân rã use case “Quản lý thực phẩm trong tủ lạnh”}\label{sssec:pr-tu-lanh}
 
-Gói Quản lý thực phẩm trong tủ lạnh gồm tám use case từ \uc{UC24} đến \uc{UC31}, được phân rã tại Hình~\ref{fig:uc-tu-lanh}. \uc{UC24} Xem danh sách thực phẩm là điểm vào chính. Các thao tác cập nhật (\uc{UC27}), ghi nhận sử dụng (\uc{UC28}) và loại bỏ (\uc{UC29}) mở rộng use case này, vì được thực hiện trên từng lô trong danh sách. \uc{UC26} Quét mã vạch mở rộng \uc{UC25} như một phương thức nhập liệu và là use case duy nhất tra cứu Cơ sở dữ liệu sản phẩm mở. Riêng \uc{UC31} được Bộ lập lịch khởi phát thay vì người dùng.
+Gói Quản lý thực phẩm trong tủ lạnh có bốn use case, được phân rã tại Hình~\ref{fig:uc-tu-lanh}. \uc{UC11} Nhập thực phẩm vào tủ lạnh thuộc tầng 1. \uc{UC12} Xem và lọc thực phẩm trong tủ lạnh là điểm vào chính và gộp việc xem danh sách với xem thực phẩm sắp hết hạn. \uc{UC13} Điều chỉnh lô thực phẩm gộp ba thao tác trên một lô: sửa thông tin, ghi nhận sử dụng và loại bỏ, khác nhau ở lý do điều chỉnh; thao tác loại bỏ ghi nhật ký loại bỏ, nguồn dữ liệu của báo cáo lãng phí, và ghi nhận sử dụng dùng chung dịch vụ trừ kho theo FEFO với \uc{UC19}. Các thao tác này được gọi từ danh sách của \uc{UC12} nên chỉ là điều hướng, không mô hình hóa bằng extend. \uc{UC14} Nhắc thực phẩm sắp hết hạn do Bộ lập lịch khởi phát thay vì người dùng. \uc{UC12}, \uc{UC13} và \uc{UC14} thuộc tầng 2; riêng sửa lô và ghi nhận sử dụng cài đặt tối giản. Việc nhập bằng quét mã vạch và tra cứu cơ sở dữ liệu sản phẩm mở không thuộc phạm vi: mọi thực phẩm được nhập tay.
 
 \diagram[0.8\textwidth]{c2-10-uc-tu-lanh}{Biểu đồ use case phân rã gói Quản lý thực phẩm trong tủ lạnh}{fig:uc-tu-lanh}
 
-\begin{ucspec}{UC25}{Thêm thực phẩm vào tủ lạnh}
+
+\ucgoal{UC11}{Nhập thực phẩm vào tủ lạnh}{1}{Người dùng}{nhập từ mặt hàng đã mua, nhập tay}
+Mục tiêu: có một lô thực phẩm với số lượng, vị trí và hạn dùng đúng. Có hai cách nhập, khác nhau ở dữ liệu được điền sẵn (Bảng~\ref{tab:nguon-nhap-tu}); cả hai tạo lô theo \br{BR11}, \br{BR12}, \br{BR14}. Cách chuyển từ đơn mua (biến thể A) là cách duy nhất giữ liên kết tới giá mua; cách nhập tay là biến thể B.
+
+\begin{ucspec}{UC11}{Nhập thực phẩm vào tủ lạnh}
 \ucfield{Tác nhân}{Người dùng}
-\ucfield{Mô tả}{Cho phép người dùng nhập một lô thực phẩm vào tủ lạnh của không gian hiện hành với số lượng, ngày mua, ngày hết hạn và vị trí lưu trữ.}
-\ucfield{Điều kiện trước}{Người dùng đã đăng nhập.}
-\ucflow{Luồng thực thi chính}
-\ucstep{1}{Người dùng}{Tại màn hình Tủ lạnh, nhấn nút “Thêm thực phẩm”.}
-\ucstep{2}{Hệ thống}{Hiển thị biểu mẫu gồm các trường trong Bảng~\ref{tab:in-thuc-pham} và nút “Quét mã vạch”.}
-\ucstep{3}{Người dùng}{Gõ tên và chọn thực phẩm từ danh sách gợi ý.}
-\ucstep{4}{Hệ thống}{Điền sẵn đơn vị mặc định, vị trí lưu trữ mặc định theo loại thực phẩm, ngày mua là hôm nay và ngày hết hạn đề xuất theo \br{BR11}.}
-\ucstep{5}{Người dùng}{Nhập số lượng, điều chỉnh các trường còn lại nếu cần và nhấn “Lưu”.}
-\ucstep{6}{Hệ thống}{Kiểm tra các trường bắt buộc, số lượng dương (\br{BR14}) và ngày hết hạn không trước ngày mua (\br{BR11}).}
-\ucstep{7}{Hệ thống}{Tạo lô thực phẩm, tính trạng thái hạn dùng theo \br{BR12}, hiển thị lô trong nhóm vị trí tương ứng và thông báo \msg{MSG10}.}
-\ucflow{Luồng thực thi mở rộng}
-\ucstep{2a}{Người dùng}{Nhấn “Quét mã vạch”: thực hiện \uc{UC26}; khi nhận diện thành công, hệ thống điền sẵn thực phẩm và chuyển sang bước 4.}
-\ucstep{3a}{Người dùng}{Thực phẩm không có trong danh mục: chọn “Thêm thực phẩm mới”, nhập tên và chọn loại; thực phẩm được lưu dưới dạng thực phẩm riêng của không gian, chờ quản trị viên xem xét bổ sung vào danh mục chung.}
-\ucstep{6a}{Hệ thống}{Thiếu trường bắt buộc: hiển thị \msg{MSG01}; quay lại bước 5.}
-\ucstep{6b}{Hệ thống}{Số lượng không hợp lệ: hiển thị \msg{MSG16}; quay lại bước 5.}
-\ucstep{6c}{Hệ thống}{Ngày hết hạn trước ngày mua: hiển thị \msg{MSG14}; quay lại bước 5.}
-\ucstep{7a}{Hệ thống}{Ngày hết hạn đã qua: vẫn lưu lô với trạng thái Đã hết hạn sau khi người dùng xác nhận, nhằm phản ánh đúng thực tế trong tủ.}
-\ucfield{Điều kiện sau}{Một lô thực phẩm mới thuộc không gian hiện hành, có trạng thái hạn dùng được tính đúng; lô được đưa vào phạm vi kiểm tra của \uc{UC31}.}
+\ucfield{Mô tả}{\textbf{A.} Cho phép người dùng chuyển một hoặc nhiều mặt hàng đã mua thành các lô thực phẩm trong tủ lạnh mà không phải nhập lại thông tin. \textbf{B.} Cho phép người dùng nhập một lô thực phẩm vào tủ lạnh của không gian hiện hành với số lượng, ngày mua, ngày hết hạn và vị trí lưu trữ.}
+\ucfield{Điều kiện trước}{\textbf{A.} Có ít nhất một mặt hàng ở trạng thái Đã mua tham chiếu tới thực phẩm trong danh mục. \textbf{B.} Người dùng đã đăng nhập.}
+\ucflow{Biến thể A – Chuyển mặt hàng đã mua vào tủ lạnh: luồng thực thi chính}
+\ucstep{1}{Người dùng}{Chọn “Cho vào tủ lạnh” trên một mặt hàng, hoặc chọn “Cất tất cả vào tủ” sau khi đi chợ về.}
+\ucstep{2}{Hệ thống}{Với mỗi mặt hàng, điền sẵn tên, số lượng thực tế, đơn vị, ngày mua bằng ngày đánh dấu đã mua, vị trí lưu trữ mặc định theo loại thực phẩm và ngày hết hạn đề xuất bằng ngày mua cộng hạn dùng gợi ý tại vị trí đó (\br{BR11}).}
+\ucstep{3}{Người dùng}{Rà soát, điều chỉnh vị trí hoặc ngày hết hạn theo bao bì (nếu cần) và nhấn “Xác nhận”.}
+\ucstep{4}{Hệ thống}{Kiểm tra ngày hết hạn không trước ngày mua (\br{BR11}).}
+\ucstep{5}{Hệ thống}{Trong cùng giao dịch, kiểm tra lại trạng thái mặt hàng, tạo lô liên kết với nguồn mua và đánh dấu đã nhập tủ. Mỗi mặt hàng chỉ có một lô nguồn; tính trạng thái hạn dùng theo \br{BR12}.}
+\ucstep{6}{Hệ thống}{Chuyển các mặt hàng sang Đã nhập tủ lạnh, hiển thị \msg{MSG10} kèm lối tắt tới màn hình Tủ lạnh.}
+\ucflow{Biến thể A – Chuyển mặt hàng đã mua vào tủ lạnh: luồng thực thi mở rộng}
+\ucstep{2a}{Hệ thống}{Mặt hàng có tên tự do không thuộc danh mục: yêu cầu người dùng chọn thực phẩm tương ứng hoặc bỏ qua mặt hàng đó.}
+\ucstep{3a}{Người dùng}{Thay đổi vị trí lưu trữ: hệ thống tính lại ngày hết hạn đề xuất theo vị trí mới, trừ khi người dùng đã sửa tay ngày hết hạn.}
+\ucstep{4a}{Hệ thống}{Ngày hết hạn trước ngày mua: hiển thị \msg{MSG14} tại dòng tương ứng; quay lại bước 3.}
+\ucstep{5a}{Hệ thống}{Ngày hết hạn đã nằm trong ngưỡng nhắc: lô được tạo với trạng thái Sắp hết hạn và được hiển thị nổi bật trên màn hình kết quả.}
+\ucstep{5b}{Hệ thống}{Mặt hàng đã được nhập tủ bởi yêu cầu trước hoặc thiết bị khác: trả kết quả đã có, không tạo lô thứ hai. Lỗi giữa chừng phải hoàn tác cả việc tạo lô và đổi trạng thái.}
+\ucflow{Biến thể B – Thêm thực phẩm vào tủ lạnh: luồng thực thi chính}
+\ucstep{B1}{Người dùng}{Tại màn hình Tủ lạnh, nhấn nút “Thêm thực phẩm”.}
+\ucstep{B2}{Hệ thống}{Hiển thị biểu mẫu gồm các trường trong Bảng~\ref{tab:in-thuc-pham}.}
+\ucstep{B3}{Người dùng}{Gõ tên và chọn thực phẩm từ danh sách gợi ý.}
+\ucstep{B4}{Hệ thống}{Điền sẵn đơn vị mặc định, vị trí lưu trữ mặc định theo loại thực phẩm, ngày mua là hôm nay và ngày hết hạn đề xuất theo \br{BR11}.}
+\ucstep{B5}{Người dùng}{Nhập số lượng, điều chỉnh các trường còn lại nếu cần và nhấn “Lưu”.}
+\ucstep{B6}{Hệ thống}{Kiểm tra các trường bắt buộc, số lượng dương (\br{BR14}) và ngày hết hạn không trước ngày mua (\br{BR11}).}
+\ucstep{B7}{Hệ thống}{Tạo lô thực phẩm, tính trạng thái hạn dùng theo \br{BR12}, hiển thị lô trong nhóm vị trí tương ứng và thông báo \msg{MSG10}.}
+\ucflow{Biến thể B – Thêm thực phẩm vào tủ lạnh: luồng thực thi mở rộng}
+\ucstep{B3a}{Người dùng}{Thực phẩm không có trong danh mục: chọn “Thêm thực phẩm mới”, nhập tên và chọn loại; thực phẩm được lưu dưới dạng thực phẩm riêng của không gian, chờ quản trị viên xem xét bổ sung vào danh mục chung.}
+\ucstep{B6a}{Hệ thống}{Thiếu trường bắt buộc: hiển thị \msg{MSG01}; quay lại bước B5.}
+\ucstep{B6b}{Hệ thống}{Số lượng không hợp lệ: hiển thị \msg{MSG16}; quay lại bước B5.}
+\ucstep{B6c}{Hệ thống}{Ngày hết hạn trước ngày mua: hiển thị \msg{MSG14}; quay lại bước B5.}
+\ucstep{B7a}{Hệ thống}{Ngày hết hạn đã qua: vẫn lưu lô với trạng thái Đã hết hạn sau khi người dùng xác nhận, nhằm phản ánh đúng thực tế trong tủ.}
+\ucfield{Điều kiện sau}{\textbf{A.} Mỗi mặt hàng được chọn sinh ra đúng một lô thực phẩm trong tủ; mặt hàng ở trạng thái Đã nhập tủ lạnh và không thể hoàn tác. \textbf{B.} Một lô thực phẩm mới thuộc không gian hiện hành, có trạng thái hạn dùng được tính đúng; lô được đưa vào phạm vi kiểm tra của \uc{UC14}.}
 \ucfield{Quy tắc nghiệp vụ}{\br{BR11}, \br{BR12}, \br{BR14}, \br{BR16}}
 \end{ucspec}
 
+
 \begin{fieldtable}{Dữ liệu đầu vào của một lô thực phẩm trong tủ lạnh}{tab:in-thuc-pham}
-\frow{Thực phẩm}{Tham chiếu tới danh mục thực phẩm}{Có}{Chọn từ gợi ý, từ kết quả quét mã vạch hoặc tạo thực phẩm riêng}{Sữa tươi không đường}
+\frow{Thực phẩm}{Tham chiếu tới danh mục thực phẩm}{Có}{Chọn từ gợi ý hoặc tạo thực phẩm riêng}{Sữa tươi không đường}
 \frow{Số lượng}{Lượng thực phẩm cất vào tủ}{Có}{Số dương, tối đa hai chữ số thập phân}{2}
 \frow{Đơn vị}{Đơn vị đo của số lượng}{Có}{Thuộc danh mục đơn vị; mặc định theo thực phẩm}{hộp}
 \frow{Vị trí lưu trữ}{Nơi cất trong tủ hoặc trong bếp}{Có}{Một trong năm vị trí của Bảng~\ref{tab:vi-tri-luu-tru}}{Cánh tủ}
@@ -40,42 +57,49 @@ Gói Quản lý thực phẩm trong tủ lạnh gồm tám use case từ \uc{UC2
 \frow{Ghi chú}{Thông tin bổ sung}{Không}{Tối đa 200 ký tự}{Đã mở nắp 1 hộp}
 \end{fieldtable}
 
-\uc{UC28} ghi nhận lượng thực phẩm đã dùng nhưng không gắn với bữa ăn trong kế hoạch. Người dùng nhập lượng ở cấp thực phẩm; hệ thống tự phân bổ phần giảm trừ cho các lô theo nguyên tắc FEFO. Nhờ đó, người dùng không cần chọn lô cụ thể.
+\begin{longtable}{|L{2.6cm}|C{1.5cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-2.6cm-1.5cm-3.4cm\relax}|L{3.4cm}|}
+\caption{Hai nguồn nhập thực phẩm vào tủ lạnh}\label{tab:nguon-nhap-tu}\\
+\hline
+\hd{Nguồn} & \hd{Biến thể} & \hd{Dữ liệu điền sẵn} & \hd{Người dùng nhập}\\ \hline
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
+\hd{Nguồn} & \hd{Biến thể} & \hd{Dữ liệu điền sẵn} & \hd{Người dùng nhập}\\ \hline
+\endhead
+Mặt hàng đã mua & A & Thực phẩm, số lượng thực tế, đơn vị, ngày mua, vị trí mặc định, hạn đề xuất; lô liên kết với mặt hàng nguồn để tính giá trị lãng phí & Rà soát vị trí và hạn dùng\\ \hline
+Nhập tay & B & Đơn vị, vị trí mặc định, ngày mua là hôm nay, hạn đề xuất & Thực phẩm, số lượng\\ \hline
+\end{longtable}
 
-\begin{ucspec}{UC28}{Ghi nhận sử dụng thực phẩm}
-\ucfield{Tác nhân}{Người dùng}
-\ucfield{Mô tả}{Cho phép người dùng ghi nhận lượng thực phẩm đã lấy ra sử dụng; hệ thống trừ tồn kho theo nguyên tắc hết hạn trước dùng trước.}
-\ucfield{Điều kiện trước}{Thực phẩm có ít nhất một lô với lượng còn lại lớn hơn 0 trong không gian hiện hành.}
-\ucflow{Luồng thực thi chính}
-\ucstep{1}{Người dùng}{Trên màn hình Tủ lạnh, chọn một thực phẩm và nhấn “Đã dùng”.}
-\ucstep{2}{Hệ thống}{Hiển thị tổng lượng còn lại, các lô theo thứ tự ngày hết hạn tăng dần và ô nhập lượng sử dụng với các nút nhanh “Một nửa”, “Hết”.}
-\ucstep{3}{Người dùng}{Nhập lượng sử dụng hoặc chọn nút nhanh, nhấn “Xác nhận”.}
-\ucstep{4}{Hệ thống}{Kiểm tra lượng sử dụng dương và không vượt tổng lượng còn lại của các lô chưa hết hạn (\br{BR14}).}
-\ucstep{5}{Hệ thống}{Trừ dần từ lô có ngày hết hạn sớm nhất (\br{BR15}); lô có lượng còn lại bằng 0 chuyển sang Đã dùng hết.}
-\ucstep{6}{Hệ thống}{Ghi nhật ký tiêu thụ cho từng lô bị trừ, cập nhật hiển thị và thông báo \msg{MSG10}.}
-\ucflow{Luồng thực thi mở rộng}
-\ucstep{3a}{Người dùng}{Chọn đích danh một lô (ví dụ hộp sữa đã mở): hệ thống chỉ trừ trên lô được chọn.}
-\ucstep{4a}{Hệ thống}{Lượng sử dụng vượt lượng còn lại: hiển thị \msg{MSG17}; quay lại bước 3.}
-\ucstep{4b}{Hệ thống}{Chỉ còn lô Đã hết hạn: hỏi người dùng có chắc chắn sử dụng lô quá hạn hay muốn chuyển sang \uc{UC29} Loại bỏ thực phẩm.}
-\ucfield{Điều kiện sau}{Tồn kho của thực phẩm giảm đúng bằng lượng sử dụng; nhật ký tiêu thụ được ghi nhận để phục vụ \uc{UC45}.}
-\ucfield{Quy tắc nghiệp vụ}{\br{BR14}, \br{BR15}, \br{BR16}}
-\end{ucspec}
+Cả hai nguồn cùng tạo lô thực phẩm và cùng áp dụng \br{BR11}, \br{BR12}, \br{BR14}; khác biệt duy nhất là khả năng truy vết giá mua khi nguồn là mặt hàng đã mua.
 
-\uc{UC31} thực hiện yêu cầu tự động nhắc trước hạn sử dụng. Hệ thống tuân theo ba nguyên tắc: áp dụng thiết lập của từng thành viên, gộp nhiều thực phẩm vào một thông báo và không nhắc cùng một lô quá một lần trong ngày. Luồng xử lý và tương tác giữa các thành phần được thể hiện lần lượt ở Hình~\ref{fig:act-nhac-nho} và Hình~\ref{fig:seq-nhac-nho}.
 
-\begin{ucspec}{UC31}{Gửi nhắc nhở thực phẩm sắp hết hạn}
+
+\ucgoal{UC12}{Xem và lọc thực phẩm trong tủ lạnh}{2}{Người dùng}{xem danh sách tủ, xem thực phẩm sắp hết hạn}
+
+\ucgoal{UC13}{Điều chỉnh lô thực phẩm}{2}{Người dùng}{sửa lô, ghi nhận sử dụng, loại bỏ}
+Người dùng loại bỏ lô hỏng hoặc hết hạn; hệ thống trừ tồn kho, ghi lý do và giá trị ước tính để \uc{UC21} tổng hợp. Đặc tả ở Phụ lục~\ref{pl:dac-ta-bo-sung}.
+
+\uc{UC13} ghi nhận lượng thực phẩm đã dùng nhưng không gắn với bữa ăn trong kế hoạch. Người dùng nhập lượng ở cấp thực phẩm; hệ thống tự phân bổ phần giảm trừ cho các lô theo nguyên tắc FEFO. Nhờ đó, người dùng không cần chọn lô cụ thể.
+
+\uc{UC13} thuộc tầng 3 và được ghi ở Phụ lục~\ref{pl:dac-ta-bo-sung}; nghiệp vụ trừ kho theo FEFO của nó là dịch vụ dùng chung với \uc{UC19}.
+
+
+\ucgoal{UC14}{Nhắc thực phẩm sắp hết hạn}{2}{Bộ lập lịch; Dịch vụ thông báo đẩy}{nhắc hạn dùng theo thiết lập của từng thành viên}
+
+\uc{UC14} thực hiện yêu cầu tự động nhắc trước hạn sử dụng. Ở tầng 2, bắt buộc cài đặt luồng chính (bước 1--8) và nhánh 1a (chạy lại không gửi trùng theo \br{BR13}); các nhánh 7a và 7b (làm sạch mã thiết bị, thử lại khi dịch vụ đẩy lỗi) là mục tiêu hoàn thiện. Hệ thống tuân theo ba nguyên tắc: áp dụng thiết lập của từng thành viên, gộp nhiều thực phẩm vào một thông báo và không nhắc cùng một lô quá một lần trong ngày. Luồng xử lý và tương tác giữa các thành phần được thể hiện lần lượt ở Hình~\ref{fig:act-nhac-nho} và Hình~\ref{fig:seq-nhac-nho}.
+
+\begin{ucspec}{UC14}{Gửi nhắc nhở thực phẩm sắp hết hạn}
 \ucfield{Tác nhân}{Bộ lập lịch (tác nhân thời gian, khởi phát use case); Dịch vụ thông báo đẩy (phụ)}
 \ucfield{Mô tả}{Hằng ngày, hệ thống tự động cập nhật trạng thái hạn dùng của mọi lô thực phẩm và gửi thông báo tổng hợp tới từng thành viên về các thực phẩm sắp hết hạn trong vòng N ngày.}
-\ucfield{Điều kiện trước}{Đến khung giờ chạy tác vụ nhắc nhở được cấu hình tại \uc{UC53} (mặc định 08:00).}
+\ucfield{Điều kiện trước}{Đến khung giờ chạy tác vụ nhắc nhở được cấu hình tại \uc{UC25} (mặc định 08:00).}
 \ucflow{Luồng thực thi chính}
 \ucstep{1}{Bộ lập lịch}{Kích hoạt tác vụ kiểm tra hạn dùng.}
 \ucstep{2}{Hệ thống}{Tính lại số ngày còn lại và trạng thái hạn dùng cho mọi lô có lượng còn lại lớn hơn 0 (\br{BR12}).}
 \ucstep{3}{Hệ thống}{Xác định các không gian có lô còn không quá 7 ngày, là giá trị lớn nhất của ngưỡng N, hoặc vừa chuyển sang Đã hết hạn trong ngày.}
-\ucstep{4}{Hệ thống}{Với mỗi thành viên của các không gian đó, đọc thiết lập nhắc nhở cá nhân (\uc{UC08}) gồm ngưỡng N và trạng thái bật, tắt.}
+\ucstep{4}{Hệ thống}{Với mỗi thành viên của các không gian đó, đọc thiết lập nhắc nhở cá nhân (\uc{UC04}) gồm ngưỡng N và trạng thái bật, tắt.}
 \ucstep{5}{Hệ thống}{Lọc các lô có số ngày còn lại từ 0 đến N, hoặc vừa quá hạn trong ngày, và chưa được nhắc cho thành viên này trong ngày (\br{BR13}).}
 \ucstep{6}{Hệ thống}{Tạo một thông báo tổng hợp, ví dụ “3 thực phẩm sắp hết hạn: Thịt ba chỉ (còn 1 ngày), Sữa tươi (còn 2 ngày)…”, liệt kê tối đa 5 lô gần hết hạn nhất, lưu vào hộp thư trong ứng dụng.}
 \ucstep{7}{Hệ thống}{Gửi yêu cầu tới Dịch vụ thông báo đẩy cho mọi thiết bị đã đăng ký của thành viên.}
-\ucstep{8}{Dịch vụ thông báo đẩy}{Chuyển thông báo tới thiết bị; khi người dùng chạm vào, ứng dụng mở màn hình \uc{UC30} Xem thực phẩm sắp hết hạn kèm món gợi ý.}
+\ucstep{8}{Dịch vụ thông báo đẩy}{Chuyển thông báo tới thiết bị; khi người dùng chạm vào, ứng dụng mở màn hình \uc{UC12} Xem thực phẩm sắp hết hạn kèm món gợi ý.}
 \ucflow{Luồng thực thi mở rộng}
 \ucstep{1a}{Hệ thống}{Lần chạy trước bị gián đoạn: tác vụ được thiết kế lũy đẳng, chạy lại không gây gửi trùng nhờ bản ghi đã nhắc theo ngày.}
 \ucstep{4a}{Hệ thống}{Thành viên tắt nhắc nhở hạn dùng: bỏ qua thành viên này.}
@@ -90,4 +114,4 @@ Gói Quản lý thực phẩm trong tủ lạnh gồm tám use case từ \uc{UC2
 
 \diagram[\textwidth]{c2-12-seq-nhac-nho}{Biểu đồ tuần tự của luồng nhắc nhở hạn dùng}{fig:seq-nhac-nho}
 
-Theo biểu đồ tuần tự ở Hình~\ref{fig:seq-nhac-nho}, thông báo đẩy chỉ hiển thị nội dung tóm tắt. Khi người dùng mở thông báo, ứng dụng mới truy vấn danh sách chi tiết và món gợi ý từ máy chủ. Cách này hạn chế thông tin hiển thị trên màn hình khóa và giúp ứng dụng tải dữ liệu mới nhất. Các use case \uc{UC24}, \uc{UC26}, \uc{UC27}, \uc{UC29} và \uc{UC30} được đặc tả tại Phụ lục~\ref{pl:dac-ta-bo-sung}.
+Theo biểu đồ tuần tự ở Hình~\ref{fig:seq-nhac-nho}, thông báo đẩy chỉ hiển thị nội dung tóm tắt. Khi người dùng mở thông báo, ứng dụng mới truy vấn danh sách chi tiết và món gợi ý từ máy chủ. Cách này hạn chế thông tin hiển thị trên màn hình khóa và giúp ứng dụng tải dữ liệu mới nhất. Các chức năng \uc{UC12} và \uc{UC13} được đặc tả tại Phụ lục~\ref{pl:dac-ta-bo-sung}.

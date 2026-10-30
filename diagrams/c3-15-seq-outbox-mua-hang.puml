@@ -10,7 +10,7 @@ database "PostgreSQL" as DB
 participant "NotifyWorker" as W
 participant "FCM" as F
 
-group S12 – đánh dấu đã mua (UC20)
+group S12 – đánh dấu đã mua (UC09)
   A -> API : POST .../purchase\nIdempotency-Key, items[]
   API -> DB : BEGIN; khóa lũy đẳng;\nkhóa shopping_lists
   loop từng mặt hàng, id tăng dần

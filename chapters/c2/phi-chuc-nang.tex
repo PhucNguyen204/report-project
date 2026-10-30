@@ -34,11 +34,11 @@ Tuần & Bắt đầu từ thứ Hai & — & T2 08/12 – CN 14/12\\ \hline
 
 \subsection{Hiệu năng (Performance)}\label{ssec:nfr-hieu-nang}
 
-\nfr{NFR08}--\nfr{NFR10} đo thời gian phản hồi trên thiết bị tầm trung và mạng 4G. Thời gian gợi ý món được đo với 500 công thức và 200 lô thực phẩm. Các ngưỡng trong bảng tổng hợp là mục tiêu nghiệm thu; ghi nhận riêng thời gian giao diện, API và đồng bộ nhóm để xác định nơi gây chậm.
+\nfr{NFR08}--\nfr{NFR10} đo thời gian phản hồi trên thiết bị tầm trung và mạng 4G. Thời gian gợi ý món được đo với 500 công thức và 200 lô thực phẩm. Các ngưỡng trong bảng tổng hợp là mục tiêu nghiệm thu; ghi nhận riêng thời gian giao diện và API để xác định nơi gây chậm. \nfr{NFR10} (đồng bộ thời gian thực) là định hướng phát triển, không thuộc tiêu chí nghiệm thu.
 
 \subsection{Độ tin cậy (Reliability)}\label{ssec:nfr-tin-cay}
 
-\nfr{NFR11}--\nfr{NFR13} bảo vệ dữ liệu khi mất mạng, chạy lại tác vụ hoặc cập nhật đồng thời. Bốn nhóm thao tác ngoại tuyến gồm xem và cập nhật danh sách mua sắm, đánh dấu đã mua, xem tủ lạnh và thêm thực phẩm. Hàng đợi ngoại tuyến giữ thay đổi cho đến khi máy chủ xác nhận. Đánh dấu đã mua giữ bản ghi sớm hơn khi xung đột; sửa thuộc tính giữ bản ghi sau cùng và thông báo phần bị ghi đè. \uc{UC21} và \uc{UC41} phải cập nhật nguyên tử; nhắc nhở có khóa chống trùng theo ngày.
+\nfr{NFR12} và \nfr{NFR13} bảo vệ dữ liệu khi chạy lại tác vụ hoặc cập nhật đồng thời. \uc{UC11} và \uc{UC19} phải cập nhật nguyên tử; khi hai người cùng đánh dấu một mặt hàng, hệ thống giữ bản ghi sớm hơn và báo cho người đến sau; nhắc nhở có khóa chống trùng theo ngày. \nfr{NFR11} (hoạt động ngoại tuyến) là định hướng phát triển: bốn nhóm thao tác dự kiến dùng được khi mất mạng gồm xem và cập nhật danh sách mua sắm, đánh dấu đã mua, xem tủ lạnh và thêm thực phẩm, với hàng đợi giữ thay đổi đến khi máy chủ xác nhận. Ở phạm vi nghiệm thu, khi mất mạng ứng dụng chỉ cần báo lỗi (\msg{MSG33}) và cho phép thử lại.
 
 \subsection{An toàn bảo mật (Security)}\label{ssec:nfr-bao-mat}
 
@@ -46,11 +46,11 @@ Tuần & Bắt đầu từ thứ Hai & — & T2 08/12 – CN 14/12\\ \hline
 
 \subsection{Tính dễ bảo trì và khả chuyển (Maintainability, Portability)}\label{ssec:nfr-bao-tri}
 
-\nfr{NFR19}, \nfr{NFR20} yêu cầu một mã nguồn Flutter~\cite{flutter}, phân tách trình bày, nghiệp vụ và dữ liệu. Quy tắc có tham số được đọc từ cấu hình \uc{UC53}; bộ kiểm thử tập trung vào quy đổi đơn vị, FEFO, sinh phần thiếu và xử lý giao dịch đồng thời.
+\nfr{NFR19}, \nfr{NFR20} yêu cầu một mã nguồn Flutter~\cite{flutter}, phân tách trình bày, nghiệp vụ và dữ liệu. Quy tắc có tham số được đọc từ cấu hình \uc{UC25}; bộ kiểm thử tập trung vào quy đổi đơn vị, FEFO, sinh phần thiếu và xử lý giao dịch đồng thời.
 
 \subsection{Các ràng buộc kỹ thuật}\label{ssec:nfr-rang-buoc}
 
-\nfr{NFR21}--\nfr{NFR23} quy định API REST/JSON, đường dẫn cơ sở \texttt{/it4788/}, cơ sở dữ liệu quan hệ, dịch vụ lưu ảnh, FCM~\cite{fcm} và bộ lập lịch. Thiết bị dùng cơ sở dữ liệu nhúng cho dữ liệu ngoại tuyến và bản nháp.
+\nfr{NFR21}--\nfr{NFR23} quy định API REST/JSON, đường dẫn cơ sở \texttt{/it4788/}, cơ sở dữ liệu quan hệ, dịch vụ lưu ảnh, FCM~\cite{fcm} và bộ lập lịch. Thiết bị dùng cơ sở dữ liệu nhúng cho bản nháp, và cho dữ liệu ngoại tuyến khi định hướng \nfr{NFR11} được thực hiện.
 
 Bảng~\ref{tab:tong-hop-nfr} tổng hợp các yêu cầu phi chức năng và tiêu chí đo, làm cơ sở xây dựng ca kiểm thử.
 
@@ -72,8 +72,8 @@ NFR06 & Dễ dùng & Khả năng tiếp cận & Vùng chạm $\ge$ 48 dp; tươn
 NFR07 & Dễ dùng & Đa ngôn ngữ & Tiếng Việt, tiếng Anh; không có chuỗi viết cứng trong mã\\ \hline
 NFR08 & Hiệu năng & Hiệu năng giao diện & Khởi động $\le$ 3 s; chuyển màn hình $\le$ 300 ms; cuộn 60 fps với 500 phần tử\\ \hline
 NFR09 & Hiệu năng & Thời gian phản hồi máy chủ & 95\% API $\le$ 1 s; gợi ý món $\le$ 2 s; gợi ý tên $\le$ 500 ms\\ \hline
-NFR10 & Hiệu năng & Đồng bộ thời gian thực & Thay đổi hiển thị trên thiết bị khác $\le$ 3 s\\ \hline
-NFR11 & Tin cậy & Hoạt động ngoại tuyến & Bốn nhóm thao tác chính dùng được khi mất mạng; đồng bộ tự động, không mất dữ liệu\\ \hline
+NFR10 & Hiệu năng & Đồng bộ thời gian thực (định hướng phát triển) & Không nghiệm thu. Mục tiêu: thay đổi hiển thị trên thiết bị khác $\le$ 3 s\\ \hline
+NFR11 & Tin cậy & Hoạt động ngoại tuyến (định hướng phát triển) & Không nghiệm thu. Mục tiêu: bốn nhóm thao tác chính dùng được khi mất mạng; đồng bộ tự động, không mất dữ liệu\\ \hline
 NFR12 & Tin cậy & Độ tin cậy của nhắc nhở & Không gửi trùng; thử lại 3 lần; $\ge$ 99\% thông báo tạo trong 15 phút\\ \hline
 NFR13 & Tin cậy & Sẵn sàng, sao lưu, giao dịch & Sẵn sàng $\ge$ 99\% (06:00–23:00); sao lưu hằng ngày, giữ 7 bản\\ \hline
 NFR14 & Bảo mật & Mã hóa đường truyền, băm mật khẩu & TLS $\ge$ 1.2; bcrypt hoặc Argon2; không có mật khẩu rõ trong CSDL, nhật ký\\ \hline
@@ -85,8 +85,8 @@ NFR19 & Khả chuyển & Đa nền tảng & Một mã nguồn Flutter; Android $
 NFR20 & Bảo trì & Kiến trúc và chất lượng mã & Phân tầng; tham số hóa quy tắc; bao phủ kiểm thử tầng nghiệp vụ $\ge$ 70\%; có tài liệu OpenAPI\\ \hline
 NFR21 & Ràng buộc & Giao tiếp API & REST, JSON, đường dẫn \texttt{/it4788/}, bộ mã phản hồi thống nhất\\ \hline
 NFR22 & Ràng buộc & Hạ tầng máy chủ & CSDL quan hệ; lưu trữ tệp riêng; FCM; bộ lập lịch phía máy chủ\\ \hline
-NFR23 & Ràng buộc & Lưu trữ cục bộ & CSDL nhúng trên thiết bị cho dữ liệu ngoại tuyến và bản nháp\\ \hline
+NFR23 & Ràng buộc & Lưu trữ cục bộ & CSDL nhúng trên thiết bị cho bản nháp; dữ liệu ngoại tuyến thuộc định hướng \nfr{NFR11}\\ \hline
 \end{longtable}
 }
 
-Chương này giữ danh mục 53 use case để truy vết nhưng phân bổ độ sâu theo giá trị nghiệp vụ: 12 use case được đặc tả đầy đủ, 12 use case hỗ trợ được mô tả gọn theo gói, 29 use case bổ sung nằm ở Phụ lục~\ref{pl:dac-ta-bo-sung}. Các luồng chính liên kết mua sắm, tồn kho và kế hoạch bữa ăn, kèm 23 yêu cầu phi chức năng có tiêu chí kiểm chứng. Ma trận tại Phụ lục~\ref{pl:truy-vet} là cơ sở đối chiếu với phạm vi đề bài khi thiết kế và kiểm thử.
+Chương này gộp các thao tác cùng mục tiêu thành 25 use case và phân bổ độ sâu theo ba tầng ưu tiên: 8 use case tầng 1 được đặc tả đầy đủ, 12 use case tầng 2 chỉ cần luồng chính (ba trong số đó được đặc tả tại chương này, các use case còn lại mô tả gọn hoặc ở Phụ lục~\ref{pl:dac-ta-bo-sung}), 5 use case tầng 3 chỉ cài đặt tối giản. Các luồng chính liên kết mua sắm, tồn kho và kế hoạch bữa ăn, kèm 23 yêu cầu phi chức năng có tiêu chí kiểm chứng, trong đó \nfr{NFR10} và \nfr{NFR11} là định hướng phát triển. Ma trận tại Phụ lục~\ref{pl:truy-vet} là cơ sở đối chiếu với phạm vi đề bài khi thiết kế và kiểm thử.

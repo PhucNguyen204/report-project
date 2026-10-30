@@ -114,9 +114,9 @@ Học kỳ 20261\quad GVHD: Thầy Nguyễn Quốc Tuấn\par
 % \column{0.57\textwidth}\centering\fig{c2-01-quan-he-tac-nhan}{5.65cm}
 % \column{0.40\textwidth}
 % \key{5 tác nhân chính}\par Khách, Người dùng, Thành viên nhóm, Trưởng nhóm, Quản trị viên.
-% \gap\key{4 tác nhân phụ}\par Bộ lập lịch, thông báo đẩy, thư điện tử và CSDL sản phẩm mở.
+% \gap\key{3 tác nhân phụ}\par Bộ lập lịch, thông báo đẩy và thư điện tử.
 % \gap\key{Quyền theo vai trò}\par {\small Trưởng nhóm kế thừa quyền thành viên và có thêm quyền điều phối, phân công.}
-% \gap\key{Giới hạn quản trị}\par {\small Quản trị viên không truy cập nội dung riêng của gia đình.}
+% \gap\key{Giới hạn quản trị}\par {\small Quản trị viên là tác nhân độc lập, không kế thừa Người dùng và không truy cập nội dung riêng của gia đình.}
 % \end{columns}
 % \source{Chương 2, quan hệ tác nhân; quy tắc BR23.}
 % \end{frame}
@@ -125,54 +125,54 @@ Học kỳ 20261\quad GVHD: Thầy Nguyễn Quốc Tuấn\par
 % \begin{columns}[T,onlytextwidth]
 % \column{0.56\textwidth}\centering\fig{c2-02-uc-tong-quan}{5.85cm}
 % \column{0.41\textwidth}
-% \key{9 gói chức năng}\par Mỗi elip trên hình đại diện một gói, kèm dải mã use case thành phần.
+% \key{9 gói chức năng}\par Mỗi elip trên hình đại diện một gói, kèm dải mã use case.
 % \gap\key{Người dùng là trung tâm}\par Tham gia 8 gói. Gói quản trị dành cho Quản trị viên.
 % \gap\key{Phối hợp trong gia đình}\par Thành viên dùng dữ liệu chung. Trưởng nhóm phân công người mua.
-% \gap\key{Tích hợp dịch vụ}\par OTP qua email, nhắc hạn qua thông báo đẩy, mã vạch qua CSDL sản phẩm.
+% \gap\key{Tích hợp dịch vụ}\par OTP qua email, nhắc hạn và phân công qua thông báo đẩy.
 % \end{columns}
 % \end{frame}
 % % 08
-% \begin{frame}{Danh mục 53 use case theo 9 nhóm}
+% \begin{frame}{Danh mục 25 use case theo 9 gói}
 % \small\renewcommand{\arraystretch}{1.13}
 % \begin{tabular}{@{}P{3.8cm}P{2.1cm}cP{6.4cm}@{}}\toprule
-% \textbf{Nhóm chức năng} & \textbf{Mã use case} & \textbf{Số} & \textbf{Chức năng đại diện}\\\midrule
-% 1. Tài khoản & UC01--UC08 & 8 & Đăng ký, OTP, đăng nhập, thiết lập nhắc\\
-% 2. Nhóm gia đình & UC09--UC15 & 7 & Tạo nhóm, mời, tham gia, chuyển quyền\\
-% 3. Mua sắm & UC16--UC23 & 8 & Phân công, đã mua, nhập tủ, sinh danh sách\\
-% 4. Tủ lạnh & UC24--UC31 & 8 & Thêm lô, ghi nhận sử dụng, nhắc hạn\\
-% 5. Công thức & UC32--UC36 & 5 & Lưu món, đối chiếu và bổ sung nguyên liệu\\
-% 6. Kế hoạch bữa ăn & UC37--UC41 & 5 & Lên lịch, gợi ý món, xác nhận đã nấu\\
-% 7. Tìm kiếm, phân loại & UC42--UC43 & 2 & Tìm thực phẩm, món ăn, lọc danh mục\\
-% 8. Thống kê & UC44--UC47 & 4 & Chi tiêu, tiêu thụ, lãng phí, xuất tệp\\
-% 9. Quản trị & UC48--UC53 & 6 & Tài khoản, danh mục, tham số hệ thống\\\bottomrule
+% \textbf{Gói chức năng} & \textbf{Mã use case} & \textbf{Số} & \textbf{Use case đại diện}\\\midrule
+% 1. Tài khoản & UC01--UC04 & 4 & Đăng ký, đăng nhập, đặt lại mật khẩu, hồ sơ và thiết lập nhắc\\
+% 2. Nhóm gia đình & UC05--UC07 & 3 & Tạo nhóm, mời và tham gia bằng mã mời, rời nhóm\\
+% 3. Mua sắm & UC08--UC10 & 3 & Lập và phân công, đánh dấu đã mua, bù phần thiếu\\
+% 4. Tủ lạnh & UC11--UC14 & 4 & Nhập thực phẩm, xem tủ, điều chỉnh lô, nhắc hạn\\
+% 5. Công thức & UC15--UC16 & 2 & Quản lý công thức, đối chiếu nguyên liệu\\
+% 6. Kế hoạch bữa ăn & UC17--UC19 & 3 & Lên lịch, gợi ý món, xác nhận đã nấu\\
+% 7. Tìm kiếm, phân loại & UC20 & 1 & Tìm và lọc thực phẩm, món ăn\\
+% 8. Thống kê & UC21--UC22 & 2 & Báo cáo mua sắm, tiêu thụ, lãng phí; xuất tệp\\
+% 9. Quản trị & UC23--UC25 & 3 & Danh mục, tài khoản, tham số hệ thống\\\bottomrule
 % \end{tabular}
-% \gap\key{Trọng tâm đặc tả:} 12 use case đầy đủ, 12 mô tả ngắn, 29 ở phụ lục.
-% \noteinfo{UC-AI01 bổ sung luồng hỏi đáp; danh mục gốc trong báo cáo gồm 53 use case.}
+% \gap\key{Trọng tâm đặc tả:} 8 use case tầng 1 đặc tả đầy đủ, 12 tầng 2 chỉ luồng chính, 5 tầng 3 tối giản.
+% \noteinfo{UC-AI01 bổ sung luồng hỏi đáp; báo cáo gốc gồm 25 use case.}
 % \end{frame}
 % % 09
-% \begin{frame}{Nhóm gia đình và UC11: tham gia bằng mã mời}
+% \begin{frame}{Nhóm gia đình và UC06: tham gia bằng mã mời}
 % \centering\fig{c2-05-uc-nhom}{4.2cm}
 % \gap\raggedright
 % \begin{columns}[T,onlytextwidth]
 % \column{0.49\textwidth}{\small\key{Luồng chính}\par Nhập mã hoặc quét QR, kiểm tra mã, xác nhận nhóm rồi gia nhập với vai trò thành viên.}
 % \column{0.47\textwidth}{\small\key{Điều kiện và ngoại lệ}\par Mã 8 ký tự, mặc định 48 giờ. Từ chối nếu mã hết hạn, đã ở nhóm khác hoặc nhóm đầy.}
 % \end{columns}
-% \source{Chương 2, ảnh use case nhóm gia đình và đặc tả UC11.}
+% \source{Chương 2, ảnh use case nhóm gia đình và đặc tả UC06.}
 % \end{frame}
 % % 10
 % \begin{frame}{Nhóm mua sắm: lập danh sách và phân công}
 % \begin{columns}[T,onlytextwidth]
 % \column{0.58\textwidth}\centering\fig{c2-07-uc-mua-sam}{5.7cm}
 % \column{0.39\textwidth}
-% \key{UC19: phân công người mua}\par Trưởng nhóm chọn mặt hàng và người phụ trách. Hệ thống đồng bộ và gửi thông báo.
+% \key{UC08: phân công người mua}\par Trưởng nhóm chọn mặt hàng và người phụ trách. Hệ thống đồng bộ và gửi thông báo.
 % \gap\key{Gộp mặt hàng trùng}\par {\small Cùng thực phẩm, cùng nhóm đại lượng mới quy đổi và cộng dồn.}
 % \gap{\small\textbf{Ví dụ:} 3 lạng + 0,5 kg thịt = 8 lạng. Không tự gộp 2 bó rau với 300 g rau.}
-% \gap\key{Quan hệ mở rộng}\par {\small UC21 nhập tủ là lựa chọn sau UC20 đánh dấu đã mua.}
+% \gap\key{Quan hệ mở rộng}\par {\small UC11 nhập tủ là lựa chọn sau UC09 đánh dấu đã mua.}
 % \end{columns}
 % \source{Chương 2, gói mua sắm; BR09--BR10.}
 % \end{frame}
 % % 11
-% \begin{frame}{UC20 và UC21: ghi nhận mua hàng, chuyển vào tủ}
+% \begin{frame}{UC09 và UC11: ghi nhận mua hàng, chuyển vào tủ}
 % \begin{columns}[T,onlytextwidth]
 % \column{0.49\textwidth}\centering\key{1. Ghi nhận mua và đồng bộ}\par
 % \includegraphics[height=5.1cm,trim=0 1000bp 0 0,clip]{c2-08-act-danh-dau-da-mua.png}
@@ -180,10 +180,10 @@ Học kỳ 20261\quad GVHD: Thầy Nguyễn Quốc Tuấn\par
 % \includegraphics[height=5.1cm,trim=0 0 0 1000bp,clip]{c2-08-act-danh-dau-da-mua.png}
 % \end{columns}
 % \noteinfo{Mua hộ cần xác nhận. Mỗi mặt hàng chỉ sinh một lô. Yêu cầu gửi lại không tạo lô trùng.}
-% \source{Hai phần liên tiếp của ảnh hoạt động UC20--UC21 trong báo cáo.}
+% \source{Hai phần liên tiếp của ảnh hoạt động UC05, UC06 trong báo cáo.}
 % \end{frame}
 % % 12
-% \begin{frame}{UC22: sinh danh sách nguyên liệu còn thiếu}
+% \begin{frame}{UC10: sinh danh sách nguyên liệu còn thiếu}
 % \begin{columns}[T,onlytextwidth]
 % \column{0.49\textwidth}\centering\key{1. Tính nhu cầu, phân bổ tồn kho}\par
 % \includegraphics[height=5.1cm,trim=0 1077bp 0 0,clip]{c2-09-act-sinh-ds-tu-ke-hoach.png}
@@ -191,10 +191,10 @@ Học kỳ 20261\quad GVHD: Thầy Nguyễn Quốc Tuấn\par
 % \includegraphics[height=5.1cm,trim=0 0 0 1077bp,clip]{c2-09-act-sinh-ds-tu-ke-hoach.png}
 % \end{columns}
 % \noteinfo{Xét hạn dùng theo ngày nấu. Phân bổ tồn kho và hàng chờ mua mỗi lượng đúng một lần.}
-% \source{Hai phần liên tiếp của ảnh hoạt động UC22 trong báo cáo.}
+% \source{Hai phần liên tiếp của ảnh hoạt động UC10 trong báo cáo.}
 % \end{frame}
 % % 13
-% \begin{frame}{Ví dụ UC22: vì sao phải xét từng ngày nấu?}
+% \begin{frame}{Ví dụ UC10: vì sao phải xét từng ngày nấu?}
 % \begin{columns}[T,onlytextwidth]
 % \column{0.48\textwidth}
 % \key{Nhu cầu: 1 kg cà rốt cho hai bữa}
@@ -216,7 +216,7 @@ Học kỳ 20261\quad GVHD: Thầy Nguyễn Quốc Tuấn\par
 % \gap{\Large\key{Cần mua thêm 0,3 kg}}
 % \end{columns}
 % \gap\key{Nếu chỉ lấy tổng nhu cầu trừ tổng tồn kho, kết quả sai thành 0,2 kg.}
-% \source{Chương 2, ví dụ kiểm chứng UC22. FEFO: ưu tiên lô hết hạn sớm.}
+% \source{Chương 2, ví dụ kiểm chứng UC10. FEFO: ưu tiên lô hết hạn sớm.}
 % \end{frame}
 % % 14
 % \begin{frame}{Nhóm tủ lạnh: theo dõi theo từng lô thực phẩm}
@@ -224,14 +224,13 @@ Học kỳ 20261\quad GVHD: Thầy Nguyễn Quốc Tuấn\par
 % \column{0.67\textwidth}\centering\fig{c2-10-uc-tu-lanh}{5.75cm}
 % \column{0.30\textwidth}\small
 % \key{Thông tin mỗi lô}\par Tên thực phẩm, lượng còn lại, ngày mua, hạn dùng, vị trí lưu trữ.
-% \gap\key{UC28: ghi nhận sử dụng}\par Trừ lượng thực dùng. Lô về 0 chuyển sang đã dùng hết.
-% \gap\key{UC29: loại bỏ}\par Ghi lý do và lượng bỏ để thống kê lãng phí.
-% \gap\key{UC26: quét mã vạch}\par Mở rộng luồng thêm thực phẩm, tra cứu khi nhập bằng camera.
+% \gap\key{UC13: ghi nhận sử dụng}\par Trừ lượng thực dùng. Lô về 0 chuyển sang đã dùng hết.
+% \gap\key{UC13: loại bỏ}\par Ghi lý do và lượng bỏ để thống kê lãng phí.
 % \end{columns}
 % \source{Chương 2, gói thực phẩm trong tủ lạnh.}
 % \end{frame}
 % % 15
-% \begin{frame}{UC31: nhắc hạn dùng qua thông báo đẩy}
+% \begin{frame}{UC14: nhắc hạn dùng qua thông báo đẩy}
 % \begin{columns}[T,onlytextwidth]
 % \column{0.74\textwidth}\centering\fig{c2-12-seq-nhac-nho}{5.8cm}
 % \column{0.23\textwidth}\small
@@ -240,25 +239,25 @@ Học kỳ 20261\quad GVHD: Thầy Nguyễn Quốc Tuấn\par
 % \gap\key{Chống trùng}\par Tối đa một thông báo tổng hợp mỗi người mỗi ngày.
 % \gap\key{Lỗi gửi}\par Thử lại tối đa 3 lần. Hộp thư vẫn lưu thông báo.
 % \end{columns}
-% \source{Chương 2, ảnh tuần tự UC31 và đặc tả nhắc hạn dùng.}
+% \source{Chương 2, ảnh tuần tự UC14 và đặc tả nhắc hạn dùng.}
 % \end{frame}
 % % 16
-% \begin{frame}{Kế hoạch bữa ăn và UC40: gợi ý món}
+% \begin{frame}{Kế hoạch bữa ăn và UC18: gợi ý món}
 % \begin{columns}[T,onlytextwidth]
 % \column{0.60\textwidth}\centering\fig{c2-14-uc-ke-hoach}{4.6cm}
-% \gap\raggedright{\small\key{Liên kết nghiệp vụ}\par UC40 giúp chọn món cho UC37. Từ lịch bữa ăn, người dùng sinh danh sách UC22 hoặc xác nhận nấu UC41.}
+% \gap\raggedright{\small\key{Liên kết nghiệp vụ}\par UC18 giúp chọn món cho UC17. Từ lịch bữa ăn, người dùng sinh danh sách UC10 hoặc xác nhận nấu UC19.}
 % \column{0.37\textwidth}\small
 % \key{Điểm xếp hạng món}
 % \[S=0{,}6R+0{,}3E+0{,}1F\]
 % R: đáp ứng nguyên liệu.\par E: ưu tiên thực phẩm gần hạn.\par F: món yêu thích.
 % \gap\key{Ví dụ trong báo cáo}\par Canh chua cá lóc: \textbf{0,75}.\\Trứng xào cà chua: \textbf{0,60}.
 % \gap Canh chua dùng cá và dứa gần hết hạn, nhưng cần mua thêm me.
-% \gap\noteinfo{Hỏi đáp AI hỗ trợ tạo danh sách; UC40 xếp hạng món theo công thức chấm điểm.}
+% \gap\noteinfo{Hỏi đáp AI hỗ trợ tạo danh sách; UC18 xếp hạng món theo công thức chấm điểm.}
 % \end{columns}
-% \source{Chương 2, gói kế hoạch bữa ăn và ví dụ UC40.}
+% \source{Chương 2, gói kế hoạch bữa ăn và ví dụ UC18.}
 % \end{frame}
 % % 17
-% \begin{frame}{UC41: xác nhận đã nấu và cập nhật tồn kho}
+% \begin{frame}{UC19: xác nhận đã nấu và cập nhật tồn kho}
 % \begin{columns}[T,onlytextwidth]
 % \column{0.43\textwidth}\centering\fig{c2-16-act-xac-nhan-nau}{5.65cm}
 % \column{0.54\textwidth}
@@ -268,7 +267,7 @@ Học kỳ 20261\quad GVHD: Thầy Nguyễn Quốc Tuấn\par
 % \gap\key{Ngoại lệ cần xử lý}\par {\small Thiếu nguyên liệu: bổ sung kho hoặc bỏ qua phần trừ. Có cập nhật đồng thời: tải lại và xác nhận lại.}
 % \gap{\small\key{Gửi lại yêu cầu không trừ kho lần thứ hai.}}
 % \end{columns}
-% \source{Chương 2, ảnh hoạt động và đặc tả UC41.}
+% \source{Chương 2, ảnh hoạt động và đặc tả UC19.}
 % \end{frame}
 % \section{Tính năng hỏi đáp AI}
 % % 18
@@ -315,7 +314,7 @@ Học kỳ 20261\quad GVHD: Thầy Nguyễn Quốc Tuấn\par
 % \gap\key{Trước khi lưu}\par Tủ lạnh còn hạn đến tối nay; chưa có hàng chờ mua. Gia vị cơ bản giả định đã đủ.
 % \gap\key{Thao tác cuối}\par Xác nhận tạo danh sách “Bữa tối 4 người”.
 % \end{columns}
-% \gap\noteinfo{AI giúp làm rõ nhu cầu; hệ thống tính phần thiếu theo quy tắc UC22. Danh sách chỉ lưu sau xác nhận.}
+% \gap\noteinfo{AI giúp làm rõ nhu cầu; hệ thống tính phần thiếu theo quy tắc UC10. Danh sách chỉ lưu sau xác nhận.}
 % \end{frame}
 \section{Chương 3. Thiết kế backend}
 % 20
@@ -348,7 +347,7 @@ Dữ liệu PostgreSQL & Khoảng 1,6 GB/năm\\\bottomrule
 \fontsize{8}{9.5}\selectfont\renewcommand{\arraystretch}{1.2}
 \begin{tabular}{@{}P{3.4cm}P{4.2cm}P{6.2cm}@{}}\toprule
 \textbf{Thành phần} & \textbf{Công nghệ} & \textbf{Vai trò}\\\midrule
-Ứng dụng di động & Flutter, SQLite (drift) & Một mã nguồn cho Android, iOS; bản sao và hàng đợi ngoại tuyến\\
+Ứng dụng di động & Flutter, SQLite (drift) & Một mã nguồn cho Android, iOS; ngoại tuyến là định hướng phát triển\\
 API và worker & Go 1.23, chi, pgx, sqlc & Một tệp thực thi, hai chế độ chạy: API và tác vụ nền\\
 Cơ sở dữ liệu chính & PostgreSQL 16 & Giao dịch ACID, khóa dòng, nguồn sự thật\\
 Hàng đợi tác vụ & River & Tác vụ nền, định kỳ, duy nhất; chèn cùng giao dịch nghiệp vụ\\
@@ -366,7 +365,7 @@ Biên và vận hành & Caddy, Docker Compose & TLS tự động, chia tải; Pr
 \begin{tabular}{@{}P{3.2cm}P{2.6cm}P{2.9cm}P{2.6cm}P{2.6cm}@{}}\toprule
 \textbf{Tiêu chí} & \textbf{Phân tầng} & \textbf{Chia module} & \textbf{Microsystem} & \textbf{BaaS}\\\midrule
 Vận hành & Thấp & Thấp & Cao & Thấp\\
-Giao dịch UC21, UC41 & ACID cục bộ & ACID cục bộ & Saga, giao dịch bù & Dồn vào hàm\\
+Giao dịch UC11, UC19 & ACID cục bộ & ACID cục bộ & Saga, giao dịch bù & Dồn vào hàm\\
 Ranh giới, bảo trì & Dễ xói mòn & Rõ nhờ gói api & Rất rõ & Logic rải rác\\
 Hợp quy mô, 4 người & Hợp & Hợp & Thừa & Khó áp NFR11\\\midrule
 \textbf{Kết luận} & Loại & \textbf{Chọn} & Loại & Loại\\\bottomrule
@@ -386,7 +385,7 @@ Hợp quy mô, 4 người & Hợp & Hợp & Thừa & Khó áp NFR11\\\midrule
 \key{Ứng dụng và biên}\par Flutter lưu SQLite cục bộ. Mọi lời gọi qua Caddy bằng HTTPS, WSS. Ảnh tải thẳng lên MinIO bằng URL ký sẵn.
 \gap\key{Hai bản API không giữ phiên}\par Chia tải tùy ý, cập nhật cuốn chiếu. Thay đổi giữa các bản đi qua Redis Pub/Sub.
 \gap\key{Worker}\par Nhận tác vụ từ bảng River trong PostgreSQL: nhắc hạn, đẩy thông báo, thư, chỉ mục, xuất tệp. Độ trễ của FCM, SMTP không cộng vào phản hồi API.
-\gap\key{Dịch vụ ngoài}\par FCM và APNs để đẩy thông báo, SMTP để gửi OTP, Open Food Facts để tra mã vạch (có thời gian chờ và bộ đệm).
+\gap\key{Dịch vụ ngoài}\par FCM và APNs để đẩy thông báo, SMTP để gửi OTP.
 \gap\key{Kho dữ liệu}\par PostgreSQL, Redis, Elasticsearch, MinIO nằm trong mạng nội bộ. Chỉ PostgreSQL là nguồn sự thật.
 \end{columns}
 \source{Chương 3, mục 3.3.2: sơ đồ vùng chứa theo mô hình C4 (mức 2).}
@@ -419,7 +418,7 @@ Hợp quy mô, 4 người & Hợp & Hợp & Thừa & Khó áp NFR11\\\midrule
 \source{Chương 3, mục 3.5: luồng xử lý yêu cầu và lớp miền.}
 \end{frame}
 % 26
-\begin{frame}{Kỹ thuật 1: trừ kho FEFO nguyên tử (UC41)}
+\begin{frame}{Kỹ thuật 1: trừ kho FEFO nguyên tử (UC19)}
 \begin{columns}[T,onlytextwidth]
 \column{0.40\textwidth}\centering\fig{c3-14-seq-xac-nhan-nau}{5.85cm}
 \column{0.57\textwidth}\fontsize{8}{9.5}\selectfont
@@ -432,11 +431,11 @@ Hợp quy mô, 4 người & Hợp & Hợp & Thừa & Khó áp NFR11\\\midrule
 \source{Chương 3, mục 3.6.1 và sơ đồ tuần tự xác nhận đã nấu.}
 \end{frame}
 % 27
-\begin{frame}{Kỹ thuật 2 và 3: ngoại tuyến lũy đẳng, hộp thư đi}
+\begin{frame}{Kỹ thuật 2 và 3: ngoại tuyến lũy đẳng (định hướng), hộp thư đi}
 \begin{columns}[T,onlytextwidth]
 \column{0.40\textwidth}\centering\fig{c3-16-seq-dong-bo-ngoai-tuyen}{5.85cm}
 \column{0.57\textwidth}\fontsize{8}{9.5}\selectfont
-\key{Ưu tiên ngoại tuyến}\par Mỗi thao tác ghi SQLite và hàng đợi \texttt{pending\_ops} trong một giao dịch cục bộ. Khi có mạng, ứng dụng phát lại bằng đúng các API REST thông thường.
+\key{Ưu tiên ngoại tuyến (định hướng, không nghiệm thu)}\par Mỗi thao tác ghi SQLite và hàng đợi \texttt{pending\_ops} trong một giao dịch cục bộ. Khi có mạng, ứng dụng phát lại bằng đúng các API REST thông thường.
 \gap\key{Bảng khóa lũy đẳng}\par Chèn \texttt{(user\_id, key)} kèm băm yêu cầu, \texttt{ON CONFLICT DO NOTHING}.
 \begin{itemize}\setlength\itemsep{1pt}\item Cùng băm, đã xong: phát lại phản hồi đã lưu.
 \item Khác băm: từ chối 400/2002.
@@ -447,11 +446,11 @@ Hợp quy mô, 4 người & Hợp & Hợp & Thừa & Khó áp NFR11\\\midrule
 \source{Chương 3, mục 3.6.2 và 3.6.3: đồng bộ ngoại tuyến, outbox.}
 \end{frame}
 % 28
-\begin{frame}{Kỹ thuật 4 và 5: thời gian thực, nhắc hạn dùng}
+\begin{frame}{Kỹ thuật 4 và 5: thời gian thực (định hướng), nhắc hạn dùng}
 \begin{columns}[T,onlytextwidth]
 \column{0.40\textwidth}\centering\fig{c3-17-seq-thoi-gian-thuc}{5.85cm}
 \column{0.57\textwidth}\small
-\key{Ba kênh theo trạng thái ứng dụng}\par WebSocket khi ở tiền cảnh. FCM khi chạy nền. Redis Pub/Sub nối các bản API.
+\key{Ba kênh theo trạng thái ứng dụng (định hướng)}\par WebSocket khi ở tiền cảnh. FCM khi chạy nền. Redis Pub/Sub nối các bản API.
 \gap\key{WebSocket chỉ gửi gợi ý}\par Thiết bị nhận gọi \texttt{GET /changes} để kéo phần thay đổi. Một đường đọc cho cả trực tuyến và ngoại tuyến, vẫn trong 3 giây.
 \gap\key{Gộp thông báo phân công}\par Tác vụ \texttt{AssignmentDigest} duy nhất theo người và danh sách, chạy lùi 5 giây, nên nhiều phân công chỉ báo một lần.
 \gap\key{Nhắc hạn không gửi trùng}\par Tác vụ định kỳ mỗi phút, duy nhất theo người và ngày, tối đa một thông báo tổng hợp mỗi người mỗi ngày. FCM lỗi thử lại 3 lần.
@@ -521,16 +520,16 @@ Hợp quy mô, 4 người & Hợp & Hợp & Thừa & Khó áp NFR11\\\midrule
 % \small\renewcommand{\arraystretch}{1.5}
 % \begin{tabular}{@{}P{3.15cm}P{10.8cm}@{}}\toprule
 % \textbf{Yêu cầu} & \textbf{Tiêu chí trong báo cáo}\\\midrule
-% Hiệu năng & Gợi ý món trong 2 giây; đồng bộ nhóm trong 3 giây\\
-% Tin cậy & Thao tác cốt lõi ngoại tuyến; không nhập hoặc trừ kho trùng\\
+% Hiệu năng & Gợi ý món trong 2 giây (đồng bộ 3 giây là định hướng)\\
+% Tin cậy & Không nhập hoặc trừ kho trùng (ngoại tuyến là định hướng)\\
 % Phân quyền & Máy chủ kiểm tra vai trò và không gian ở mọi API\\
 % Đa nền tảng & Một mã nguồn Flutter; Android 8.0+, iOS 13+\\\bottomrule
 % \end{tabular}
 % \noteinfo{Các ngưỡng là mục tiêu kiểm thử cho chức năng hiện tại; chưa phải kết quả đo hay cam kết độ trễ cho AI.}
 % \gap\normalsize
 % \key{Chương 1:} Bài toán và 8 phân hệ nghiệp vụ.\par
-% \key{Chương 2:} 53 use case thuộc 9 gói chức năng.\par
-% \key{Chương 3:} Backend Go nguyên khối chia module, PostgreSQL là nguồn sự thật, đồng bộ ngoại tuyến lũy đẳng.\par
+% \key{Chương 2:} 25 use case thuộc 9 gói chức năng, chia 3 tầng ưu tiên.\par
+% \key{Chương 3:} Backend Go nguyên khối chia module, PostgreSQL là nguồn sự thật, khóa lũy đẳng và hộp thư đi; ngoại tuyến và thời gian thực là định hướng.\par
 % \key{Tính năng AI:} Hỏi đáp để làm rõ nhu cầu, đối chiếu tồn kho và tạo danh sách nguyên liệu.
 \gap{\centering\fontsize{20}{24}\selectfont\key{Cảm ơn thầy và các bạn đã lắng nghe!}\par}
 \end{frame}

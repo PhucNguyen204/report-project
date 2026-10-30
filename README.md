@@ -69,7 +69,7 @@ các môi trường còn lại cần tự chuẩn bị bộ biên dịch và fon
 
 Nội dung 20 slide đã điền trực tiếp vào mẫu HUST Beamer tại
 `HUST_THEME_BEAMER___LATEX_BY_FRC/Slide_HUST.tex`. Bộ slide có trang bìa đủ
-thành viên, sơ đồ phân rã, bảng 53 use case theo 9 nhóm, các use case tiêu biểu và hỏi đáp AI tạo danh sách nguyên liệu. Các sơ đồ dùng trực tiếp ảnh gốc trong báo cáo.
+thành viên, sơ đồ phân rã, bảng 25 use case theo 9 gói, các use case tiêu biểu và hỏi đáp AI tạo danh sách nguyên liệu. Các sơ đồ dùng trực tiếp ảnh gốc trong báo cáo.
 Lời dẫn và lịch trình 10 phút nằm trong
 `HUST_THEME_BEAMER___LATEX_BY_FRC/THUYET_TRINH_10_PHUT.md`.
 
@@ -149,7 +149,7 @@ Nếu máy không có Graphviz, thêm dòng `!pragma layout smetana` vào đầu
 
 ## Quy ước khi viết tiếp
 
-- Mã tham chiếu: `\uc{UC01}` use case, `\br{BR01}` quy tắc nghiệp vụ, `\msg{MSG01}` thông điệp, `\nfr{NFR01}` yêu cầu phi chức năng.
+- Mã tham chiếu: `\uc{UC01}` use case (25 use case UC01–UC25), `\br{BR01}` quy tắc nghiệp vụ, `\msg{MSG01}` thông điệp, `\nfr{NFR01}` yêu cầu phi chức năng.
 - Chèn sơ đồ: `\diagram[độ rộng]{tên-tệp-png}{Chú thích}{fig:nhan}`.
 - Đặc tả use case theo mẫu học phần:
 

@@ -5,16 +5,12 @@ left to right direction
 actor "Người dùng" as U
 
 rectangle "Quản lý công thức nấu ăn" as B {
-  usecase "UC32\nThêm công thức nấu ăn" as UC32
-  usecase "UC34\nXem chi tiết công thức\nvà đối chiếu nguyên liệu" as UC34
-  usecase "UC33\nCập nhật, xóa công thức" as UC33
-  usecase "UC35\nĐánh dấu công thức\nyêu thích" as UC35
-  usecase "UC36\nBổ sung nguyên liệu còn thiếu\nvào danh sách mua sắm" as UC36
+  usecase "UC15\nQuản lý công thức\nnấu ăn" as UC15
+  usecase "UC16\nXem công thức và\nđối chiếu nguyên liệu" as UC16
+  usecase "UC10\nBổ sung nguyên liệu còn thiếu\nvào danh sách mua sắm" as UC10
 }
 
-U -- UC32
-U -- UC34
-UC34 <.. UC33 : <<extend>>
-UC34 <.. UC35 : <<extend>>
-UC34 <.. UC36 : <<extend>>
+U -- UC15
+U -- UC16
+U -- UC10
 @enduml

@@ -9,7 +9,7 @@ participant "Worker\n(ExportReport)" as WK
 database "PostgreSQL" as PG
 database "MinIO" as S3
 
-group B03 – báo cáo lãng phí (UC46)
+group B03 – báo cáo lãng phí (UC21)
   APP -> API : GET .../reports/waste?from&to
   break from > to hoặc dài hơn 12 tháng (4a)
     API --> APP : 400 (2002), MSG25
@@ -20,7 +20,7 @@ group B03 – báo cáo lãng phí (UC46)
   API --> APP : 200 (1000): chỉ số, xu hướng, top 5\n(empty = true khi không loại bỏ, 5a)
 end
 
-group B04 – yêu cầu xuất tệp (UC47, bước 1)
+group B04 – yêu cầu xuất tệp (UC22, bước 1)
   APP -> API : POST .../reports/exports {type, from, to,\nformat: pdf | csv}, Idempotency-Key
   API -> PG : BEGIN; khóa lũy đẳng
   API -> PG : INSERT report.exports (pending);\nInsertTx ExportReport; COMMIT

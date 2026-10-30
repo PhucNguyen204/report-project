@@ -10,7 +10,7 @@ participant "shopping\n(MemberLeaveHook)" as HK
 database "PostgreSQL" as PG
 database "Redis" as RD
 
-group G09 – chuyển quyền trưởng nhóm (UC14)
+group G09 – chuyển quyền trưởng nhóm (UC07)
   APP -> API : POST …/leader-transfer\n{toUserId}
   API -> SVC : TransferLeader(sid, to)
   SVC -> PG : BEGIN; khóa lũy đẳng;\npg_advisory_xact_lock(hashtext(\nspace_id::text)); khóa hai dòng\nspace_members theo user_id
@@ -23,7 +23,7 @@ group G09 – chuyển quyền trưởng nhóm (UC14)
   API --> APP : 200 (1000), MSG10
 end
 
-group G10 – rời nhóm (UC15)
+group G10 – rời nhóm (UC07)
   APP -> API : POST …/leave
   API -> SVC : LeaveSpace(uid, sid)
   SVC -> PG : BEGIN; khóa lũy đẳng; advisory lock;\nspace_members theo user_id
@@ -41,5 +41,5 @@ group G10 – rời nhóm (UC15)
   SVC -> RD : DEL member:{sid}:{uid};\nPUBLISH user:{uid}, space:{sid}
   API --> APP : 200 (1000): không gian cá nhân
 end
-note over APP, SVC : G08 xóa thành viên (UC13): như nhánh\n[còn thành viên khác], chỉ trưởng nhóm\nđược gọi, phát member.removed
+note over APP, SVC : G08 xóa thành viên (UC07): như nhánh\n[còn thành viên khác], chỉ trưởng nhóm\nđược gọi, phát member.removed
 @enduml

@@ -10,7 +10,7 @@ participant "SuggestionEngine\n(miền)" as ENG
 database "PostgreSQL" as PG
 database "Redis" as RD
 
-group M05 – gợi ý món (UC40; UC30 dùng expiringOnly)
+group M05 – gợi ý món (UC18; UC12 dùng expiringOnly)
   APP -> API : GET .../recipe-suggestions?date,\nmealSlot, servings, expiringOnly
   break tham số sai
     API --> APP : 400 (2002), MSG02
@@ -25,7 +25,7 @@ group M05 – gợi ý món (UC40; UC30 dùng expiringOnly)
   SVC -> PG : lô expires_on ≥ $today\n(StockQuery.Available)
   SVC -> PG : công thức published có ≥ 1\nnguyên liệu trong tủ, theo bữa\n(RecipeQuery); yêu thích; COMMIT
   break tủ lạnh trống (2a)
-    API --> APP : 200 (1000): công thức mẫu phổ biến,\nlời nhắc thêm thực phẩm (UC25)
+    API --> APP : 200 (1000): công thức mẫu phổ biến,\nlời nhắc thêm thực phẩm (UC11)
   end
   SVC -> ENG : Rank(ứng viên,\ntồn kho, N, cfg)
   ENG -> ENG : R, E, F; loại R < θ;\nS = 0,6R + 0,3E + 0,1F;\nexpiringOnly: E > 0

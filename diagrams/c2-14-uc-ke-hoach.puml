@@ -5,19 +5,15 @@ left to right direction
 actor "Người dùng" as U
 
 rectangle "Quản lý kế hoạch bữa ăn" as B {
-  usecase "UC37\nLên lịch bữa ăn" as UC37
-  usecase "UC40\nGợi ý món ăn từ\nthực phẩm sẵn có" as UC40
-  usecase "UC38\nXem lịch bữa ăn\ntheo ngày, tuần" as UC38
-  usecase "UC39\nCập nhật lịch bữa ăn" as UC39
-  usecase "UC41\nXác nhận đã nấu món ăn" as UC41
-  usecase "UC22\nSinh danh sách mua sắm\ntừ kế hoạch bữa ăn" as UC22
+  usecase "UC17\nQuản lý lịch bữa ăn" as UC17
+  usecase "UC18\nGợi ý món ăn từ\nthực phẩm sẵn có" as UC18
+  usecase "UC19\nXác nhận đã nấu món ăn" as UC19
+  usecase "UC10\nBổ sung nguyên liệu còn thiếu\nvào danh sách mua sắm" as UC10
 }
 
-U -- UC37
-U -- UC40
-U -- UC38
-UC37 <.[norank]. UC40 : <<extend>>
-UC38 <.. UC39 : <<extend>>
-UC38 <.. UC41 : <<extend>>
-UC38 <.. UC22 : <<extend>>
+U -- UC17
+U -- UC18
+U -- UC19
+U -- UC10
+UC17 <.[norank]. UC18 : <<extend>>
 @enduml

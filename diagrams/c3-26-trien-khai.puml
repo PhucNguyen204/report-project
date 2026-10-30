@@ -20,7 +20,6 @@ skinparam rectangle {
 }
 hide stereotype
 
-cloud "**Open Food Facts**\n(HTTPS)" as OFF
 node "<<device>>\n**Điện thoại Android / iOS**\nỨng dụng Flutter, SQLite (drift),\nKeychain/Keystore" as PHONE
 cloud "**Dịch vụ thông báo**\nFCM HTTP v1 (→ APNs)\nSMTP relay" as NOTI
 
@@ -50,7 +49,6 @@ legend top left
   Chỉ caddy mở cổng ra Internet; mạng data là mạng internal của Docker.
 endlegend
 
-OFF -[hidden]right- PHONE
 PHONE -[hidden]right- NOTI
 API -[hidden]right- MINIO
 MINIO -[hidden]right- WK
@@ -62,7 +60,6 @@ PHONE -down-> CADDY : HTTPS/WSS :443
 CADDY -down-> API : HTTP :8080\n(cân bằng tải)
 CADDY -down-> MINIO : media.\n(URL ký sẵn)
 MON .left.> WK : thu :8081/metrics\n(api, worker)
-API -up-> OFF : HTTPS
 WK -up-> NOTI : HTTPS,\nSMTP/TLS
 NOTI -left-> PHONE : đẩy
 API -down-> NDATA : SQL, RESP, HTTPS

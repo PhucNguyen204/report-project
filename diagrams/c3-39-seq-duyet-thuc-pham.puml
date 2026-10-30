@@ -10,7 +10,7 @@ database "PostgreSQL" as PG
 participant "Worker\n(River)" as WK
 database "Elasticsearch" as ES
 
-group D11 – duyệt thực phẩm riêng (UC49)
+group D11 – duyệt thực phẩm riêng (UC23)
   APP -> API : POST …/foods/{id}/review\n{action, targetFoodId?}
   API -> SVC : ReviewFood(cmd)
   SVC -> PG : BEGIN; khóa lũy đẳng;\nfoods (id, target) FOR\nUPDATE theo id
@@ -18,7 +18,7 @@ group D11 – duyệt thực phẩm riêng (UC49)
     API --> APP : 409 (4002), MSG35
   end
   alt action = approve
-    break trùng tên trong loại\nhoặc mã vạch bản global
+    break trùng tên trong loại\ncủa bản global
       API --> APP : 409 (4003), MSG02\n(chỉ được gộp)
     end
     SVC -> PG : scope = 'global',\nstatus = 'active',\nbỏ owner_space_id

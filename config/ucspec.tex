@@ -18,9 +18,9 @@
 \newenvironment{ucspec}[2]{%
   \ucsetwidths\small
   \begin{longtable}{|L{\ucA}|L{\ucB}|L{\ucC}|L{\ucD}|}
-  \caption{Đặc tả use case #1 – #2}\label{tab:#1}\\
+  \caption{Đặc tả chức năng #1 – #2}\label{tab:#1}\\
   \hline
-  \hd{Mã use case} & \textbf{#1} & \hd{Tên use case} & \textbf{#2}\\ \hline
+  \hd{Mã chức năng} & \textbf{#1} & \hd{Tên chức năng} & \textbf{#2}\\ \hline
   \endfirsthead
   \multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo) – #1 – #2}\\ \hline
   \endhead
@@ -34,7 +34,7 @@
 
 % Mở đầu một luồng sự kiện (chính / thay thế / ngoại lệ)
 \newcommand{\ucflow}[1]{%
-  \multicolumn{4}{|l|}{\cellcolor{headerbg}\textbf{#1}}\\ \hline
+  \multicolumn{4}{|L{\dimexpr\ucA+\ucB+\ucC+\ucD+6\tabcolsep+3\arrayrulewidth\relax}|}{\cellcolor{headerbg}\textbf{#1}}\\ \hline
   \hs{STT} & \hs{Thực hiện bởi} & \multicolumn{2}{L{\ucCD}|}{\cellcolor{subheaderbg}\textbf{Hành động}}\\ \hline}
 
 % Một bước trong luồng sự kiện
@@ -104,3 +104,6 @@
 }{\end{longtable}}
 \newcommand{\ddentity}[1]{\multicolumn{4}{|l|}{\cellcolor{subheaderbg}\textbf{#1}}\\ \hline}
 \newcommand{\dd}[4]{#1 & #2 & #3 & #4\\ \hline}
+
+% Tiêu đề use case mục tiêu và dòng tóm tắt; mô tả mục tiêu viết ngay sau lệnh này
+\newcommand{\ucgoal}[5]{\paragraph{#1. #2}\noindent\emph{Tầng #3. Tác nhân: #4. Gộp từ: #5.}\par\smallskip}

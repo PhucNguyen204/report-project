@@ -11,7 +11,6 @@ rectangle "Hệ thống\n“Đi chợ tiện lợi”\n(ứng dụng di động 
 
 cloud "Dịch vụ thông báo đẩy\n(FCM / APNs)" as PUSH
 cloud "Dịch vụ thư điện tử\n(SMTP)" as MAIL
-cloud "Cơ sở dữ liệu sản phẩm mở\n(tra cứu mã vạch)" as BAR
 node "Bộ lập lịch\n(tác vụ định kỳ)" as CRON
 
 G --> SYS : thông tin đăng ký,\nđăng nhập
@@ -20,6 +19,5 @@ L --> SYS : thành viên,\nphân công mua sắm
 A --> SYS : tài khoản, danh mục,\ncấu hình hệ thống
 SYS --> PUSH : yêu cầu gửi\nthông báo
 SYS --> MAIL : mã OTP,\nthư khôi phục
-SYS --> BAR : mã vạch cần tra cứu
 CRON --> SYS : kích hoạt kiểm tra\nhạn dùng hằng ngày
 @enduml

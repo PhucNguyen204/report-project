@@ -67,7 +67,7 @@ Mục tiêu tổng quát của đề tài là xây dựng ứng dụng di độn
 \hd{Mã} & \hd{Mục tiêu cụ thể} & \hd{Chỉ tiêu đánh giá}\\ \hline
 \endhead
 MT01 & Rút ngắn thời gian lập danh sách mua sắm & Người dùng tạo được danh sách 10 mặt hàng trong không quá 90 giây nhờ gợi ý tên thực phẩm và sao chép danh sách cũ\\ \hline
-MT02 & Loại bỏ tình trạng trùng hoặc sót mặt hàng khi nhiều người cùng mua & Mặt hàng trùng được gộp tự động; trạng thái đã mua đồng bộ tới các thành viên trong không quá 3 giây khi có mạng\\ \hline
+MT02 & Loại bỏ tình trạng trùng hoặc sót mặt hàng khi nhiều người cùng mua & Mặt hàng trùng được gộp tự động; trạng thái đã mua hiển thị cho các thành viên khi họ mở hoặc tải lại danh sách (đồng bộ tức thời là định hướng phát triển)\\ \hline
 MT03 & Không để thực phẩm hết hạn mà người dùng không được báo trước & Mọi thực phẩm có ngày hết hạn đều được nhắc ít nhất một lần trước N ngày (mặc định 3 ngày)\\ \hline
 MT04 & Tận dụng thực phẩm sẵn có khi lập thực đơn & Gợi ý trả về trong không quá 2 giây; món dùng thực phẩm sắp hết hạn được cộng điểm ưu tiên, có giải thích mức đáp ứng nguyên liệu\\ \hline
 MT05 & Giúp người dùng nắm được thói quen mua sắm, tiêu thụ và lãng phí & Báo cáo theo tuần, tháng hoặc khoảng ngày tùy chọn, tối đa 12 tháng, có thể xuất ra tệp\\ \hline
@@ -93,6 +93,7 @@ Quản lý thực phẩm trong tủ lạnh và nhắc hạn sử dụng & Kết 
 Công thức nấu ăn, kế hoạch bữa ăn, gợi ý món từ tồn kho & Tư vấn dinh dưỡng mang tính y khoa, chế độ ăn điều trị\\ \hline
 Tìm kiếm, phân loại thực phẩm; thống kê mua sắm, tiêu thụ, lãng phí & Nhận diện thực phẩm bằng hình ảnh, trợ lý trí tuệ nhân tạo (định hướng phát triển)\\ \hline
 Quản trị tài khoản, danh mục dùng chung và tham số hệ thống & Hỗ trợ đa ngôn ngữ ngoài tiếng Việt và tiếng Anh\\ \hline
+Các chức năng ngoài nghiệp vụ ưu tiên, cài đặt ở mức tối giản & Hoạt động ngoại tuyến, đồng bộ thời gian thực và quét mã vạch (định hướng phát triển)\\ \hline
 \end{longtable}
 }
 
@@ -120,18 +121,20 @@ Các chức năng trong Bảng~\ref{tab:chuc-nang-mo-rong} hỗ trợ phối h�
 \multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
 \hd{Mã} & \hd{Chức năng} & \hd{Vấn đề được giải quyết} & \hd{Use case}\\ \hline
 \endhead
-MR01 & Mời thành viên bằng mã mời hoặc mã QR & Thành viên gia nhập nhóm nhanh, không cần trưởng nhóm biết trước email; mã có thời hạn và có thể thu hồi để bảo đảm an toàn & \uc{UC10}, \uc{UC11}\\ \hline
-MR02 & Chuyển mặt hàng đã mua vào tủ lạnh & Loại bỏ việc nhập lại thông tin thực phẩm sau khi đi chợ; hạn dùng được đề xuất theo loại thực phẩm và vị trí bảo quản & \uc{UC21}\\ \hline
-MR03 & Sinh danh sách mua sắm từ kế hoạch bữa ăn & Chỉ mua phần nguyên liệu thực sự còn thiếu sau khi đã trừ tồn kho và các danh sách đang chờ mua & \uc{UC22}\\ \hline
-MR04 & Quét mã vạch sản phẩm & Nhập nhanh thực phẩm đóng gói, giảm sai sót chính tả; tra cứu danh mục nội bộ trước, sau đó đến cơ sở dữ liệu sản phẩm mở & \uc{UC26}\\ \hline
-MR05 & Gợi ý món có chấm điểm, ưu tiên thực phẩm sắp hết hạn & Biến cảnh báo hạn dùng thành hành động cụ thể: món nào nên nấu ngay để không lãng phí & \uc{UC40}\\ \hline
-MR06 & Xác nhận đã nấu và trừ kho theo nguyên tắc FEFO & Tồn kho luôn phản ánh đúng thực tế mà không cần người dùng tự cập nhật từng thực phẩm & \uc{UC41}\\ \hline
-MR07 & Bổ sung nguyên liệu còn thiếu từ công thức & Từ màn hình công thức, một thao tác là đưa phần còn thiếu vào danh sách mua sắm & \uc{UC36}\\ \hline
-MR08 & Báo cáo chi tiêu, báo cáo lãng phí và xuất báo cáo & Lượng hóa giá trị thực phẩm bị bỏ đi, giúp gia đình điều chỉnh thói quen và ngân sách & \uc{UC44}, \uc{UC46}, \uc{UC47}\\ \hline
-MR09 & Thiết lập nhắc nhở cá nhân hóa & Mỗi thành viên tự chọn ngưỡng nhắc từ 1 đến 7 ngày và bật, tắt từng loại thông báo; mặc định vẫn là 3 ngày theo đề bài & \uc{UC08}\\ \hline
-MR10 & Đồng bộ thời gian thực và hoạt động ngoại tuyến & Danh sách vẫn dùng được tại chợ hoặc siêu thị khi sóng yếu; thay đổi được đồng bộ khi có mạng trở lại & \nfr{NFR10}, \nfr{NFR11}\\ \hline
+MR01 & Mời thành viên bằng mã mời hoặc mã QR & Thành viên gia nhập nhóm nhanh, không cần trưởng nhóm biết trước email; mã có thời hạn và có thể thu hồi để bảo đảm an toàn & \uc{UC06}\\ \hline
+MR02 & Chuyển mặt hàng đã mua vào tủ lạnh & Loại bỏ việc nhập lại thông tin thực phẩm sau khi đi chợ; hạn dùng được đề xuất theo loại thực phẩm và vị trí bảo quản & \uc{UC11}\\ \hline
+MR03 & Sinh danh sách mua sắm từ kế hoạch bữa ăn & Chỉ mua phần nguyên liệu thực sự còn thiếu sau khi đã trừ tồn kho và các danh sách đang chờ mua & \uc{UC10}\\ \hline
+MR04 & Quét mã vạch sản phẩm (không thuộc phạm vi cài đặt) & Nhập nhanh thực phẩm đóng gói, giảm sai sót chính tả; tra cứu danh mục nội bộ trước, sau đó đến cơ sở dữ liệu sản phẩm mở & —\\ \hline
+MR05 & Gợi ý món có chấm điểm, ưu tiên thực phẩm sắp hết hạn & Biến cảnh báo hạn dùng thành hành động cụ thể: món nào nên nấu ngay để không lãng phí & \uc{UC18}\\ \hline
+MR06 & Xác nhận đã nấu và trừ kho theo nguyên tắc FEFO & Tồn kho luôn phản ánh đúng thực tế mà không cần người dùng tự cập nhật từng thực phẩm & \uc{UC19}\\ \hline
+MR07 & Bổ sung nguyên liệu còn thiếu từ công thức & Từ màn hình công thức, một thao tác là đưa phần còn thiếu vào danh sách mua sắm & \uc{UC10}\\ \hline
+MR08 & Báo cáo chi tiêu, báo cáo lãng phí và xuất báo cáo & Lượng hóa giá trị thực phẩm bị bỏ đi, giúp gia đình điều chỉnh thói quen và ngân sách & \uc{UC21}, \uc{UC22}\\ \hline
+MR09 & Thiết lập nhắc nhở cá nhân hóa & Mỗi thành viên tự chọn ngưỡng nhắc từ 1 đến 7 ngày và bật, tắt từng loại thông báo; mặc định vẫn là 3 ngày theo đề bài & \uc{UC04}\\ \hline
+MR10 & Đồng bộ thời gian thực và hoạt động ngoại tuyến (định hướng phát triển, không thuộc tiêu chí chấp nhận) & Danh sách vẫn dùng được tại chợ hoặc siêu thị khi sóng yếu; thay đổi được đồng bộ khi có mạng trở lại & \nfr{NFR10}, \nfr{NFR11}\\ \hline
 \end{longtable}
 }
+
+Trong các chức năng này, MR01 đến MR09 là chức năng ưu tiên phát triển và kiểm thử đầy đủ; MR10 là định hướng phát triển, nằm ngoài tiêu chí chấp nhận.
 
 Hình~\ref{fig:chu-trinh} minh họa chu trình nghiệp vụ của hệ thống. Chu trình bắt đầu từ lập kế hoạch bữa ăn, tiếp tục qua các khâu tạo danh sách, phân công mua sắm, nhập thực phẩm vào tủ lạnh, theo dõi hạn dùng và nấu ăn, rồi kết thúc bằng thống kê. Kết quả thống kê được dùng để điều chỉnh kế hoạch tiếp theo. Mũi tên nét đứt biểu thị việc thông tin về thực phẩm sắp hết hạn được sử dụng để ưu tiên gợi ý món trong bước lập kế hoạch.
 
@@ -144,7 +147,7 @@ Phần này phân tích bài toán ở mức nghiệp vụ, độc lập với g
 
 \subsection{Ngữ cảnh hệ thống và các nhóm nghiệp vụ}\label{ssec:ngu-canh}
 
-Hình~\ref{fig:ngu-canh} xác định ranh giới hệ thống “Đi chợ tiện lợi”, gồm ứng dụng di động trên thiết bị người dùng và máy chủ lưu trữ dữ liệu tập trung. Các bên tương tác trực tiếp gồm khách chưa có tài khoản, người dùng, thành viên gia đình, trưởng nhóm và quản trị viên. Hệ thống sử dụng ba dịch vụ bên ngoài: dịch vụ thông báo đẩy, dịch vụ thư điện tử để gửi mã xác thực và thư khôi phục mật khẩu, và cơ sở dữ liệu sản phẩm mở để tra cứu mã vạch. Ngoài ra, bộ lập lịch kích hoạt tác vụ kiểm tra hạn sử dụng hằng ngày.
+Hình~\ref{fig:ngu-canh} xác định ranh giới hệ thống “Đi chợ tiện lợi”, gồm ứng dụng di động trên thiết bị người dùng và máy chủ lưu trữ dữ liệu tập trung. Các bên tương tác trực tiếp gồm khách chưa có tài khoản, người dùng, thành viên gia đình, trưởng nhóm và quản trị viên. Hệ thống sử dụng hai dịch vụ bên ngoài: dịch vụ thông báo đẩy và dịch vụ thư điện tử để gửi mã xác thực và thư khôi phục mật khẩu. Ngoài ra, bộ lập lịch kích hoạt tác vụ kiểm tra hạn sử dụng hằng ngày.
 
 \diagram[0.95\textwidth]{c1-04-ngu-canh}{Sơ đồ ngữ cảnh của hệ thống}{fig:ngu-canh}
 
@@ -200,7 +203,7 @@ Vòng đời của mặt hàng được biểu diễn ở Hình~\ref{fig:trang-t
 
 \diagram[0.58\textwidth]{c1-07-trang-thai-mat-hang}{Vòng đời của một mặt hàng trong danh sách mua sắm}{fig:trang-thai-mat-hang}
 
-Trong quá trình mua, cần phân biệt số lượng dự kiến với số lượng thực tế. Chẳng hạn, danh sách yêu cầu 0,5 kg cà chua nhưng người mua chọn được 0,6 kg; lượng nhập tủ và chi tiêu phải dựa trên kết quả mua đã xác nhận. Trường hợp mua hộ người khác cũng cần lưu đúng người mua thực tế để thành viên được phân công biết công việc đã hoàn thành. Nếu thiết bị mất mạng, trạng thái chờ đồng bộ phải được thể hiện rõ vì các thành viên khác có thể chưa nhận được thay đổi.
+Trong quá trình mua, cần phân biệt số lượng dự kiến với số lượng thực tế. Chẳng hạn, danh sách yêu cầu 0,5 kg cà chua nhưng người mua chọn được 0,6 kg; lượng nhập tủ và chi tiêu phải dựa trên kết quả mua đã xác nhận. Trường hợp mua hộ người khác cũng cần lưu đúng người mua thực tế để thành viên được phân công biết công việc đã hoàn thành. Nếu thiết bị mất mạng, ứng dụng cần báo rõ thao tác chưa được ghi nhận. Việc lưu chờ và đồng bộ lại khi có mạng (MR10) là định hướng phát triển.
 
 Danh sách cũ có thể được tái sử dụng cho một lần đi chợ mới, nhưng chỉ sao chép nhu cầu mặt hàng. Trạng thái đã mua, người mua và thời điểm của lần trước không được mang sang lần mới. Tương tự, khi gộp các mặt hàng trùng, hệ thống cần đối chiếu cả thực phẩm và đơn vị: cùng tên chưa đủ để cộng số lượng nếu một dòng tính theo bó và dòng khác tính theo gam. Các nghiệp vụ con của NV02 được phân tích trong Bảng~\ref{tab:nv02}.
 
@@ -216,7 +219,7 @@ Danh sách cũ có thể được tái sử dụng cho một lần đi chợ m�
 
 \subsection{Nghiệp vụ quản lý thực phẩm trong tủ lạnh}\label{ssec:nv03}
 
-NV03 theo dõi tồn kho thực phẩm trong tủ lạnh. Đơn vị quản lý là \emph{lô thực phẩm}: mỗi lần nhập thực phẩm — bằng cách nhập tay, quét mã vạch hoặc chuyển từ danh sách mua sắm — hệ thống tạo một lô riêng với số lượng, đơn vị, ngày mua, ngày hết hạn và vị trí lưu trữ. Quản lý theo lô giúp phân biệt các thực phẩm cùng loại nhưng có ngày hết hạn khác nhau, chẳng hạn hai hộp sữa mua vào những thời điểm khác nhau. Vị trí lưu trữ gồm năm giá trị chuẩn; mỗi vị trí ảnh hưởng đến hạn dùng gợi ý như trình bày tại Bảng~\ref{tab:vi-tri-luu-tru}.
+NV03 theo dõi tồn kho thực phẩm trong tủ lạnh. Đơn vị quản lý là \emph{lô thực phẩm}: mỗi lần nhập thực phẩm — bằng cách nhập tay hoặc chuyển từ danh sách mua sắm — hệ thống tạo một lô riêng với số lượng, đơn vị, ngày mua, ngày hết hạn và vị trí lưu trữ. Quản lý theo lô giúp phân biệt các thực phẩm cùng loại nhưng có ngày hết hạn khác nhau, chẳng hạn hai hộp sữa mua vào những thời điểm khác nhau. Vị trí lưu trữ gồm năm giá trị chuẩn; mỗi vị trí ảnh hưởng đến hạn dùng gợi ý như trình bày tại Bảng~\ref{tab:vi-tri-luu-tru}.
 
 {\small
 \begin{longtable}{|L{2.6cm}|L{3.2cm}|L{\dimexpr\textwidth-8\tabcolsep-5\arrayrulewidth-2.6cm-3.2cm-4.8cm\relax}|L{4.8cm}|}
@@ -246,7 +249,7 @@ Mọi thay đổi về số lượng của lô được ghi vào \emph{nhật k�
 Nhắc hạn dùng phải dựa trên lượng còn lại và thiết lập của người nhận. Một lô đã dùng hết không còn cần nhắc; cùng một lô có thể được nhắc cho các thành viên ở những thời điểm khác nhau do ngưỡng nhắc khác nhau. Thông báo cần dẫn về danh sách hiện tại để người dùng chọn sử dụng, cập nhật hoặc loại bỏ thực phẩm. Nếu chỉ hiển thị cảnh báo mà không liên kết tới thao tác tiếp theo, người dùng vẫn phải tự tìm lại lô trong tủ. Các nghiệp vụ con của NV03 được trình bày tại Bảng~\ref{tab:nv03}.
 
 \begin{nvtable}{Phân rã nghiệp vụ NV03 – Quản lý thực phẩm trong tủ lạnh}{tab:nv03}
-\nvrow{NV03.1}{Nhập thực phẩm vào tủ}{Thực phẩm hoặc mã vạch, số lượng, đơn vị, ngày mua, ngày hết hạn, vị trí}{Tra cứu danh mục theo tên hoặc mã vạch; đề xuất hạn dùng nếu bỏ trống; kiểm tra ngày hết hạn không trước ngày mua (\br{BR11}, \br{BR14})}{Lô thực phẩm mới ở trạng thái tương ứng}
+\nvrow{NV03.1}{Nhập thực phẩm vào tủ}{Thực phẩm, số lượng, đơn vị, ngày mua, ngày hết hạn, vị trí}{Tra cứu danh mục theo tên; đề xuất hạn dùng nếu bỏ trống; kiểm tra ngày hết hạn không trước ngày mua (\br{BR11}, \br{BR14})}{Lô thực phẩm mới ở trạng thái tương ứng}
 \nvrow{NV03.2}{Cập nhật lô thực phẩm}{Lô thực phẩm, thông tin thay đổi}{Kiểm tra hợp lệ, tính lại trạng thái hạn dùng (\br{BR12})}{Lô thực phẩm đã cập nhật}
 \nvrow{NV03.3}{Ghi nhận sử dụng}{Thực phẩm, lượng sử dụng}{Trừ theo nguyên tắc hết hạn trước dùng trước, không cho lượng âm; ghi nhật ký tiêu thụ (\br{BR14}, \br{BR15})}{Tồn kho mới, bản ghi tiêu thụ}
 \nvrow{NV03.4}{Loại bỏ thực phẩm}{Lô thực phẩm, lượng loại bỏ, lý do}{Trừ tồn kho, ghi nhật ký loại bỏ kèm giá trị ước tính (\br{BR21})}{Lô Đã loại bỏ hoặc giảm số lượng, bản ghi lãng phí}

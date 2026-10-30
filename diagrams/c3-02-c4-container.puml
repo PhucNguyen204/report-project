@@ -36,7 +36,6 @@ System_Boundary(sys, "Hệ thống Đi chợ tiện lợi") {
   }
 }
 
-System_Ext(off, "Open Food Facts", "Tra cứu mã vạch")
 System_Ext(fcm, "FCM / APNs", "Thông báo đẩy")
 System_Ext(smtp, "Dịch vụ SMTP", "Thư OTP, thư tài khoản")
 
@@ -46,7 +45,6 @@ Rel_D(app, caddy, "REST, WS, PUT ảnh", "HTTPS/WSS")
 Rel_D(caddy, api, "Chuyển tiếp", "HTTP")
 Rel_D(api, data, "Đọc/ghi, chèn tác vụ,\ncache, tìm kiếm, ký URL", "pgx, RESP, HTTPS, S3")
 Rel_D(worker, data, "Nhận tác vụ, PUBLISH,\nchỉ mục, lưu tệp", "pgx, RESP, HTTPS, S3")
-Rel_U(api, off, "Tra mã vạch", "HTTPS")
 Rel_U(worker, fcm, "Gửi đẩy", "HTTP v1")
 Rel_D(worker, smtp, "Gửi thư", "SMTP/TLS")
 Rel_L(fcm, app, "Thông báo đẩy")
@@ -55,7 +53,6 @@ Lay_R(api, worker)
 Lay_R(minio, pg)
 Lay_D(minio, redis)
 Lay_R(redis, es)
-Lay_R(caddy, off)
 Lay_D(fcm, smtp)
 
 SHOW_LEGEND()

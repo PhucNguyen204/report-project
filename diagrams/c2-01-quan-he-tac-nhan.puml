@@ -17,18 +17,21 @@ rectangle "Tác nhân phụ" as SEC {
   actor "Bộ lập lịch" as CRON <<hệ thống>>
   actor "Dịch vụ\nthông báo đẩy" as PUSH <<hệ thống ngoài>>
   actor "Dịch vụ\nthư điện tử" as MAIL <<hệ thống ngoài>>
-  actor "Cơ sở dữ liệu\nsản phẩm mở" as BAR <<hệ thống ngoài>>
 }
 
 G .right.> U : đăng ký,\nđăng nhập thành công
 M -up-|> U
-A -up-|> U
 L -up-|> M
 
 CRON -[hidden]right- PUSH
 PUSH -[hidden]down- MAIL
-CRON -[hidden]down- BAR
 PRI -[hidden]right- SEC
+
+note bottom of A
+  Tác nhân độc lập,
+  không kế thừa Người dùng
+  (BR23)
+end note
 
 note right of L
   Kế thừa toàn bộ quyền

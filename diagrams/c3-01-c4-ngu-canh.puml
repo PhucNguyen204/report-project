@@ -23,7 +23,6 @@ System(sys, "Hệ thống Đi chợ tiện lợi", "Ứng dụng Flutter và má
 System_Ext(fcm, "Firebase Cloud Messaging", "API đẩy HTTP v1 chung")
 System_Ext(apns, "Apple Push Notification service", "Đẩy tới thiết bị iOS")
 System_Ext(smtp, "Dịch vụ SMTP", "Chuyển tiếp thư điện tử")
-System_Ext(off, "Open Food Facts", "Tra cứu sản phẩm theo mã vạch")
 
 Rel_D(user, sys, "Mua sắm, tủ lạnh, công thức, kế hoạch", "HTTPS")
 Rel_D(admin, sys, "Quản trị tài khoản, danh mục, tham số", "HTTPS")
@@ -32,11 +31,9 @@ Rel_D(fcm, apns, "Chuyển tiếp cho iOS")
 Rel_U(fcm, user, "Đẩy tới Android")
 Rel_U(apns, user, "Đẩy tới iOS")
 Rel_D(sys, smtp, "Thư OTP, thư tài khoản", "SMTP/TLS")
-Rel_D(sys, off, "Tra mã vạch", "HTTPS/JSON")
 
 Lay_R(user, admin)
 Lay_R(fcm, smtp)
-Lay_R(smtp, off)
 
 SHOW_FLOATING_LEGEND()
 Lay_D(admin, LEGEND())

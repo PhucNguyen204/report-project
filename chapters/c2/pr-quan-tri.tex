@@ -3,14 +3,14 @@
 % ---------------------------------------------------------------------
 \subsubsection{Phân rã use case “Quản trị hệ thống”}\label{sssec:pr-quan-tri}
 
-Gói Quản trị hệ thống gồm sáu use case dành cho Quản trị viên, được phân rã tại Hình~\ref{fig:uc-quan-tri}. Use case \uc{UC48} quản lý tài khoản, \uc{UC53} cấu hình tham số và bốn use case còn lại quản lý dữ liệu danh mục dùng chung. \uc{UC49} Quản lý danh mục thực phẩm bao gồm \uc{UC50} và \uc{UC51}, vì mỗi thực phẩm phải thuộc một loại và có đơn vị mặc định. Các chức năng này nằm trong khu vực riêng của ứng dụng di động, chỉ tài khoản quản trị mới truy cập được.
+Gói Quản trị hệ thống dành cho Quản trị viên và có ba use case, được thể hiện tại Hình~\ref{fig:uc-quan-tri}: \uc{UC23} Quản lý danh mục dùng chung (thực phẩm, loại, đơn vị đo, công thức mẫu), \uc{UC24} Quản lý tài khoản người dùng (khóa, mở) và \uc{UC25} Cấu hình tham số hệ thống. Bốn loại danh mục của \uc{UC23} dùng chung một giao diện thêm, sửa, ngừng sử dụng; thực phẩm tham chiếu loại và đơn vị, đây là phụ thuộc dữ liệu nên không mô hình hóa bằng include. Cả ba use case thuộc tầng 3: danh mục, công thức mẫu và tham số được nạp sẵn bằng dữ liệu khởi tạo, tham số đọc từ tệp cấu hình thay vì giao diện riêng. Các chức năng nằm trong khu vực riêng của ứng dụng di động, chỉ tài khoản quản trị mới truy cập được.
 
 \diagram[0.82\textwidth]{c2-19-uc-quan-tri}{Biểu đồ use case phân rã gói Quản trị hệ thống}{fig:uc-quan-tri}
 
-\paragraph{Duy trì danh mục (\uc{UC49})}
-Quản trị viên nhập hoặc sửa tên thực phẩm, loại, đơn vị mặc định, mã vạch và hạn dùng gợi ý theo vị trí. Máy chủ kiểm tra quyền, tên không trùng trong cùng loại, mã vạch duy nhất và miền giá trị trước khi lưu. Dữ liệu đã được tham chiếu chỉ được ngừng sử dụng, không xóa cứng; mọi thay đổi phải ghi nhật ký (\br{BR16}, \br{BR22}, \br{BR23}). Khi duyệt thực phẩm riêng, quản trị viên chọn gộp với bản ghi có sẵn hoặc tạo bản ghi chuẩn hóa.
+\paragraph{Duy trì danh mục (\uc{UC23})}
+Quản trị viên nhập hoặc sửa tên thực phẩm, loại, đơn vị mặc định và hạn dùng gợi ý theo vị trí. Máy chủ kiểm tra quyền, tên không trùng trong cùng loại và miền giá trị trước khi lưu. Dữ liệu đã được tham chiếu chỉ được ngừng sử dụng, không xóa cứng; mọi thay đổi phải ghi nhật ký (\br{BR16}, \br{BR22}, \br{BR23}). Khi duyệt thực phẩm riêng, quản trị viên chọn gộp với bản ghi có sẵn hoặc tạo bản ghi chuẩn hóa.
 
-\paragraph{Cấu hình vận hành (\uc{UC53})}
+\paragraph{Cấu hình vận hành (\uc{UC25})}
 Quản trị viên chỉnh tham số, xem lại giá trị cũ và mới rồi xác nhận. Hệ thống chỉ lưu khi mọi giá trị hợp lệ và tổng trọng số gợi ý bằng 1; nếu sai thì báo \msg{MSG27}, không áp dụng một phần. Cấu hình có hiệu lực cho lần xử lý kế tiếp và được lưu lịch sử. Bảng~\ref{tab:tham-so-he-thong} giữ các miền giá trị làm cơ sở kiểm thử.
 
 {\small
@@ -22,17 +22,17 @@ Quản trị viên chỉnh tham số, xem lại giá trị cũ và mới rồi x
 \multicolumn{4}{l}{\footnotesize\itshape Bảng \thetable\ (tiếp theo)}\\ \hline
 \hd{Tham số} & \hd{Mặc định} & \hd{Miền hợp lệ} & \hd{Ảnh hưởng tới}\\ \hline
 \endhead
-Ngưỡng nhắc mặc định $N$ & 3 ngày & 1–7 ngày & Người dùng chưa tự thiết lập (\uc{UC08}, \uc{UC31})\\ \hline
-Khung giờ chạy nhắc nhở & 08:00 & 05:00–21:00 & Tác vụ \uc{UC31}\\ \hline
-Số thành viên tối đa mỗi nhóm & 10 & 2–30 & \uc{UC10}, \uc{UC11}\\ \hline
-Thời hạn mã mời & 48 giờ & 1–168 giờ & \uc{UC10}\\ \hline
-Thời hạn mã OTP & 5 phút & 2–15 phút & \uc{UC02}\\ \hline
-Ngưỡng đáp ứng tối thiểu $\theta$ & 0,6 & 0,3–1,0 & \uc{UC40}\\ \hline
-Trọng số $R$, $E$, $F$ & 0,6; 0,3; 0,1 & Mỗi trọng số 0–1, tổng bằng 1 & \uc{UC40}\\ \hline
-Số món gợi ý tối đa & 10 & 3–30 & \uc{UC40}\\ \hline
-Khoảng lập kế hoạch tối đa & 28 ngày & 7–60 ngày & \uc{UC37}\\ \hline
-Số lô tối đa trong một thông báo tổng hợp & 5 & 1–10 & \uc{UC31}\\ \hline
+Ngưỡng nhắc mặc định $N$ & 3 ngày & 1–7 ngày & Người dùng chưa tự thiết lập (\uc{UC04}, \uc{UC14})\\ \hline
+Khung giờ chạy nhắc nhở & 08:00 & 05:00–21:00 & Tác vụ \uc{UC14}\\ \hline
+Số thành viên tối đa mỗi nhóm & 10 & 2–30 & \uc{UC06}\\ \hline
+Thời hạn mã mời & 48 giờ & 1–168 giờ & \uc{UC06}\\ \hline
+Thời hạn mã OTP & 5 phút & 2–15 phút & \uc{UC01}\\ \hline
+Ngưỡng đáp ứng tối thiểu $\theta$ & 0,6 & 0,3–1,0 & \uc{UC18}\\ \hline
+Trọng số $R$, $E$, $F$ & 0,6; 0,3; 0,1 & Mỗi trọng số 0–1, tổng bằng 1 & \uc{UC18}\\ \hline
+Số món gợi ý tối đa & 10 & 3–30 & \uc{UC18}\\ \hline
+Khoảng lập kế hoạch tối đa & 28 ngày & 7–60 ngày & \uc{UC17}\\ \hline
+Số lô tối đa trong một thông báo tổng hợp & 5 & 1–10 & \uc{UC14}\\ \hline
 \end{longtable}
 }
 
-Các thao tác tài khoản, loại mặt hàng, đơn vị và công thức mẫu dùng chung quy trình kiểm tra quyền, kiểm tra dữ liệu, lưu và ghi nhật ký; đặc tả bổ sung của \uc{UC48}, \uc{UC50}--\uc{UC52} nằm tại Phụ lục~\ref{pl:dac-ta-bo-sung}.
+Các thao tác tài khoản, loại mặt hàng, đơn vị và công thức mẫu dùng chung quy trình kiểm tra quyền, kiểm tra dữ liệu, lưu và ghi nhật ký; đặc tả bổ sung của \uc{UC24}, \uc{UC23} nằm tại Phụ lục~\ref{pl:dac-ta-bo-sung}.
