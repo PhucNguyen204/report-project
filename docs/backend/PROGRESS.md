@@ -39,8 +39,8 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F04 | Worker/email port | IN_PROGRESS | River InsertTx rollback/dedupe PASS; provider/worker tiếp tục |
 | F05 | UC01 đăng ký/OTP | LOCAL_PASS | Auth core7 tests; coverage68.3%, thiếu ma trận còn mở |
 | F06 | UC02 phiên/thiết bị | LOCAL_PASS | Refresh/reuse/logout counters PG+race PASS |
-| F07 | UC23 danh mục/đơn vị nền tảng | NOT_STARTED | — |
-| F08 | UC25 cấu hình/audit | NOT_STARTED | — |
+| F07 | UC23 danh mục/đơn vị nền tảng | LOCAL_PASS baseline | Scope/unit/privatefood PG+race PASS; ETag/dimension review fixes tiếp tục |
+| F08 | UC25 cấu hình/audit | LOCAL_PASS baseline | Atomic config/audit tests PASS; full negative coverage tiếp tục |
 | F09 | Media | NOT_STARTED | — |
 | F10 | UC04 hồ sơ/nhắc | NOT_STARTED | — |
 | F11 | Inbox/delivery | NOT_STARTED | — |
@@ -206,3 +206,12 @@ Feature-ID: F21-digest-dedupe. Review phát hiện River mặc định giữ com
 - [x] Chỉ assignment.digest loại completed/cancelled khỏi uniqueness; các key idempotent khác giữ chính sách cũ.
 - [x] `go test -tags integration ./internal/platform -count=1 -race` PASS và regression inventory future-burst PASS.
 - [ ] FCM thật và release gate thông báo vẫn chưa đo; không hứa exactly-once tới provider.
+
+### F07/F08 — danh mục dùng chung, cấu hình và audit — 09/11/2026
+
+Feature-ID: F07-catalog-config. Trạng thái LOCAL_PASS baseline.
+- [x] ValidateFood và CreatePrivateFood qua port, không cho inventory ghi schema catalog.
+- [x] Catalog/admin được đăng ký tách khỏi auth; thay đổi cấu hình validate toàn batch và audit.
+- [x] Root test snapshot auth+catalog+admin với `-tags integration -count=1 -race`: PASS exit0.
+- [ ] Review còn mở: ETag danh mục phải thay đổi khi sửa, chặn food/đơn vị khác dimension, D02 không tự khóa. Fix đã có test tái hiện ở vòng tiếp theo.
+- [ ] Toàn accounts coverage hiện57.1%, chưa đạt gate85%.
