@@ -33,10 +33,10 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 
 | ID | Phạm vi | Trạng thái | Commit/evidence |
 |---|---|---|---|
-| F01 | Runtime, DB, migrations, harness/CI | NOT_STARTED | — |
+| F01 | Runtime, DB, migrations, harness/CI | IN_PROGRESS | Migrations/checksum và isolated PG test harness có; runtime/CI tiếp tục |
 | F02 | Quantity/Money/clock/Tx/HTTP | IN_PROGRESS | Quantity core: race PASS, coverage95.9%; Tx/HTTP đang tích hợp |
-| F03 | Auth scope/idempotency/request limits | NOT_STARTED | — |
-| F04 | Worker/email port | NOT_STARTED | — |
+| F03 | Auth scope/idempotency/request limits | IN_PROGRESS | PostgreSQL replay/concurrency/rollback5 tests platform PASS; full router chưa tích hợp |
+| F04 | Worker/email port | IN_PROGRESS | River InsertTx rollback/dedupe PASS; provider/worker tiếp tục |
 | F05 | UC01 đăng ký/OTP | NOT_STARTED | — |
 | F06 | UC02 phiên/thiết bị | NOT_STARTED | — |
 | F07 | UC23 danh mục/đơn vị nền tảng | NOT_STARTED | — |
@@ -134,3 +134,16 @@ Trạng thái: LOCAL_PASS cho phần Quantity; F02 tổng thể đang làm. Comm
 - [ ] Phần transaction/HTTP và integration toàn hệ thống hoàn tất.
 
 Ghi nhận: RED đầu tiên thiếu symbol; regression precision có behavioral RED thực. Không khẳng định coverage platform đạt gate; integration tests được ghi riêng sau.
+
+### F01/F03/F04 — nền tảng transaction/request/queue — 09/11/2026
+
+Trạng thái: LOCAL_PASS cho foundation; các tính năng tổng thể còn tích hợp. Feature-ID: F01-platform.
+
+- [x] Migrations embedded có checksum, advisory lock, chạy trong transaction.
+- [x] Test DB tạo database riêng, cleanup rõ ràng; PostgreSQL16 Docker thật.
+- [x] `go test -tags integration ./internal/platform -count=1 -v`:5 tests PASS, exit0.
+- [x] Hai request cùng key chỉ ghi một lần; khác body bị chặn; business error rollback cả counter và key.
+- [x] River InsertTx không tạo job khi rollback; cùng unique key chỉ một job.
+- [ ] Middleware đầy đủ/rate limit/provider/CI và E2E tích hợp.
+
+Review lưu ý: public auth loại khỏi transaction idempotency để counter lỗi được commit; nested DB.Tx dùng transaction trong request context.
