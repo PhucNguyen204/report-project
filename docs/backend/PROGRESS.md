@@ -198,3 +198,11 @@ Trạng thái: LOCAL_PASS, cần tăng coverage/ma trận trước release. Feat
 - [x] Logout family hiện tại, thiết bị khác vẫn có phiên; không lưu refresh token rõ.
 - [x] Root chạy snapshot4 files auth với `-tags integration -count=1 -race -cover`: PASS exit0, coverage68.3%.
 - [ ] Coverage≥85%, full router/E2E và external email smoke chưa đạt; ghi rõ chưa DONE.
+
+### F04/F21 — không chặn các đợt phân công tương lai — 09/11/2026
+
+Feature-ID: F21-digest-dedupe. Review phát hiện River mặc định giữ completed trong unique states, làm đợt phân công sau bị mất.
+- [x] Root quan sát RED platform `bursts1` và inventory `jobs1`.
+- [x] Chỉ assignment.digest loại completed/cancelled khỏi uniqueness; các key idempotent khác giữ chính sách cũ.
+- [x] `go test -tags integration ./internal/platform -count=1 -race` PASS và regression inventory future-burst PASS.
+- [ ] FCM thật và release gate thông báo vẫn chưa đo; không hứa exactly-once tới provider.

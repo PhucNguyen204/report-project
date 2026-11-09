@@ -106,3 +106,27 @@ func TestQueueRollbackAndDedupe(t *testing.T) {
 		t.Fatalf("dedupe count %d", n)
 	}
 }
+
+func TestAssignmentDigestDedupeEndsWithCompletedBurst(t *testing.T) {
+	db := testutil.NewDB(t)
+	ctx := context.Background()
+	enqueue := func() {
+		t.Helper()
+		if err := db.Tx(ctx, func(tx pgx.Tx) error {
+			return db.Enqueue(ctx, tx, "assignment.digest", "user:list", map[string]string{"userId": "user"}, time.Now())
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	enqueue()
+	enqueue()
+	var count int
+	if _, err := db.Pool.Exec(ctx, "UPDATE river_job SET state='completed',finalized_at=now()"); err != nil {
+		t.Fatal(err)
+	}
+	enqueue()
+	enqueue()
+	if err := db.Pool.QueryRow(ctx, "SELECT count(*) FROM river_job").Scan(&count); err != nil || count != 2 {
+		t.Fatalf("bursts %d %v", count, err)
+	}
+}

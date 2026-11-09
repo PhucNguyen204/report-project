@@ -8,6 +8,7 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
+	"github.com/riverqueue/river/rivertype"
 	"time"
 )
 
@@ -51,7 +52,11 @@ func ConfigureQueue(ctx context.Context, db *DB, handler EventHandler) (*river.C
 		if err != nil {
 			return err
 		}
-		_, err = client.InsertTx(ctx, tx, Event{Event: kind, Key: kind + ":" + key, Payload: b}, &river.InsertOpts{MaxAttempts: 4, ScheduledAt: runAt, UniqueOpts: river.UniqueOpts{ByArgs: true}})
+		unique := river.UniqueOpts{ByArgs: true}
+		if kind == "assignment.digest" {
+			unique.ByState = []rivertype.JobState{rivertype.JobStateAvailable, rivertype.JobStatePending, rivertype.JobStateRunning, rivertype.JobStateRetryable, rivertype.JobStateScheduled}
+		}
+		_, err = client.InsertTx(ctx, tx, Event{Event: kind, Key: kind + ":" + key, Payload: b}, &river.InsertOpts{MaxAttempts: 4, ScheduledAt: runAt, UniqueOpts: unique})
 		return err
 	}
 	return client, nil

@@ -97,3 +97,5 @@ Năm kịch bản giá trị (bảng trong `chapters/c2/uc-tong-quan.tex`): K1 g
 - Mỗi tính năng: test hành vi thất bại trước, code, chạy unit và test tích hợp phù hợp, review, cập nhật báo cáo/checklist, commit với trailer `Feature-ID: Fxx`. Root giữ thao tác Git khi có nhiều agent.
 - Không đánh dấu pass/done cho test chưa chạy, test bị skip hoặc dịch vụ thật mới chỉ được fake. Báo cáo ghi rõ lệnh, kết quả, giới hạn và bằng chứng.
 - Comment code hạn chế, chỉ câu ngắn về vai trò function khi cần. Tham chiếu ADR trong plan khi đặc tả mâu thuẫn; không sửa âm thầm phạm vi báo cáo LaTeX.
+
+- Từ yêu cầu tiếp theo của người dùng: mỗi phần đã verify phải commit và push ngay lên GitLab nhánh `baocao-phucnn`; root thực hiện Git tuần tự. Không sửa migration đã commit, thêm migration số mới cho nâng cấp.
