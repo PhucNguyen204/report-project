@@ -41,3 +41,15 @@ func TestAuthRejectsMissingTokenAndPreservesPublicAuth(t *testing.T) {
 		t.Fatal("public auth blocked")
 	}
 }
+
+func TestPreviewDoesNotNeedIdempotencyKey(t *testing.T) {
+	for _, path := range []string{"/it4788/v1/spaces/join", "/it4788/v1/spaces/abc/shopping-lists/generate", "/it4788/v1/spaces/abc/recipes/def/missing-to-list"} {
+		r := httptest.NewRequest("POST", path, strings.NewReader(`{"dryRun":true}`))
+		r = r.WithContext(WithPrincipal(r.Context(), Principal{UserID: "actor"}))
+		w := httptest.NewRecorder()
+		Idempotency(nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) })).ServeHTTP(w, r)
+		if w.Code != 204 {
+			t.Fatalf("preview blocked %s %d", path, w.Code)
+		}
+	}
+}

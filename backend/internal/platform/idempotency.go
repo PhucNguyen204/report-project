@@ -22,9 +22,8 @@ func Idempotency(db *DB, next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		key := r.Header.Get("Idempotency-Key")
-		if key == "" || len(key) > 128 {
-			Fail(w, Invalid("Idempotency-Key bắt buộc, tối đa128 ký tự"))
+		if r.Method == "PUT" && r.URL.Path == "/it4788/v1/me/password" {
+			next.ServeHTTP(w, r)
 			return
 		}
 		body, err := io.ReadAll(io.LimitReader(r.Body, 1_048_577))
@@ -33,6 +32,15 @@ func Idempotency(db *DB, next http.Handler) http.Handler {
 			return
 		}
 		r.Body = io.NopCloser(bytes.NewReader(body))
+		if previewRequest(r, body) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		key := r.Header.Get("Idempotency-Key")
+		if key == "" || len(key) > 128 {
+			Fail(w, Invalid("Idempotency-Key bắt buộc, tối đa128 ký tự"))
+			return
+		}
 		sum := sha256.Sum256(append([]byte(r.Method+" "+r.URL.RequestURI()+"\n"), body...))
 		hash := hex.EncodeToString(sum[:])
 		var result *httptest.ResponseRecorder
@@ -100,3 +108,17 @@ func Idempotency(db *DB, next http.Handler) http.Handler {
 type responseError struct{}
 
 func (*responseError) Error() string { return "business request failed" }
+
+func previewRequest(r *http.Request, body []byte) bool {
+	if r.Method != "POST" {
+		return false
+	}
+	path := r.URL.Path
+	if path != "/it4788/v1/spaces/join" && !strings.HasSuffix(path, "/shopping-lists/generate") && !strings.HasSuffix(path, "/missing-to-list") {
+		return false
+	}
+	var in struct {
+		DryRun bool `json:"dryRun"`
+	}
+	return json.Unmarshal(body, &in) == nil && in.DryRun
+}

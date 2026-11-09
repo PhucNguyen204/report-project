@@ -215,3 +215,14 @@ Feature-ID: F07-catalog-config. Trạng thái LOCAL_PASS baseline.
 - [x] Root test snapshot auth+catalog+admin với `-tags integration -count=1 -race`: PASS exit0.
 - [ ] Review còn mở: ETag danh mục phải thay đổi khi sửa, chặn food/đơn vị khác dimension, D02 không tự khóa. Fix đã có test tái hiện ở vòng tiếp theo.
 - [ ] Toàn accounts coverage hiện57.1%, chưa đạt gate85%.
+
+### F03 — preview và đổi mật khẩu không cache token — 09/11/2026
+
+Feature-ID: F03-preview.
+- [x] Test preview dryRuntrue tạiG07/S15/R08 quan sát RED400, sửa allowlist, GREEN.
+- [x] Preview vẫn đi qua xác thực và kiểm tra scope service; chỉ bỏ yêu cầu/caching Idempotency-Key.
+- [x] PUT/me/password không cache phản hồi chứa refresh token; counter sai mật khẩu được commit theo handler.
+- [x] `go test -tags integration ./internal/platform -count=1 -race`: PASS exit0.
+- [x] Bổ sung port LotSearchPort để query lô qua chủ sở hữuinventory.
+
+ADR10: miễn idempotency cache cho thay đổi mật khẩu để không lưu refresh token rõ; client mất response có thể đăng nhập bằng mật khẩu mới.

@@ -93,3 +93,7 @@ type Composition struct {
 type PlannedListComposer interface {
 	ComposePlanned(context.Context, pgx.Tx, string, string, Composition) (string, error)
 }
+
+type LotSearchPort interface {
+	SearchLots(context.Context, pgx.Tx, string, string) ([]map[string]any, error)
+}
