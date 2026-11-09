@@ -66,3 +66,26 @@ func TestConsumeFEPORollsBackAcrossFoods(t *testing.T) {
 		t.Fatalf("first %s %s %v", state, rem, err)
 	}
 }
+
+func TestConsumeConvertsLotToBaseUnitWithoutLosingGram(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	kg := "00000000-0000-7000-8000-000000000012"
+	lot, err := f.s.CreateLot(ctx, f.sid, f.uid, LotInput{FoodID: f.food, UnitID: kg, Quantity: qty("1"), StorageLocation: "chill", PurchasedOn: "2026-11-09", ExpiresOn: "2026-11-12"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = f.db.Tx(ctx, func(tx pgx.Tx) error {
+		return f.s.Consume(ctx, tx, f.sid, "", []platform.Consumption{{FoodID: f.food, Quantity: qty("1")}})
+	})
+	if err != nil {
+		t.Fatalf("lost representable gram: %v", err)
+	}
+	var unit, initial, remaining, base string
+	if err = f.db.Pool.QueryRow(ctx, "SELECT unit_id::text,initial_qty::text,remaining_qty::text,base_remaining::text FROM pantry.food_lots WHERE id=$1", lot.ID).Scan(&unit, &initial, &remaining, &base); err != nil {
+		t.Fatal(err)
+	}
+	if unit != f.unit || initial != "1000.00" || remaining != "999.00" || base != "999.000000" {
+		t.Fatalf("%s %s %s %s", unit, initial, remaining, base)
+	}
+}

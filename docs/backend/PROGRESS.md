@@ -168,3 +168,13 @@ Trạng thái: LOCAL_PASS core, HTTP và ma trận toàn bộ đang bổ sung. F
 - [x] Root chạy snapshot file độc lập: `go test -tags integration internal/modules/inventory/domain.go internal/modules/inventory/service.go internal/modules/inventory/domain_test.go internal/modules/inventory/fixture_test.go internal/modules/inventory/pantry_integration_test.go -count=1 -race -cover`: PASS exit0; coverage69.7%.
 - [x] Sub-agent domain RED thiếu symbols rồi GREEN; FEFO domain94.7%, expiry100%.
 - [ ] HTTP read/filter/update/discard, full E2E và coverage nghiệp vụ≥85% chưa hoàn tất; không gọi là UC11/UC13 DONE.
+
+### F17 — sửa precision khi trừ lô khác đơn vị — 09/11/2026
+
+Trạng thái: LOCAL_PASS. Feature-ID: F17-unit-normalization.
+
+Review phát hiện1kg−1g bị từ chối dù999g biểu diễn được.
+- [x] Sub-agent quan sát behavioral RED cho test1kg−1g và merge1g vào1kg.
+- [x] Pantry chuyển lô sang đơn vị cơ sở khi cần, giữ nguyên lượng ban đầu1000g để bảo toàn định giá.
+- [x] Root chạy snapshot pantry với `-tags integration -count=1 -race`: PASS exit0.
+- [ ] HTTP/mua sắm merge thuộc commit tính năng tiếp theo, chưa khẳng định toàn module hoàn tất.

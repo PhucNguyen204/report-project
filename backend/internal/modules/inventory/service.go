@@ -264,7 +264,22 @@ func (s *Service) Consume(ctx context.Context, tx pgx.Tx, sid, mealID string, li
 			base := remaining[a.LotID] - a.Quantity
 			display, err := base.Div(factors[a.LotID])
 			if err != nil || !display.TwoDecimals() {
-				return platform.Rule("Đơn vị lô không biểu diễn chính xác lượng còn lại")
+				var dimension string
+				var initial kernel.Quantity
+				if err = tx.QueryRow(ctx, `SELECT dimension,(initial_qty*unit_factor)::text FROM pantry.food_lots WHERE id=$1 AND space_id=$2`, a.LotID, sid).Scan(&dimension, &initial); err != nil {
+					return err
+				}
+				if !base.TwoDecimals() || validQuantity(initial) != nil {
+					return platform.Rule("Đơn vị lô không biểu diễn chính xác lượng còn lại")
+				}
+				var unit string
+				if err = tx.QueryRow(ctx, `SELECT id::text FROM catalog.units WHERE dimension=$1 AND is_base AND active`, dimension).Scan(&unit); err != nil {
+					return err
+				}
+				if _, err = tx.Exec(ctx, `UPDATE pantry.food_lots SET unit_id=$3,unit_factor=1,initial_qty=$4 WHERE id=$1 AND space_id=$2`, a.LotID, sid, unit, initial.String()); err != nil {
+					return err
+				}
+				display = base
 			}
 			life := "active"
 			if display == 0 {
