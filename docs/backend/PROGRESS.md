@@ -1,0 +1,125 @@
+# Báo cáo triển khai backend — Đi chợ tiện lợi
+
+Ngày bắt đầu: 09/11/2026. Nguồn đặc tả: commit `d87eb22`. Lộ trình: [backend plan](../superpowers/plans/2026-11-09-backend.md).
+
+## Quy tắc ghi nhận
+
+Đây là file tổng hợp duy nhất cho kết quả triển khai. NOT_STARTED: chưa làm; IN_PROGRESS: đang code; LOCAL_PASS: kiểm tra local đạt và có commit; DONE: toàn bộ gate áp dụng đạt, CI/evidence đầy đủ; BLOCKED: thiếu điều kiện cụ thể; NOT_RUN: chưa chạy phép kiểm tra. Không dùng kết quả fake adapter để khẳng định dịch vụ thật hoạt động.
+
+Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ sau khi kiểm tra bằng chứng. Báo cáo đi cùng commit tính năng; SHA của commit chứa entry được truy bằng trailer Feature-ID, rồi cập nhật SHA ở lần ghi tiếp theo. CI test SHA code; cập nhật riêng báo cáo không thay đổi code đã kiểm chứng.
+
+## Quyết định triển khai
+
+- Code tại `backend/`, cùng repo hiện tại. Dùng Go/PostgreSQL theo đặc tả; chia sub-agent theo module, root tích hợp và giữ quyền commit.
+- Dùng ba skill upstream Superpowers: writing-plans, test-driven-development, verification-before-completion; không tạo một skill `code` tự viết.
+- Nguồn clone: https://github.com/obra/superpowers ; SHA `22f0b463e7a5e579904dd6211a520321035526f7`. Cài tại `~/.codex/skills/`, đã đọc SKILL.md.
+- ADR01–08 trong plan là quyết định xử lý mâu thuẫn; không sửa âm thầm nội dung LaTeX.
+- Scope gồm25 UC/88 mã API; Y01/Y02 ngoài scope, P08 đã bỏ; frontend-only NFR không tick thay client.
+
+## Tổng quan bằng chứng hiện tại
+
+| Hạng mục | Trạng thái | Bằng chứng/giới hạn |
+|---|---|---|
+| Đọc phạm vi25 UC và kiểm tra thiết kế | PASS | AGENTS.md, chương1–3, phụ lục; audit độc lập từ sub-agent spec_audit |
+| Clone/cài skill coding upstream | PASS | Installer trả installed cho3 skill; clone SHA nêu trên |
+| Plan và ma trận kiểm thử | PASS | spec_audit chấp nhận sau sửa dependency/auth, activity log, contracts, River, precision, release gate |
+| Toolchain Go | PASS | `go version`: go1.26.6 darwin/arm64 |
+| PostgreSQL integration environment | IN_PROGRESS | Docker app đã được mở; daemon trước đó chưa sẵn sàng |
+| Test backend/coverage/race/build | NOT_RUN | Chưa có code backend ở thời điểm tạo báo cáo |
+| Email/FCM/S3 thật | NOT_RUN | Chưa xác minh credential/staging; sẽ ghi riêng adapter fake và smoke thật |
+| Load/backup-restore | NOT_RUN | Chưa có hệ thống chạy để đo |
+
+## Tiến độ tính năng
+
+| ID | Phạm vi | Trạng thái | Commit/evidence |
+|---|---|---|---|
+| F01 | Runtime, DB, migrations, harness/CI | NOT_STARTED | — |
+| F02 | Quantity/Money/clock/Tx/HTTP | NOT_STARTED | — |
+| F03 | Auth scope/idempotency/request limits | NOT_STARTED | — |
+| F04 | Worker/email port | NOT_STARTED | — |
+| F05 | UC01 đăng ký/OTP | NOT_STARTED | — |
+| F06 | UC02 phiên/thiết bị | NOT_STARTED | — |
+| F07 | UC23 danh mục/đơn vị nền tảng | NOT_STARTED | — |
+| F08 | UC25 cấu hình/audit | NOT_STARTED | — |
+| F09 | Media | NOT_STARTED | — |
+| F10 | UC04 hồ sơ/nhắc | NOT_STARTED | — |
+| F11 | Inbox/delivery | NOT_STARTED | — |
+| F12 | UC05 nhóm | NOT_STARTED | — |
+| F13 | UC06 mời/join | NOT_STARTED | — |
+| F14 | UC07 rời/xóa/chuyển quyền | NOT_STARTED | — |
+| F15 | UC11 nhập tay | NOT_STARTED | — |
+| F16 | UC12 xem/lọc tủ | NOT_STARTED | — |
+| F17 | UC13 sửa/sử dụng/loại bỏ | NOT_STARTED | — |
+| F18 | UC08 danh sách/mặt hàng/copy/lịch sử | NOT_STARTED | — |
+| F19 | UC09 mua/undo | NOT_STARTED | — |
+| F20 | UC11 nhập từ mua sắm | NOT_STARTED | — |
+| F21 | UC08 phân công/push | NOT_STARTED | — |
+| F22 | UC15 công thức/yêu thích/copy | NOT_STARTED | — |
+| F23 | UC16 xem/đối chiếu | NOT_STARTED | — |
+| F24 | UC17 lịch | NOT_STARTED | — |
+| F25 | UC10 từ công thức | NOT_STARTED | — |
+| F26 | UC10 từ lịch | NOT_STARTED | — |
+| F27 | UC18 gợi ý | NOT_STARTED | — |
+| F28 | UC19 đã nấu/trừ kho | NOT_STARTED | — |
+| F29 | UC14 reminder | NOT_STARTED | — |
+| F30 | UC21 báo cáo | NOT_STARTED | — |
+| F31 | UC22 export | NOT_STARTED | — |
+| F32 | UC20 search/suggest | NOT_STARTED | — |
+| F33 | UC23 templates/duyệt/gộp | NOT_STARTED | — |
+| F34 | UC24 quản trị tài khoản | NOT_STARTED | — |
+| F35 | Copy/PurgeSpace/xóa tài khoản | NOT_STARTED | — |
+| F36 | UC03 mật khẩu | NOT_STARTED | — |
+| F37 | E2E/security/load/restore/release | NOT_STARTED | — |
+
+## Checklist chất lượng toàn dự án
+
+- [ ] Đủ25 UC/biến thể và các API hỗ trợ trong scope, mỗi mục có test liên kết.
+- [ ] Scope authorization được kiểm ở API và DB; admin không đọc dữ liệu gia đình.
+- [ ] Tiền/lượng/ngày chính xác; transaction/concurrency/idempotency có test PostgreSQL thật.
+- [ ] TDD có RED/GREEN; unit/HTTP/integration/race/regression pass.
+- [ ] Coverage handwritten nghiệp vụ≥85%, core algorithms≥90%; case quan trọng không bỏ sót.
+- [ ] Worker transactional, dedupe/retry/per-device; không gọi provider trong transaction.
+- [ ] Migration/seed/fresh checkout/OpenAPI khớp implementation.
+- [ ] Format/vet/lint/build và dependency/secret scan đạt.
+- [ ] K1–K5 E2E, external smoke, load và backup restore có kết quả thực.
+- [ ] Comment chỉ ngắn gọn vai trò function; không placeholder endpoint thành công.
+- [ ] Mỗi tính năng có commit và entry báo cáo.
+- [ ] Không lỗi Critical/Important chưa xử lý sau review độc lập.
+
+## Nhật ký review
+
+### 09/11/2026 — audit đặc tả trước code
+
+Reviewer: sub-agent `spec_audit` (read-only). Phát hiện và đã đưa vào plan:88 mã API sau bỏ P08; search pg_trgm đủ bản đầu; security counter phải commit khi trả lỗi; logout phải kiểm family revocation; scope idempotency theo user; transaction nhập tủ/nấu/rời nhóm; mâu thuẫn BR08/S14/X-Client-Time. Quyết định chi tiết: ADR01–08 trong plan.
+
+Plan review: ACCEPT sau các chỉnh sửa đã ghi. Code review: chưa thực hiện; bắt đầu F01/F02. Root phải cung cấp contracts biên dịch trước giao agent.
+
+## Mẫu entry cho một tính năng
+
+```markdown
+### Fxx — tên tính năng — ngày
+Trạng thái: IN_PROGRESS | LOCAL_PASS | DONE | BLOCKED
+UC/API/BR/NFR: ...
+Commit: trailer Feature-ID: Fxx; SHA bổ sung sau commit
+File thay đổi: ...
+Hành vi nhận được: ...
+
+- [ ] Contract và điều kiện chấp nhận khớp đặc tả
+- [ ] Unit test RED rồi GREEN; có lỗi/biên
+- [ ] HTTP/contract và authorization pass
+- [ ] Integration DB thật và rollback/concurrency pass (hoặc N/A + lý do)
+- [ ] Regression toàn backend và race pass
+- [ ] Coverage mục tiêu đạt hoặc nêu chính xác gap
+- [ ] Format/vet/lint/build/migration/codegen phù hợp pass
+- [ ] Review diff và comment ngắn đạt
+- [ ] Commit code+test+migration+báo cáo
+
+| Lệnh | Kết quả/exit | Pass/fail/skip | Artifact/CI |
+|---|---|---|---|
+| lệnh thực tế | NOT_RUN | — | — |
+
+Review findings và cách xử lý: ...
+Quyết định khác plan (Ruling), lý do và tác động: ...
+Giới hạn/chưa kiểm chứng: ...
+Bước tiếp theo: ...
+```
