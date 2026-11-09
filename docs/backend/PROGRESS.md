@@ -37,8 +37,8 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F02 | Quantity/Money/clock/Tx/HTTP | IN_PROGRESS | Quantity core: race PASS, coverage95.9%; Tx/HTTP đang tích hợp |
 | F03 | Auth scope/idempotency/request limits | IN_PROGRESS | PostgreSQL replay/concurrency/rollback5 tests platform PASS; full router chưa tích hợp |
 | F04 | Worker/email port | IN_PROGRESS | River InsertTx rollback/dedupe PASS; provider/worker tiếp tục |
-| F05 | UC01 đăng ký/OTP | NOT_STARTED | — |
-| F06 | UC02 phiên/thiết bị | NOT_STARTED | — |
+| F05 | UC01 đăng ký/OTP | LOCAL_PASS | Auth core7 tests; coverage68.3%, thiếu ma trận còn mở |
+| F06 | UC02 phiên/thiết bị | LOCAL_PASS | Refresh/reuse/logout counters PG+race PASS |
 | F07 | UC23 danh mục/đơn vị nền tảng | NOT_STARTED | — |
 | F08 | UC25 cấu hình/audit | NOT_STARTED | — |
 | F09 | Media | NOT_STARTED | — |
@@ -188,3 +188,13 @@ Trạng thái: LOCAL_PASS core; API/cấu hình/coverage toàn feature tiếp t�
 - [x] Ví dụ điểm0,75 cao hơn0,6; boundary công thức/ngày lịch.
 - [x] Root chạy `go test internal/modules/planning/algorithms.go internal/modules/planning/algorithms_test.go -count=1 -race -cover`: PASS exit0; coverage89.1%.
 - [ ] Mục tiêu core≥90% chưa đạt; bổ sung case có ý nghĩa ở vòng test tiếp theo.
+
+### F05/F06 — xác thực, OTP và phiên — 09/11/2026
+
+Trạng thái: LOCAL_PASS, cần tăng coverage/ma trận trước release. Feature-ID: F05-auth.
+
+- [x] Argon2id, JWT EdDSA, OTP không trả trong response; kích hoạt tạo đúng một personal space.
+- [x] Counter5 lần sai được lưu khi trả lỗi; resend/lock/expiry; refresh rotate/grace/reuse và thu hồiJWT.
+- [x] Logout family hiện tại, thiết bị khác vẫn có phiên; không lưu refresh token rõ.
+- [x] Root chạy snapshot4 files auth với `-tags integration -count=1 -race -cover`: PASS exit0, coverage68.3%.
+- [ ] Coverage≥85%, full router/E2E và external email smoke chưa đạt; ghi rõ chưa DONE.
