@@ -147,3 +147,14 @@ Trạng thái: LOCAL_PASS cho foundation; các tính năng tổng thể còn tí
 - [ ] Middleware đầy đủ/rate limit/provider/CI và E2E tích hợp.
 
 Review lưu ý: public auth loại khỏi transaction idempotency để counter lỗi được commit; nested DB.Tx dùng transaction trong request context.
+
+### F05/F07 — schema tài khoản, không gian, danh mục — 09/11/2026
+
+Trạng thái: LOCAL_PASS cho migration nền tảng; chức năng API đang triển khai. Feature-ID: F05-schema.
+
+- [x] Migration010 chạy trên PostgreSQL16 mới qua `testutil.NewDB`.
+- [x] `go test -tags integration ./internal/platform -count=1`: PASS, exit0.
+- [x] Constraint email duy nhất, membership/leader và catalog seed đã được sử dụng trong test thật.
+- [ ] API tài khoản/nhóm/danh mục hoàn tất toàn bộ; chưa tick thay phần service.
+
+Push nền tảng trước đó: GitLab nhánh baocao-phucnn đã nhận `cccce67`. Từ yêu cầu mới, root push mỗi commit tính năng sau verify.
