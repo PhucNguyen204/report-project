@@ -34,7 +34,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | ID | Phạm vi | Trạng thái | Commit/evidence |
 |---|---|---|---|
 | F01 | Runtime, DB, migrations, harness/CI | NOT_STARTED | — |
-| F02 | Quantity/Money/clock/Tx/HTTP | NOT_STARTED | — |
+| F02 | Quantity/Money/clock/Tx/HTTP | IN_PROGRESS | Quantity core: race PASS, coverage95.9%; Tx/HTTP đang tích hợp |
 | F03 | Auth scope/idempotency/request limits | NOT_STARTED | — |
 | F04 | Worker/email port | NOT_STARTED | — |
 | F05 | UC01 đăng ký/OTP | NOT_STARTED | — |
@@ -123,3 +123,14 @@ Quyết định khác plan (Ruling), lý do và tác động: ...
 Giới hạn/chưa kiểm chứng: ...
 Bước tiếp theo: ...
 ```
+
+### F02 — Quantity chính xác — 09/11/2026
+
+Trạng thái: LOCAL_PASS cho phần Quantity; F02 tổng thể đang làm. Commit truy bằng `Feature-ID: F02-quantity`.
+
+- [x] Test exact0.1+0.2, quy đổi, dấu, storage/JSON, input sai và overflow.
+- [x] Regression subscale quan sát RED `silently truncated product`, sửa Mul/Div từ chối mất precision, GREEN.
+- [x] `go test ./internal/kernel ./internal/platform -race -count=1 -cover`: exit0; kernel95.9%, platform12.4%.
+- [ ] Phần transaction/HTTP và integration toàn hệ thống hoàn tất.
+
+Ghi nhận: RED đầu tiên thiếu symbol; regression precision có behavioral RED thực. Không khẳng định coverage platform đạt gate; integration tests được ghi riêng sau.
