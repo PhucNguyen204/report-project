@@ -178,3 +178,13 @@ Review phát hiện1kg−1g bị từ chối dù999g biểu diễn được.
 - [x] Pantry chuyển lô sang đơn vị cơ sở khi cần, giữ nguyên lượng ban đầu1000g để bảo toàn định giá.
 - [x] Root chạy snapshot pantry với `-tags integration -count=1 -race`: PASS exit0.
 - [ ] HTTP/mua sắm merge thuộc commit tính năng tiếp theo, chưa khẳng định toàn module hoàn tất.
+
+### F26/F27 — thuật toán phần thiếu và chấm điểm — 09/11/2026
+
+Trạng thái: LOCAL_PASS core; API/cấu hình/coverage toàn feature tiếp tục. Feature-ID: F26-algorithms.
+
+- [x] Test nguồn cung chỉ dùng một lần và còn hạn tại ngày nấu, regression đúng0,3kg.
+- [x] Test sai dimension/hàng tới muộn/input âm/overflow, required đủ lượng và optional.
+- [x] Ví dụ điểm0,75 cao hơn0,6; boundary công thức/ngày lịch.
+- [x] Root chạy `go test internal/modules/planning/algorithms.go internal/modules/planning/algorithms_test.go -count=1 -race -cover`: PASS exit0; coverage89.1%.
+- [ ] Mục tiêu core≥90% chưa đạt; bổ sung case có ý nghĩa ở vòng test tiếp theo.
