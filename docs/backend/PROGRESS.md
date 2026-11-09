@@ -47,7 +47,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F12 | UC05 nhóm | NOT_STARTED | — |
 | F13 | UC06 mời/join | NOT_STARTED | — |
 | F14 | UC07 rời/xóa/chuyển quyền | NOT_STARTED | — |
-| F15 | UC11 nhập tay | NOT_STARTED | — |
+| F15 | UC11 nhập tay | LOCAL_PASS core | PostgreSQL+race69.7% phần pantry; HTTP và coverage gate tiếp tục |
 | F16 | UC12 xem/lọc tủ | NOT_STARTED | — |
 | F17 | UC13 sửa/sử dụng/loại bỏ | NOT_STARTED | — |
 | F18 | UC08 danh sách/mặt hàng/copy/lịch sử | NOT_STARTED | — |
@@ -158,3 +158,13 @@ Trạng thái: LOCAL_PASS cho migration nền tảng; chức năng API đang tri
 - [ ] API tài khoản/nhóm/danh mục hoàn tất toàn bộ; chưa tick thay phần service.
 
 Push nền tảng trước đó: GitLab nhánh baocao-phucnn đã nhận `cccce67`. Từ yêu cầu mới, root push mỗi commit tính năng sau verify.
+
+### F15/F17 — pantry core, FEFO và nhập tay — 09/11/2026
+
+Trạng thái: LOCAL_PASS core, HTTP và ma trận toàn bộ đang bổ sung. Feature-ID: F15-pantry-core.
+
+- [x] Test input/date/quantity/scope và lot+stock_in movement thật.
+- [x] FEFO thứ tự hạn dùng, không tự trừ lô quá hạn, thiếu nguồn rollback nhiều thực phẩm.
+- [x] Root chạy snapshot file độc lập: `go test -tags integration internal/modules/inventory/domain.go internal/modules/inventory/service.go internal/modules/inventory/domain_test.go internal/modules/inventory/fixture_test.go internal/modules/inventory/pantry_integration_test.go -count=1 -race -cover`: PASS exit0; coverage69.7%.
+- [x] Sub-agent domain RED thiếu symbols rồi GREEN; FEFO domain94.7%, expiry100%.
+- [ ] HTTP read/filter/update/discard, full E2E và coverage nghiệp vụ≥85% chưa hoàn tất; không gọi là UC11/UC13 DONE.
