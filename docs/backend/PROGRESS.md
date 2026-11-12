@@ -24,8 +24,8 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | Clone/cài skill coding upstream | PASS | Installer trả installed cho3 skill; clone SHA nêu trên |
 | Plan và ma trận kiểm thử | PASS | spec_audit chấp nhận sau sửa dependency/auth, activity log, contracts, River, precision, release gate |
 | Toolchain Go | PASS | `go version`: go1.26.6 darwin/arm64 |
-| PostgreSQL integration environment | IN_PROGRESS | Docker app đã được mở; daemon trước đó chưa sẵn sàng |
-| Test backend/coverage/race/build | NOT_RUN | Chưa có code backend ở thời điểm tạo báo cáo |
+| PostgreSQL integration environment | PASS local | PostgreSQL16, SeaweedFS S3, Mailpit đang chạy; Redis7 bổ sung ngày12/11 |
+| Test backend/coverage/race/build | IN_PROGRESS | Baseline12/11: kernel95.9%, accounts60.4%, inventory85%, notification47.3%; media/planning còn task chưa hoàn tất lúc chạy baseline |
 | Email/FCM/S3 thật | NOT_RUN | Chưa xác minh credential/staging; sẽ ghi riêng adapter fake và smoke thật |
 | Load/backup-restore | NOT_RUN | Chưa có hệ thống chạy để đo |
 
@@ -42,7 +42,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F07 | UC23 danh mục/đơn vị nền tảng | LOCAL_PASS baseline | Scope/unit/privatefood PG+race PASS; ETag/dimension review fixes tiếp tục |
 | F08 | UC25 cấu hình/audit | LOCAL_PASS baseline | Atomic config/audit tests PASS; full negative coverage tiếp tục |
 | F09 | Media | NOT_STARTED | — |
-| F10 | UC04 hồ sơ/nhắc | NOT_STARTED | — |
+| F10 | UC04 hồ sơ/nhắc | LOCAL_PASS | Snapshot profile/password PG+race PASS; E2E và coverage toàn accounts tiếp tục |
 | F11 | Inbox/delivery | NOT_STARTED | — |
 | F12 | UC05 nhóm | NOT_STARTED | — |
 | F13 | UC06 mời/join | NOT_STARTED | — |
@@ -68,7 +68,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F33 | UC23 templates/duyệt/gộp | NOT_STARTED | — |
 | F34 | UC24 quản trị tài khoản | NOT_STARTED | — |
 | F35 | Copy/PurgeSpace/xóa tài khoản | NOT_STARTED | — |
-| F36 | UC03 mật khẩu | NOT_STARTED | — |
+| F36 | UC03 mật khẩu | LOCAL_PASS | Reset một lần, đổi mật khẩu/thu hồi phiên đã có test PG; external email tiếp tục |
 | F37 | E2E/security/load/restore/release | NOT_STARTED | — |
 
 ## Checklist chất lượng toàn dự án
@@ -226,3 +226,11 @@ Feature-ID: F03-preview.
 - [x] Bổ sung port LotSearchPort để query lô qua chủ sở hữuinventory.
 
 ADR10: miễn idempotency cache cho thay đổi mật khẩu để không lưu refresh token rõ; client mất response có thể đăng nhập bằng mật khẩu mới.
+
+### F10/F36 — hồ sơ, thiết lập và mật khẩu — 12/11/2026
+
+Feature-ID: F10-profile-password. Trạng thái LOCAL_PASS.
+- [x] Root chạy snapshot auth+profile+tests với PostgreSQL thật, `-tags integration -count=1 -race`: PASS exit0 (7.637s).
+- [x] Hồ sơ/locale/ngưỡng nhắc1–7/null, mật khẩu hiện tại, reset-token dùngmột lần và thu hồi phiên khác có assertion.
+- [x] Không đưa token vào idempotency cache cho PUT/me/password.
+- [ ] Toàn accounts chưa đạt85% coverage và API tích hợp còn đang hoàn thiện; không gọi toàn bộ UC DONE.
