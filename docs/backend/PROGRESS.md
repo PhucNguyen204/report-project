@@ -54,8 +54,8 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F19 | UC09 mua/undo | NOT_STARTED | — |
 | F20 | UC11 nhập từ mua sắm | NOT_STARTED | — |
 | F21 | UC08 phân công/push | NOT_STARTED | — |
-| F22 | UC15 công thức/yêu thích/copy | NOT_STARTED | — |
-| F23 | UC16 xem/đối chiếu | NOT_STARTED | — |
+| F22 | UC15 công thức/yêu thích/copy | LOCAL_PASS core | Recipe+template+copy atomic PG/race PASS; ảnh thêm032 sau core |
+| F23 | UC16 xem/đối chiếu | LOCAL_PASS core | Khẩu phần, nguyên liệu bắt buộc/tùy chọn, snapshot đơn vị được kiểm thử |
 | F24 | UC17 lịch | NOT_STARTED | — |
 | F25 | UC10 từ công thức | NOT_STARTED | — |
 | F26 | UC10 từ lịch | NOT_STARTED | — |
@@ -243,3 +243,13 @@ Feature-ID: F03-transaction-context.
 - [x] Root chạy `go test -tags integration ./internal/platform ./internal/app -count=1 -race`: PASS exit0.
 - [x] Đọc sau ghi trả201 đúng trạng thái; panic không commit và không giữ connection; retry phục hồi request body.
 - [ ] Full backend đang có task mới trong exports; không dùng kết quả component để khẳng định toàn bộ hệ thống đã pass.
+
+### F22/F23 — công thức, mẫu và sao chép nguyên tử — 12/11/2026
+
+Feature-ID: F22-recipes.
+- [x] Root test snapshot algorithms+recipes+templates+recipe/copy tests với `-tags integration -count=1 -race`: PASS exit0 (2.750s).
+- [x] Creator/leader, template chỉ đọc/sao chép, optimistic version, favorite và rollback nguyên liệu có test PostgreSQL.
+- [x] CopyRecipe ghi origin+recipe+ingredients+activity cùng một transaction; trigger failure không để lại bản sao dở dang.
+- [ ] HTTP tổng hợp và ảnh công thức sẽ được commit task riêng; không loại yêu cầu ảnh tùy chọn khỏi phạm vi UC15.
+
+Baseline toàn hệ thống12/11: app78.8%, kernel95.9%, accounts84.9%, inventory86.4%, planning86.5%, media86.7%, exports85.5%, notification47.3%, platform65.3%. Ba test lifecycle media/exports mới đang RED, do đó full suite chưa PASS.
