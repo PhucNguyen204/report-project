@@ -14,14 +14,14 @@ import (
 )
 
 type DB struct {
-	Pool         *pgxpool.Pool
+	Pool         *ContextPool
 	Clock        Clock
 	MemberLeave  MemberLeaveHook
 	RecipeDelete RecipeDeleteHook
 	EnqueueFunc  func(context.Context, pgx.Tx, string, string, any, time.Time) error
 }
 
-func NewDB(pool *pgxpool.Pool) *DB { return &DB{Pool: pool, Clock: RealClock{}} }
+func NewDB(pool *pgxpool.Pool) *DB { return &DB{Pool: &ContextPool{Pool: pool}, Clock: RealClock{}} }
 func (db *DB) Today() time.Time {
 	loc, _ := time.LoadLocation("Asia/Ho_Chi_Minh")
 	now := db.Clock.Now().In(loc)
@@ -36,15 +36,16 @@ func (db *DB) Tx(ctx context.Context, fn func(pgx.Tx) error) error {
 		if err != nil {
 			return err
 		}
-		_, err = tx.Exec(ctx, "SET LOCAL lock_timeout = '3s'")
-		if err == nil {
-			err = fn(tx)
-		}
-		if err == nil {
-			err = tx.Commit(ctx)
-		} else {
-			_ = tx.Rollback(context.WithoutCancel(ctx))
-		}
+		err = func() error {
+			defer tx.Rollback(context.WithoutCancel(ctx))
+			if _, err := tx.Exec(ctx, "SET LOCAL lock_timeout = '3s'; SET LOCAL statement_timeout = '10s'"); err != nil {
+				return err
+			}
+			if err := fn(tx); err != nil {
+				return err
+			}
+			return tx.Commit(ctx)
+		}()
 		if err == nil {
 			return nil
 		}

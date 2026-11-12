@@ -78,6 +78,7 @@ func Idempotency(db *DB, next http.Handler) http.Handler {
 				return nil
 			}
 			result = httptest.NewRecorder()
+			r.Body = io.NopCloser(bytes.NewReader(body))
 			ctx := context.WithValue(r.Context(), transactionKey{}, tx)
 			next.ServeHTTP(result, r.WithContext(ctx))
 			if result.Code >= 400 {

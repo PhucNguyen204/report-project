@@ -30,7 +30,7 @@ func (w *eventWorker) Work(ctx context.Context, job *river.Job[Event]) error {
 	return w.handler(ctx, job.Args)
 }
 func ConfigureQueue(ctx context.Context, db *DB, handler EventHandler) (*river.Client[pgx.Tx], error) {
-	driver := riverpgxv5.New(db.Pool)
+	driver := riverpgxv5.New(db.Pool.Pool)
 	m, err := rivermigrate.New(driver, nil)
 	if err != nil {
 		return nil, err

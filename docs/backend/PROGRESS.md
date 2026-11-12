@@ -234,3 +234,12 @@ Feature-ID: F10-profile-password. Trạng thái LOCAL_PASS.
 - [x] Hồ sơ/locale/ngưỡng nhắc1–7/null, mật khẩu hiện tại, reset-token dùngmột lần và thu hồi phiên khác có assertion.
 - [x] Không đưa token vào idempotency cache cho PUT/me/password.
 - [ ] Toàn accounts chưa đạt85% coverage và API tích hợp còn đang hoàn thiện; không gọi toàn bộ UC DONE.
+
+### F03 — transaction HTTP đọc được dữ liệu vừa ghi và không rò kết nối — 12/11/2026
+
+Feature-ID: F03-transaction-context.
+- [x] Root quan sát behavioral RED: handler nhận500 vì đọc pool khác chưa thấy dữ liệu đang ghi; panic để lại1 kết nối acquired.
+- [x] ContextPool dùng lại transaction trong request context cho Query/Exec/QueryRow; DB.Tx luôn rollback khi callback lỗi/panic hoặc commit thất bại.
+- [x] Root chạy `go test -tags integration ./internal/platform ./internal/app -count=1 -race`: PASS exit0.
+- [x] Đọc sau ghi trả201 đúng trạng thái; panic không commit và không giữ connection; retry phục hồi request body.
+- [ ] Full backend đang có task mới trong exports; không dùng kết quả component để khẳng định toàn bộ hệ thống đã pass.
