@@ -13,30 +13,32 @@ import (
 )
 
 type Service struct {
-	db      *platform.DB
-	stock   platform.StockPort
-	lists   platform.ListComposer
-	catalog platform.CatalogPort
+	ValidateMedia func(context.Context, pgx.Tx, string, string, string, string) error
+	db            *platform.DB
+	stock         platform.StockPort
+	lists         platform.ListComposer
+	catalog       platform.CatalogPort
 }
 
 func New(db *platform.DB, stock platform.StockPort, lists platform.ListComposer, catalog platform.CatalogPort) *Service {
-	return &Service{db, stock, lists, catalog}
+	return &Service{db: db, stock: stock, lists: lists, catalog: catalog}
 }
 
 type Recipe struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Servings    int               `json:"servings"`
-	Kind        string            `json:"kind"`
-	Status      string            `json:"status"`
-	MealSlot    string            `json:"mealSlot"`
-	CookMinutes int               `json:"cookMinutes"`
-	Steps       []string          `json:"steps"`
-	Notes       string            `json:"notes"`
-	Version     int64             `json:"version"`
-	Ingredients []IngredientInput `json:"ingredients"`
-	Comparison  []Comparison      `json:"comparison,omitempty"`
-	CreatedBy   string            `json:"-"`
+	ImageObjectID *string           `json:"imageObjectId,omitempty"`
+	ID            string            `json:"id"`
+	Name          string            `json:"name"`
+	Servings      int               `json:"servings"`
+	Kind          string            `json:"kind"`
+	Status        string            `json:"status"`
+	MealSlot      string            `json:"mealSlot"`
+	CookMinutes   int               `json:"cookMinutes"`
+	Steps         []string          `json:"steps"`
+	Notes         string            `json:"notes"`
+	Version       int64             `json:"version"`
+	Ingredients   []IngredientInput `json:"ingredients"`
+	Comparison    []Comparison      `json:"comparison,omitempty"`
+	CreatedBy     string            `json:"-"`
 }
 type Comparison struct {
 	FoodID    string          `json:"foodId"`
@@ -96,6 +98,9 @@ func (s *Service) CreateRecipe(ctx context.Context, user, sid string, in RecipeI
 		if err := s.writeIngredients(ctx, tx, sid, rid, in.Ingredients); err != nil {
 			return err
 		}
+		if err := s.writeRecipeImage(ctx, tx, user, rid, in.ImageObjectID); err != nil {
+			return err
+		}
 		return s.db.Activity(ctx, tx, sid, user, "recipe.created", rid, in)
 	})
 	if err != nil {
@@ -107,7 +112,7 @@ func (s *Service) CreateRecipe(ctx context.Context, user, sid string, in RecipeI
 func (s *Service) readRecipe(ctx context.Context, q platform.Querier, sid, rid string, servings int) (Recipe, error) {
 	var out Recipe
 	var steps []byte
-	err := q.QueryRow(ctx, "SELECT id::text,name,servings,kind,status,meal_slot,cook_minutes,steps,notes,version,created_by::text FROM recipe.recipes WHERE id=$1 AND deleted_at IS NULL AND status='published' AND (space_id=$2 OR kind='template')", rid, sid).Scan(&out.ID, &out.Name, &out.Servings, &out.Kind, &out.Status, &out.MealSlot, &out.CookMinutes, &steps, &out.Notes, &out.Version, &out.CreatedBy)
+	err := q.QueryRow(ctx, "SELECT id::text,name,servings,kind,status,meal_slot,cook_minutes,steps,notes,image_object_id::text,version,created_by::text FROM recipe.recipes WHERE id=$1 AND deleted_at IS NULL AND status='published' AND (space_id=$2 OR kind='template')", rid, sid).Scan(&out.ID, &out.Name, &out.Servings, &out.Kind, &out.Status, &out.MealSlot, &out.CookMinutes, &steps, &out.Notes, &out.ImageObjectID, &out.Version, &out.CreatedBy)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return out, platform.NotFound()
 	}
@@ -198,6 +203,9 @@ func (s *Service) UpdateRecipe(ctx context.Context, user, sid, rid string, versi
 		if err = s.writeIngredients(ctx, tx, sid, rid, in.Ingredients); err != nil {
 			return err
 		}
+		if err := s.writeRecipeImage(ctx, tx, user, rid, in.ImageObjectID); err != nil {
+			return err
+		}
 		return s.db.Activity(ctx, tx, sid, user, "recipe.updated", rid, in)
 	})
 	if err != nil {
@@ -270,7 +278,7 @@ func (s *Service) CopyRecipe(ctx context.Context, user, sid, rid, name string) (
 		}
 		id := platform.ID()
 		steps, _ := json.Marshal(in.Steps)
-		if _, err = tx.Exec(ctx, "INSERT INTO recipe.recipes(id,space_id,created_by,name,servings,meal_slot,cook_minutes,steps,notes,origin_recipe_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)", id, sid, user, in.Name, in.Servings, in.MealSlot, in.CookMinutes, steps, in.Notes, rid); err != nil {
+		if _, err = tx.Exec(ctx, "INSERT INTO recipe.recipes(id,space_id,created_by,name,servings,meal_slot,cook_minutes,steps,notes,origin_recipe_id,image_object_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)", id, sid, user, in.Name, in.Servings, in.MealSlot, in.CookMinutes, steps, in.Notes, rid, recipe.ImageObjectID); err != nil {
 			return err
 		}
 		if err = s.writeIngredients(ctx, tx, sid, id, in.Ingredients); err != nil {
@@ -397,4 +405,21 @@ func (s *Service) Compare(ctx context.Context, user, sid, rid string, servings i
 		return nil
 	})
 	return out, err
+}
+
+func (s *Service) writeRecipeImage(ctx context.Context, tx pgx.Tx, user, rid string, image *string) error {
+	var id string
+	if image != nil {
+		id = *image
+	}
+	if id != "" {
+		if s.ValidateMedia == nil {
+			return platform.Rule("Dịch vụ xác thực ảnh chưa được cấu hình")
+		}
+		if err := s.ValidateMedia(ctx, tx, user, "recipe", rid, id); err != nil {
+			return err
+		}
+	}
+	_, err := tx.Exec(ctx, "UPDATE recipe.recipes SET image_object_id=NULLIF($2,'')::uuid WHERE id=$1", rid, id)
+	return err
 }

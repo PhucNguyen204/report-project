@@ -28,7 +28,7 @@ func requireAdmin(ctx context.Context, tx pgx.Tx, user string) error {
 func (s *Service) readTemplate(ctx context.Context, q platform.Querier, id string) (Recipe, error) {
 	var out Recipe
 	var b []byte
-	if err := q.QueryRow(ctx, "SELECT id::text,name,servings,kind,status,meal_slot,cook_minutes,steps,notes,version,created_by::text FROM recipe.recipes WHERE id=$1 AND kind='template' AND deleted_at IS NULL", id).Scan(&out.ID, &out.Name, &out.Servings, &out.Kind, &out.Status, &out.MealSlot, &out.CookMinutes, &b, &out.Notes, &out.Version, &out.CreatedBy); err != nil {
+	if err := q.QueryRow(ctx, "SELECT id::text,name,servings,kind,status,meal_slot,cook_minutes,steps,notes,image_object_id::text,version,created_by::text FROM recipe.recipes WHERE id=$1 AND kind='template' AND deleted_at IS NULL", id).Scan(&out.ID, &out.Name, &out.Servings, &out.Kind, &out.Status, &out.MealSlot, &out.CookMinutes, &b, &out.Notes, &out.ImageObjectID, &out.Version, &out.CreatedBy); err != nil {
 		return out, err
 	}
 	if err := json.Unmarshal(b, &out.Steps); err != nil {
@@ -110,6 +110,9 @@ func (s *Service) SaveTemplate(ctx context.Context, user, id string, version int
 			}
 		}
 		if err := s.writeIngredients(ctx, tx, globalScope, id, in.Ingredients); err != nil {
+			return err
+		}
+		if err := s.writeRecipeImage(ctx, tx, user, id, in.ImageObjectID); err != nil {
 			return err
 		}
 		var err error

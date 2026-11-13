@@ -32,14 +32,15 @@ type IngredientInput struct {
 	Optional bool            `json:"optional"`
 }
 type RecipeInput struct {
-	ID          string            `json:"id,omitempty"`
-	Name        string            `json:"name"`
-	Servings    int               `json:"servings"`
-	MealSlot    string            `json:"mealSlot,omitempty"`
-	CookMinutes int               `json:"cookMinutes,omitempty"`
-	Steps       []string          `json:"steps,omitempty"`
-	Notes       string            `json:"notes,omitempty"`
-	Ingredients []IngredientInput `json:"ingredients"`
+	ImageObjectID *string           `json:"imageObjectId,omitempty"`
+	ID            string            `json:"id,omitempty"`
+	Name          string            `json:"name"`
+	Servings      int               `json:"servings"`
+	MealSlot      string            `json:"mealSlot,omitempty"`
+	CookMinutes   int               `json:"cookMinutes,omitempty"`
+	Steps         []string          `json:"steps,omitempty"`
+	Notes         string            `json:"notes,omitempty"`
+	Ingredients   []IngredientInput `json:"ingredients"`
 }
 
 func dateUTC(t time.Time) time.Time {
@@ -110,7 +111,7 @@ func Missing(demands []Demand, supply []Supply) ([]Demand, error) {
 // Score computes quantity coverage and expiry priority for one recipe.
 func Score(needs []Demand, supply []Supply, today time.Time, reminderDays int, favorite bool, w Weights) (RecipeScore, error) {
 	var out RecipeScore
-	if reminderDays < 1 || reminderDays > 7 || math.Abs(w.Coverage+w.Expiry+w.Favorite-1) > 1e-9 || w.Coverage < 0 || w.Expiry < 0 || w.Favorite < 0 {
+	if reminderDays < 1 || reminderDays > 7 || math.IsNaN(w.Coverage+w.Expiry+w.Favorite) || math.Abs(w.Coverage+w.Expiry+w.Favorite-1) > 1e-9 || w.Coverage < 0 || w.Expiry < 0 || w.Favorite < 0 {
 		return out, platform.Invalid("Tham số gợi ý không hợp lệ")
 	}
 	for _, v := range supply {

@@ -343,3 +343,13 @@ Feature-ID: F30-reports-search. Trạng thái LOCAL_PASS core.
 - [x] Tìm không dấu/đ, q≥2, scope thực phẩm/công thức/lô; không lộ private/template ẩn và chống SQL injection qua tham số.
 - [x] Root full integration/race PASS13/11; planning86.8% trên toàn package.
 - [ ] Tải và toàn bộ keyset pagination chưa nghiệm thu.
+
+### F22–F28 — HTTP planning và ảnh công thức — 13/11/2026
+
+Feature-ID: F24-planning-http. Trạng thái LOCAL_PASS.
+- [x] Đăng ký đầy đủ route recipe/template/favorite/meal/missing/suggestion/report/search; authz/scope/malformed query/body có test router thật.
+- [x] Ảnh tùy chọn phải ready, đúng uploader/purpose/target; lỗi rollback cả công thức. Copy tin cậy giữ reference ảnh bất biến.
+- [x] M06 bắt buộc If-Match dương, planned stale409 trước trừ kho; cooked replay trả hiện trạng. Test RED→GREEN cho thiếu header/stale đã quan sát.
+- [x] Migration031 chặn đổi dimension đơn vị recipe; chấm điểm từ chối NaN.
+- [x] Root full integration/race PASS13/11; planning86.8%; contract route/schema được kiểm riêng ở task OpenAPI.
+- [ ] Keyset/default pagination toàn endpoint còn mở, chưa tuyên bố khớp toàn bộ phần phân trang của đặc tả.
