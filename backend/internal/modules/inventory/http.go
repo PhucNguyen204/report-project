@@ -133,6 +133,10 @@ func filters(r *http.Request, key string) map[string]bool {
 }
 
 func (s *Service) getLot(w http.ResponseWriter, r *http.Request) error {
+	page, err := platform.ReadPage(r, platform.PageTime, platform.PageUUID)
+	if err != nil {
+		return err
+	}
 	if err := s.member(r); err != nil {
 		return err
 	}
@@ -145,7 +149,7 @@ func (s *Service) getLot(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	lot.ExpiryState = ExpiryState(d, s.db.Today(), s.reminderDays(r.Context(), s.db.Pool, platform.Current(r).UserID))
-	rows, err := s.db.Pool.Query(r.Context(), `SELECT m.id::text,m.kind,m.quantity::text,m.reason,m.meal_id::text,m.occurred_at,u.id::text FROM pantry.stock_movements m JOIN catalog.units u ON u.dimension=$3 AND u.is_base WHERE m.space_id=$1 AND m.lot_id=$2 ORDER BY m.occurred_at,m.id LIMIT 1000`, r.PathValue("sid"), lot.ID, lot.Dimension)
+	rows, err := s.db.Pool.Query(r.Context(), `SELECT m.id::text,m.kind,m.quantity::text,m.reason,m.meal_id::text,m.occurred_at,u.id::text FROM pantry.stock_movements m JOIN catalog.units u ON u.dimension=$3 AND u.is_base WHERE m.space_id=$1 AND m.lot_id=$2 AND ($4='' OR (m.occurred_at,m.id)>(NULLIF($4,'')::timestamptz,NULLIF($5,'')::uuid)) ORDER BY m.occurred_at,m.id LIMIT $6`, r.PathValue("sid"), lot.ID, lot.Dimension, page.After[0], page.After[1], page.Limit+1)
 	if err != nil {
 		return err
 	}
@@ -161,11 +165,17 @@ func (s *Service) getLot(w http.ResponseWriter, r *http.Request) error {
 	if err = rows.Err(); err != nil {
 		return err
 	}
+	next := ""
+	if len(movements) > page.Limit {
+		movements = movements[:page.Limit]
+		last := movements[len(movements)-1]
+		next = page.Next(last.OccurredAt.Format(time.RFC3339Nano), last.ID)
+	}
 	w.Header().Set("ETag", fmt.Sprintf("\"%d\"", lot.Version))
-	platform.Write(w, 200, struct {
+	platform.WritePage(w, struct {
 		Lot
 		Movements []Movement `json:"movements"`
-	}{lot, movements})
+	}{lot, movements}, next, s.db.Clock.Now())
 	return nil
 }
 

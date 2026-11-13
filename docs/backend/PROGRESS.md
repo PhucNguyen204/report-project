@@ -508,3 +508,13 @@ Feature-ID: F37-database-recovery. Trạng thái LOCAL_PASS fixture; production 
 - [x] River queue cô lập trên DB restore dùng production Dispatcher từ current checkout, chạy space.copy rồi JobRetry cùng job attempt1→2. Fingerprint business không đổi; đúng1list/item/lot/movement/recipe,500g/10000đ và1worker receipt.
 - [x] Cleanup xác nhận DB tạm đã xóa; source app healthy/running trước và sau. Lệnh/JSON không ghi credential; không đọc signing/queue key. Runbook và Make target được review, Python syntax compile đạt.
 - [ ] Chưa chứng minh PITR/WAL/offsite/giữ7bản, restore S3/SMTP/Redis hoặc replay encrypted jobs có sẵn. Không dùng thời gian fixture nhỏ làm RPO≤5phút/RTO≤1giờ production; cần key management và diễn tập hạ tầng riêng.
+
+
+### F17 — phân trang lịch sử biến động lô — 13/11/2026
+
+Feature-ID: F17-movement-pagination. Trạng thái LOCAL_PASS.
+- [x] Root RED thực tế: fixture1003 movements bị trả1000 dù default20, thiếu continuation; GREEN sau keyset occurredAt ASC/id ASC và LIMIT+1.
+- [x] P03 giữ data.LotDetail gồm movements và ETag của lô hiện tại, thêm meta.nextCursor/serverTime; default20/max100. Cursor ràng buộc lot/user/filter, đổi limit hợp lệ; outsider404, params sai400.
+- [x] Test lấy đủ1003 dòng/không trùng/sum lượng đúng sau chèn hai adjustment trước cursor; lịch sử vượt1000 truy cập được. Migration047 mới, OpenAPI query/metadata khớp handler.
+- [x] Focused PostgreSQL/race PASS. Root export staged snapshot để tách thay đổi search/admin đang làm; trên snapshot đó `make verify integration`: PASS380 case/0 fail/0 skip, vet/build/mod verify/race đạt. Evidence output/backend-qa/movement-integration.jsonl và movement-coverage.out.
+- [ ] Phân trang không cung cấp snapshot giữa các lần cập nhật lô; ETag/phần lot phản ánh trạng thái lần đọc. Search và review quyền quản trị tiếp tục ở task riêng.

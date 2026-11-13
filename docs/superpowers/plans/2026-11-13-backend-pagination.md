@@ -51,3 +51,19 @@ Files: `internal/modules/accounts/{admin.go,catalog.go,pagination_integration_te
 Self-review: không thay generic search/suggestion thành list một cách vô ý; keyset bảo đảm không lặp do insert trước cursor, không hứa snapshot qua mọi lần đổi sort key. Mọi caller vẫn kiểm quyền và scope; aggregate theo full filters tránh tổng tiền phụ thuộc page size.
 
 Verification13/11: root review SQL/cursor/DTO và contract RED thiếu meta cho8 GET rồi GREEN. `make verify integration`:378 case pass/0 fail/0 skip; planning87.1%, accounts86.3%. Q01 capped100/facets và stock movement detail capped1000 là gap đã audit, triển khai tiếp riêng; không tick toàn yêu cầu pagination là complete.
+
+
+## Task4: Lot movement history
+
+Files: `backend/internal/modules/inventory/{http.go,movement_pagination_integration_test.go}`, migration047, OpenAPI generator/contract.
+
+Interfaces: P03 giữ data là LotDetail (lot fields và movements), meta.nextCursor/serverTime áp dụng cho movements; limit default20/max100, key tuple occurredAt ASC/id ASC. Mỗi trang đọc lại lot hiện tại và ETag, không hứa snapshot qua cập nhật.
+
+- [x] RED `TestLotMovementHistoryPaginatesBeyondOneThousand`:1001+ movements, default20, resize100 và lấy đủ từng id/quantity, không lặp khi insert trước cursor.
+- [x] RED `TestLotMovementCursorKeepsLotAndActorScope`: cursor khác lot/user/filter400; outsider404, invalidlimit/cursor400; ETag và lot DTO giữ nguyên.
+- [x] Parse page trước SQL; query keyset LIMIT+1, index(space_id,lot_id,occurred_at,id); metadata envelope đúng P03 schema/query.
+- [x] Focused/full integration/race/verify và contract, report/commit/push/merge F17-movement-pagination.
+
+Self-review Task4: không bỏ lịch sử cũ vượt1000 hoặc truyền cursor để bỏ qua quyền. Không biến P03 thành endpoint trả tất cả movements không giới hạn; không thay đổi nghĩa lượng/dấu/đơn vị cơ sở trong history.
+
+Verification Task4: RED default history returned1000 movements, want20; focusedGREEN. Root staged snapshot (không kéo thay đổi khác của agents) `make verify integration` PASS380 case/0 fail/0 skip. data.LotDetail/ETag giữ đúng, history1003 dòng lấy đủ lượng qua các trang.
