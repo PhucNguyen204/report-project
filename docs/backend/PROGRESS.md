@@ -25,51 +25,51 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | Plan và ma trận kiểm thử | PASS | spec_audit chấp nhận sau sửa dependency/auth, activity log, contracts, River, precision, release gate |
 | Toolchain Go | PASS | `go version`: go1.26.11 darwin/arm64; nâng sau scanner RED |
 | PostgreSQL integration environment | PASS local | PostgreSQL16, SeaweedFS S3, Mailpit đang chạy; Redis7 bổ sung ngày12/11 |
-| Test backend/coverage/race/build | IN_PROGRESS | Baseline12/11: kernel95.9%, accounts60.4%, inventory85%, notification47.3%; media/planning còn task chưa hoàn tất lúc chạy baseline |
-| Email/FCM/S3 thật | NOT_RUN | Chưa xác minh credential/staging; sẽ ghi riêng adapter fake và smoke thật |
-| Load/backup-restore | NOT_RUN | Chưa có hệ thống chạy để đo |
+| Test backend/coverage/race/build | LOCAL_PASS13/11 | Go1.26.11 full integration/race exit0; accounts86.1%, inventory87.0%, planning86.8%, media85.8%, exports85.1%, notification90.7%; app80.4%, platform71.3%, kernel95.9% |
+| Email/FCM/S3 thật | PARTIAL | SMTP Mailpit + S3 SeaweedFS qua network thật PASS; FCM và production credentials NOT_RUN |
+| Load/backup-restore | NOT_RUN | Hệ thống local đã chạy; phép đo tải và khôi phục còn mở |
 
 ## Tiến độ tính năng
 
 | ID | Phạm vi | Trạng thái | Commit/evidence |
 |---|---|---|---|
-| F01 | Runtime, DB, migrations, harness/CI | IN_PROGRESS | Migrations/checksum và isolated PG test harness có; runtime/CI tiếp tục |
-| F02 | Quantity/Money/clock/Tx/HTTP | IN_PROGRESS | Quantity core: race PASS, coverage95.9%; Tx/HTTP đang tích hợp |
-| F03 | Auth scope/idempotency/request limits | IN_PROGRESS | PostgreSQL replay/concurrency/rollback5 tests platform PASS; full router chưa tích hợp |
-| F04 | Worker/email port | IN_PROGRESS | River InsertTx rollback/dedupe PASS; provider/worker tiếp tục |
-| F05 | UC01 đăng ký/OTP | LOCAL_PASS | Auth core7 tests; coverage68.3%, thiếu ma trận còn mở |
-| F06 | UC02 phiên/thiết bị | LOCAL_PASS | Refresh/reuse/logout counters PG+race PASS |
-| F07 | UC23 danh mục/đơn vị nền tảng | LOCAL_PASS baseline | Scope/unit/privatefood PG+race PASS; ETag/dimension review fixes tiếp tục |
-| F08 | UC25 cấu hình/audit | LOCAL_PASS baseline | Atomic config/audit tests PASS; full negative coverage tiếp tục |
-| F09 | Media | NOT_STARTED | — |
-| F10 | UC04 hồ sơ/nhắc | LOCAL_PASS | Snapshot profile/password PG+race PASS; E2E và coverage toàn accounts tiếp tục |
-| F11 | Inbox/delivery | NOT_STARTED | — |
-| F12 | UC05 nhóm | NOT_STARTED | — |
-| F13 | UC06 mời/join | NOT_STARTED | — |
-| F14 | UC07 rời/xóa/chuyển quyền | NOT_STARTED | — |
-| F15 | UC11 nhập tay | LOCAL_PASS core | PostgreSQL+race69.7% phần pantry; HTTP và coverage gate tiếp tục |
-| F16 | UC12 xem/lọc tủ | NOT_STARTED | — |
-| F17 | UC13 sửa/sử dụng/loại bỏ | NOT_STARTED | — |
-| F18 | UC08 danh sách/mặt hàng/copy/lịch sử | NOT_STARTED | — |
-| F19 | UC09 mua/undo | NOT_STARTED | — |
-| F20 | UC11 nhập từ mua sắm | NOT_STARTED | — |
-| F21 | UC08 phân công/push | NOT_STARTED | — |
-| F22 | UC15 công thức/yêu thích/copy | LOCAL_PASS core | Recipe+template+copy atomic PG/race PASS; ảnh thêm032 sau core |
-| F23 | UC16 xem/đối chiếu | LOCAL_PASS core | Khẩu phần, nguyên liệu bắt buộc/tùy chọn, snapshot đơn vị được kiểm thử |
-| F24 | UC17 lịch | NOT_STARTED | — |
-| F25 | UC10 từ công thức | NOT_STARTED | — |
-| F26 | UC10 từ lịch | NOT_STARTED | — |
-| F27 | UC18 gợi ý | NOT_STARTED | — |
-| F28 | UC19 đã nấu/trừ kho | NOT_STARTED | — |
-| F29 | UC14 reminder | NOT_STARTED | — |
-| F30 | UC21 báo cáo | NOT_STARTED | — |
-| F31 | UC22 export | NOT_STARTED | — |
-| F32 | UC20 search/suggest | NOT_STARTED | — |
-| F33 | UC23 templates/duyệt/gộp | NOT_STARTED | — |
-| F34 | UC24 quản trị tài khoản | NOT_STARTED | — |
-| F35 | Copy/PurgeSpace/xóa tài khoản | NOT_STARTED | — |
-| F36 | UC03 mật khẩu | LOCAL_PASS | Reset một lần, đổi mật khẩu/thu hồi phiên đã có test PG; external email tiếp tục |
-| F37 | E2E/security/load/restore/release | NOT_STARTED | — |
+| F01 | Runtime, DB, migrations, harness/CI | IN_PROGRESS | Runtime/worker/OpenAPI local pass; Compose/CI/clean checkout đang hoàn thiện |
+| F02 | Quantity/Money/clock/Tx/HTTP | LOCAL_PASS | Kernel95.9%; transaction/context/panic/cancellation có regression |
+| F03 | Auth scope/idempotency/request limits | LOCAL_PASS | f6accaf; Redis2 instance40 request chỉ10 được nhận; proxy-prefix regression |
+| F04 | Worker/email port | LOCAL_PASS | faa4860; actual River worker, encrypted events và SMTP Mailpit |
+| F05 | UC01 đăng ký/OTP | LOCAL_PASS | 6f876c7; full accounts86.1%, OTP/counter/activation có assertions |
+| F06 | UC02 phiên/thiết bị | LOCAL_PASS | 6f876c7; rotate/reuse/grace/logout và device scope |
+| F07 | UC23 danh mục/đơn vị nền tảng | LOCAL_PASS | 0ab2cd2/5e30ea9; ETag/dimension/canonical locking đã sửa |
+| F08 | UC25 cấu hình/audit | LOCAL_PASS | 0ab2cd2; atomic config/audit; đọc live DB từ lần gọi kế tiếp |
+| F09 | Media | LOCAL_PASS | f888a7d; actual S3 compatible85.8%; production store chưa smoke |
+| F10 | UC04 hồ sơ/nhắc | LOCAL_PASS | 392b536/5e30ea9; profile/reminders/version/media ownership |
+| F11 | Inbox/delivery | LOCAL_PASS | 153d0e8; notification90.7%; FCM thật NOT_RUN |
+| F12 | UC05 nhóm | LOCAL_PASS | 5e30ea9; nhóm/member và versioned metadata |
+| F13 | UC06 mời/join | LOCAL_PASS | 5e30ea9; preview/rotate/join/race chỗ cuối |
+| F14 | UC07 rời/xóa/chuyển quyền | LOCAL_PASS | 5e30ea9/2ddf402; leave/remove/transfer cùng cleanup assignment |
+| F15 | UC11 nhập tay | LOCAL_PASS | 9644352/2ddf402; nhập tay, lot/movement atomic |
+| F16 | UC12 xem/lọc tủ | IN_PROGRESS | 2ddf402; filter/cursor/facet pass; audit default20 còn mở |
+| F17 | UC13 sửa/sử dụng/loại bỏ | LOCAL_PASS | d6f45e7/2ddf402; FEFO/stale remaining/metadata merge |
+| F18 | UC08 danh sách/mặt hàng/copy/lịch sử | IN_PROGRESS | 2ddf402; workflows pass; keyset list pagination còn mở |
+| F19 | UC09 mua/undo | LOCAL_PASS | 2ddf402; purchase/undo/batch rollback/concurrency |
+| F20 | UC11 nhập từ mua sắm | LOCAL_PASS | 2ddf402; stock source unique và total cost bảo toàn |
+| F21 | UC08 phân công/push | LOCAL_PASS | 2ddf402; role/race/digest5 giây; live FCM chưa smoke |
+| F22 | UC15 công thức/yêu thích/copy | IN_PROGRESS | c498d1b/d5dac6a; ảnh/copy/favorite pass; recipe pagination còn mở |
+| F23 | UC16 xem/đối chiếu | LOCAL_PASS | c498d1b/d5dac6a; scale/optional/dimension/stock comparison |
+| F24 | UC17 lịch | IN_PROGRESS | d39c0d5/d5dac6a; lịch/horizon/cooked rules pass; pagination còn mở |
+| F25 | UC10 từ công thức | LOCAL_PASS | 18a04e0; missing recipe preview/confirm |
+| F26 | UC10 từ lịch | LOCAL_PASS | 18a04e0; dated allocation và regression0,3kg |
+| F27 | UC18 gợi ý | LOCAL_PASS | e8e97be; score/live settings/fallback; tải NOT_RUN |
+| F28 | UC19 đã nấu/trừ kho | LOCAL_PASS | d39c0d5/d5dac6a; atomic cook/If-Match/replay |
+| F29 | UC14 reminder | LOCAL_PASS | 153d0e8; Tick/reminder/retention pass; SLA vận hành chưa đo |
+| F30 | UC21 báo cáo | LOCAL_PASS | df7a33b; report views/previous period/inclusive range |
+| F31 | UC22 export | LOCAL_PASS | 96ef09c; exports85.1%, S3 và PDF/CSV thật |
+| F32 | UC20 search/suggest | LOCAL_PASS | df7a33b; scoped unaccent search/suggest và bounds |
+| F33 | UC23 templates/duyệt/gộp | IN_PROGRESS | 5e30ea9/d5dac6a/f97b6e8; review/template/remap pass; admin pagination còn mở |
+| F34 | UC24 quản trị tài khoản | IN_PROGRESS | 5e30ea9; status/role/revoke pass; admin list pagination còn mở |
+| F35 | Copy/PurgeSpace/xóa tài khoản | LOCAL_PASS | f97b6e8; copy/purge/anonymization; atomic dispatcher có test |
+| F36 | UC03 mật khẩu | LOCAL_PASS | 392b536/0b6cb74; reset/change/retention đúng thời hạn |
+| F37 | E2E/security/load/restore/release | IN_PROGRESS | 41caf63; scanner exit0; E2E mở rộng/load/restore/monitoring/CI/review còn mở |
 
 ## Checklist chất lượng toàn dự án
 
@@ -397,3 +397,14 @@ Feature-ID: F37-security-toolchain. Trạng thái LOCAL_PASS scanner.
 - [x] `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`: exit0, No vulnerabilities found. Không diễn giải thành bằng chứng hệ thống không còn mọi lỗi bảo mật.
 - [x] Go1.26.11 full integration/race/coverage PASS exit0; `go mod verify` all modules verified; build server PASS.
 - [ ] Secret/container scan, tải, restore, CI remote và review release vẫn còn mở.
+
+### F01/F03/F04 — ứng dụng API/worker và hợp đồng OpenAPI — 13/11/2026
+
+Feature-ID: F01-system-runtime. Trạng thái LOCAL_PASS runtime, release IN_PROGRESS.
+- [x] Binary server/keygen, private keys0600, cấu hình development/production, API/worker/all, startup DB/Redis/S3 và graceful shutdown.
+- [x] Nối đủ module, route, encrypted River worker, atomic cross-module copy/remap/purge receipts; Tick có durable slot và dọn inbox/OTP/session/media/export/idempotency.
+- [x] HTTP app version/body/MIME/request ID/no-store, rate GCRA Redis nguyên tử; lỗi Redis fallback bộ nhớ có trạng thái degraded.
+- [x] Root quan sát RED proxy-prefix thay đổi qua trusted chain giúp request11 né quota; sửa đọc chuỗi từ proxy tin cậy về client đầu tiên không tin cậy, GREEN.
+- [x] OpenAPI3.1 có74 paths/101 operations/198 schemas,86 mã API trong scope; official schema/ref validation, registered mux và HTTP request/response thật khớp. UUID contract RED→GREEN.
+- [x] Go1.26.11 `go test -tags integration ./... -count=1 -race -cover -timeout 5m` PASS exit0; build/vet/mod verify PASS. Scanner No vulnerabilities found.
+- [ ] Phân trang ở một số endpoint, packaging/CI/load/restore/observability và FCM thật chưa hoàn tất. Bộ test contract hiện tại không thay thế review đủ mọi biến thể UC.
