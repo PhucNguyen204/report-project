@@ -20,14 +20,18 @@ Interfaces: parse_profile(text)->unique blocks{location:(statementCount,coveredC
 
 Files: kernel/quantity_fuzz_test.go, platform/http_fuzz_test.go, inventory/domain_fuzz_test.go, planning/algorithms_fuzz_test.go; Makefile/CI.
 
-- [ ] Quantity: mọi int64 Quantity canonical String→Parse giữ đúng; input text bất kỳ parse thành công cũng roundtrip; giới hạn string256byte cho campaign.
-- [ ] Decode: không panic với JSON arbitrary≤4096byte; success phải là một root object JSON hợp lệ và quantity API không quá2decimals.
-- [ ] FEFO: lot IDs duy nhất/không sửa input; không âm/quá supply, sum đúng demand; auto không dùng expired, explicit chỉ dùng lot chỉ định; thiếu supply không trả partial success.
-- [ ] Missing: hai demands chung một supply không dùng lại stock; optional bỏ qua, future/expired/wrong-dimension không cấp phát; sum shortQty=max(required-eligible,0), input không đổi.
-- [ ] Dates: format roundtrip và horizon7..60/ngày biên chính xác; không phụ thuộc timezone máy.
-- [ ] Chạy từng campaign15s với2workers, capture executions/corpus/failure artifacts. Corpus tìm thấy lỗi phải thành regression và sửa trước commit; không gọi fuzz seeds là campaign đã chạy.
-- [ ] Full verification/report/commit/push/merge F37-quality-gates.
+- [x] Quantity: mọi int64 Quantity canonical String→Parse giữ đúng; input text bất kỳ parse thành công cũng roundtrip; giới hạn string256byte cho campaign.
+- [x] Decode: không panic với JSON arbitrary≤4096byte; success phải là một root object JSON hợp lệ, chỉ field cho phép, quantity giữ chính xác6decimals. Giới hạn input nghiệp vụ2decimals ở validator module, không ở generic Decode.
+- [x] FEFO: lot IDs duy nhất/không sửa input; không âm/quá supply, sum đúng demand; auto không dùng expired, explicit chỉ dùng lot chỉ định; thiếu supply không trả partial success.
+- [x] Missing: hai demands chung một supply không dùng lại stock; optional bỏ qua, future/expired/wrong-dimension không cấp phát; sum shortQty=max(required-eligible,0), input không đổi.
+- [x] Dates: format roundtrip và horizon7..60/ngày biên chính xác; không phụ thuộc timezone máy.
+- [x] Chạy từng campaign15s với2workers, capture executions/corpus/failure artifacts. Corpus tìm thấy lỗi phải thành regression và sửa trước commit; không gọi fuzz seeds là campaign đã chạy.
+- [x] Full verification/report/commit/push/merge F37-fuzz-campaigns (Git thực hiện ngay sau gate).
 
 Self-review: coverage-combined trước khi thêm tests đã platform86.45%, app81.59%, global85.4%; không lấy phần trăm từng test binary khi coverpkg=./... làm phần trăm package. Không loại code khó test để tăng số. Fuzz không thay DB concurrency, provider smoke hoặc SLA production.
 
-Task1 verification13/11: parser unit5pass; coverage gate baselineFAILapp81.59 then meaningful runtime tests→457Go/0fail/0skip, app88.11/platform86.45/global85.81. All packages remain in global denominator, CLI/tooling reported. Ruby YAML parse CI PASS; remote runner not available. Task2 campaigns not yet run.
+Task1 verification13/11: parser unit5pass; coverage gate baselineFAILapp81.59 then meaningful runtime tests→457Go/0fail/0skip, app88.11/platform86.45/global85.81. All packages remain in global denominator, CLI/tooling reported. Ruby YAML parse CI PASS; remote runner not available. Task2 results bên dưới.
+
+Task2 review: 5 mutants thực tế đều bị seed assertions bắt (mất dấu âm/unknown field/expired FEFO/reuse supply/horizon đảo). Campaign đầu làm lộ oracle JSON sai vì encoding/json nhận case-insensitive field; sửa oracle, giữ biến thể quAntitY làm seed, không đổi API contract. Make3.81 bỏ qua .SHELLFLAGS gây tee che lỗi: Python orchestration test REDreturn0→explicit pipefail→GREEN. Sau fix 5 campaign PASS, executions1678565/175899/652081/411225/361396 (tổng3279166). Corpus hữu ích ở Go cache; crash do oracle sai chuyển thành seed công khai. Không ghi nhận oracle sai là lỗi nghiệp vụ.
+
+Full verification: `make verify integration` PASS, 7 Python tests, 490 Go cases/0fail/0skip; race/vet/mod verify/build đạt; combined global85.83%. Remote CI chưa chạy do runner.

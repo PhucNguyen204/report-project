@@ -613,3 +613,13 @@ Feature-ID: F37-combined-coverage. Trạng thái LOCAL_PASS quality gate.
 - [x] Script đọc unique statement blocks, không đếm đôi dependencies; malformed/conflicting input, missing gated module/core hoặc test skip/build fail không thành PASS. CLI/tooling giữ trong global denominator và vẫn hiện tỷ lệ thấp riêng; không khẳng định main entrypoints được unit-cover85%.
 - [x] CI artifact coverage-summary.json + regex TOTAL_COVERAGE đọc từ summary đúng phương pháp; Ruby YAML parse đạt. Counter từng test binary với coverpkg không bị dùng làm coverage của package.
 - [ ] Remote CI vẫn chờ runner/Owner như runbook; fuzz campaign là task riêng, không tick từ seed tests hoặc tỷ lệ coverage.
+
+### F37 — fuzz invariants và lệnh kiểm thử không che lỗi — 13/11/2026
+
+Feature-ID: F37-fuzz-campaigns. Trạng thái LOCAL_PASS.
+- [x] Thêm properties Quantity toàn int64/canonical; Decode strict object/unknown fields; FEFO bảo toàn lượng/thứ tự/hết hạn/explicit; Missing không dùng lại stock/optional/future/expired/dimension; civil dates và biên horizon7–60.
+- [x] Kiểm chứng 5 mutants thực tế đều bị seed assertions bắt rồi khôi phục code. Campaign đầu gặp oracle sai với field quAntitY do encoding/json nhận case-insensitive: sửa oracle, giữ seed, không ghi nhận là bug nghiệp vụ hoặc tự đổi API contract. Precision2decimals vẫn do validators module kiểm, generic Decode giữ6decimals.
+- [x] Phát hiện Make3.81 bỏ qua .SHELLFLAGS nên tee che mã lỗi go test. Python orchestration test REDreturn0 khi tool exit7→explicit pipefail→GREEN, dừng ngay campaign đầu lỗi và giữ log; success giữ đủ5log.
+- [x] `make fuzz`: 5campaign×15s/2workers PASS; executions quantity1678565/JSON175899/FEFO652081/Missing411225/dates361396, tổng3279166. Log output/backend-qa/fuzz-*.log; CI chạy cùng campaign và lưu logs/crash corpus14ngày.
+- [x] `make verify integration`: 7Python tests PASS, 490Go cases/0fail/0skip; format/vet/mod verify/unit race/integration race/build đạt. Combined global85.83%, app88.11/platform86.45/kernel95.95; mọi module vượt gate. Không đổi dependency hoặc migration.
+- [ ] Remote pipeline224/main tại ae790be vẫn pending, job983 runner=null/started_at=null. Owner/Maintainer cần gán runner như runbook; fuzz local không thay remote CI, smoke provider hoặc SLA production.

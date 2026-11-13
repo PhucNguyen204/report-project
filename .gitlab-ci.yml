@@ -19,12 +19,15 @@ backend-verify:
   extends: .go
   stage: verify
   script:
-    - make verify openapi security secrets
+    - make verify openapi security secrets fuzz
 
   artifacts:
     when: always
     expire_in: 14 days
-    paths: [output/backend-qa/gitleaks-reviewed.json]
+    paths:
+      - output/backend-qa/gitleaks-reviewed.json
+      - output/backend-qa/fuzz-*.log
+      - backend/internal/**/testdata/fuzz/
 
 backend-integration:
   extends: .go

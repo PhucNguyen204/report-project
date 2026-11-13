@@ -52,10 +52,13 @@ Hợp đồng tại `/openapi.json`, nguồn [api/build.py](api/build.py) và ar
 make verify
 make integration
 make security secrets
+make fuzz
 make smoke
 ```
 
 `verify` chạy format/vet/mod verify/unit Python/Go race/build. `integration` cần PostgreSQL16, Redis7, S3 và Mailpit thật; tạo DB riêng từng test, không skip khi dịch vụ thiếu. Artifact tại `../output/backend-qa/{integration.jsonl,coverage.out,coverage-summary.json}`. Coverage dùng `-coverpkg=./...`, gate total85%, domain/app/platform85%, kernel/core90%; test fail/skip làm gate fail. `smoke` cần API/worker đang chạy, thực hiện K1–K5 với tài khoản tổng hợp, OTP SMTP, ảnh S3 và CSV/PDF; không in token/OTP/mật khẩu.
+
+`fuzz` chạy 5 campaign thực tế, mỗi campaign 15 giây/2 workers; log `../output/backend-qa/fuzz-*.log`. Quantity/JSON/FEFO/Missing/civil dates có invariants riêng. Seed tests trong `verify` không thay campaign; lỗi từ `go test` qua `tee` vẫn làm make fail, kể cả Make 3.81 trên macOS.
 
 Đổi địa chỉ fixture cho CI hoặc project riêng:
 

@@ -68,3 +68,12 @@ migrate:
 .PHONY: performance
 performance:
 	go test -tags performance ./internal/app -run '^TestPerformance' -count=1 -v -timeout 10m
+
+.PHONY: fuzz
+fuzz:
+	mkdir -p ../output/backend-qa
+	set -o pipefail; go test ./internal/kernel -run '^$$' -fuzz '^FuzzQuantityCanonicalRoundTrip$$' -fuzztime=15s -parallel=2 -timeout=2m | tee ../output/backend-qa/fuzz-quantity.log
+	set -o pipefail; go test ./internal/platform -run '^$$' -fuzz '^FuzzDecodeStrictObject$$' -fuzztime=15s -parallel=2 -timeout=2m | tee ../output/backend-qa/fuzz-json.log
+	set -o pipefail; go test ./internal/modules/inventory -run '^$$' -fuzz '^FuzzAllocateConservesStock$$' -fuzztime=15s -parallel=2 -timeout=2m | tee ../output/backend-qa/fuzz-fefo.log
+	set -o pipefail; go test ./internal/modules/planning -run '^$$' -fuzz '^FuzzMissingNeverReusesSupply$$' -fuzztime=15s -parallel=2 -timeout=2m | tee ../output/backend-qa/fuzz-missing.log
+	set -o pipefail; go test ./internal/modules/planning -run '^$$' -fuzz '^FuzzMealDatesRespectCivilHorizon$$' -fuzztime=15s -parallel=2 -timeout=2m | tee ../output/backend-qa/fuzz-dates.log
