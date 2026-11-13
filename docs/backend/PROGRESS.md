@@ -253,3 +253,12 @@ Feature-ID: F22-recipes.
 - [ ] HTTP tổng hợp và ảnh công thức sẽ được commit task riêng; không loại yêu cầu ảnh tùy chọn khỏi phạm vi UC15.
 
 Baseline toàn hệ thống12/11: app78.8%, kernel95.9%, accounts84.9%, inventory86.4%, planning86.5%, media86.7%, exports85.5%, notification47.3%, platform65.3%. Ba test lifecycle media/exports mới đang RED, do đó full suite chưa PASS.
+
+### F01 — khóa dependency cho runtime và kiểm thử contract — 13/11/2026
+
+Feature-ID: F01-runtime-dependencies.
+- [x] go.mod/go.sum khóa AWS SDK S3, Redis7 client, OAuth2 FCM, GoPDF và JSON Schema2020-12 validator theo version cụ thể.
+- [x] Root `go mod verify`: all modules verified, exit0. `go mod tidy` và buildserver/keygen thực hiện thành công.
+- [x] .local privatekeys và bin được gitignore trước khi tạo khóa; helper tạo0600 và không ghi đè khóa đã có.
+- [x] Live smoke actual server13/11: health/ready/openapi200, register201, OTP quaSMTPMailpit+kích hoạt200, authenticatedcreate201, idempotentreplay201, read200. Artifact local: output/backend-qa/live-smoke.json.
+- [ ] Đây là checkpoint môi trường/runtime; chưa khẳng định toàn bộ releasegate đã hoàn tất.

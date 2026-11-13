@@ -13,3 +13,5 @@ output/
 tmp/
 bao-cao-latex.zip
 .DS_Store
+backend/.local/
+backend/bin/
