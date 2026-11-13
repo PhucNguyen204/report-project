@@ -334,3 +334,12 @@ Feature-ID: F27-suggestions. Trạng thái LOCAL_PASS core.
 - [x] Top/tie ổn định, favorite theo user, fallback3, thay đổi kho/cấu hình phản ánh ở lần đọc kế tiếp.
 - [x] Root full integration/race PASS13/11; test không dùng cache fake để thay dữ liệu PostgreSQL.
 - [ ] Đo tải500 công thức/200 lô và target latency còn NOT_RUN.
+
+### F30/F32 — báo cáo và tìm kiếm — 13/11/2026
+
+Feature-ID: F30-reports-search. Trạng thái LOCAL_PASS core.
+- [x] Báo cáo mua sắm/tiêu thụ/lãng phí đọc qua view, bảo toàn lượng/tiền, tách thiếu giá, thống kê danh mục/top/reason và kỳ trước.
+- [x] Boundary ngày VN, khoảng ngày bao gồm≤12 tháng, mẫu số0 và định giá lô có regression PostgreSQL.
+- [x] Tìm không dấu/đ, q≥2, scope thực phẩm/công thức/lô; không lộ private/template ẩn và chống SQL injection qua tham số.
+- [x] Root full integration/race PASS13/11; planning86.8% trên toàn package.
+- [ ] Tải và toàn bộ keyset pagination chưa nghiệm thu.
