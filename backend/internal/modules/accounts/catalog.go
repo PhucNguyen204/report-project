@@ -2,8 +2,10 @@ package accounts
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"unicode/utf8"
@@ -15,13 +17,16 @@ import (
 
 func (s *Service) ValidateFood(ctx context.Context, tx pgx.Tx, sid, foodID, unitID string) (platform.FoodUnit, error) {
 	var out platform.FoodUnit
-	var factor string
-	err := tx.QueryRow(ctx, `SELECT f.id::text,f.name,u.id::text,u.dimension,u.factor_to_base::text FROM catalog.foods f JOIN catalog.units u ON u.id=COALESCE(NULLIF($3,'')::uuid,f.default_unit_id) WHERE f.id=$2 AND (f.scope='global' OR f.owner_space_id=$1) AND f.status IN ('active','pending_review') AND u.active`, sid, foodID, unitID).Scan(&out.FoodID, &out.Name, &out.UnitID, &out.Dimension, &factor)
+	var factor, defaultDimension string
+	err := tx.QueryRow(ctx, `SELECT f.id::text,f.name,u.id::text,u.dimension,u.factor_to_base::text,d.dimension FROM catalog.foods original JOIN catalog.foods f ON f.id=COALESCE(original.merged_into,original.id) JOIN catalog.units d ON d.id=f.default_unit_id JOIN catalog.units u ON u.id=COALESCE(NULLIF($3,'')::uuid,f.default_unit_id) WHERE original.id=$2 AND (original.scope='global' OR original.owner_space_id=$1) AND f.status IN ('active','pending_review') AND u.active FOR SHARE OF original,f,u,d`, sid, foodID, unitID).Scan(&out.FoodID, &out.Name, &out.UnitID, &out.Dimension, &factor, &defaultDimension)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return out, platform.NotFound()
 	}
 	if err != nil {
 		return out, err
+	}
+	if out.Dimension != defaultDimension {
+		return out, platform.Rule("Không thể quy đổi giữa các nhóm đại lượng")
 	}
 	out.Factor, err = kernel.ParseQuantity(factor)
 	return out, err
@@ -81,20 +86,25 @@ func (s *Service) catalog(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	units, err := queryMaps(r.Context(), s.db.Pool, `SELECT id::text,name,dimension,factor_to_base::text AS "factorToBase",is_base AS "isBase" FROM catalog.units WHERE active ORDER BY dimension,factor_to_base`)
+	units, err := queryMaps(r.Context(), s.db.Pool, `SELECT id::text,name,dimension,factor_to_base::text AS "factorToBase",is_base AS "isBase" FROM catalog.units WHERE active ORDER BY dimension,factor_to_base,id`)
 	if err != nil {
 		return err
 	}
 	for _, u := range units {
 		u["factorToBase"] = json.Number(u["factorToBase"].(string))
 	}
-	tag := `"catalog-1"`
+	payload := map[string]any{"categories": categories, "units": units, "locations": []string{"chill", "freezer", "crisper", "door", "pantry_shelf"}}
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	tag := fmt.Sprintf("\"%x\"", sha256.Sum256(encoded))
 	w.Header().Set("ETag", tag)
 	if r.Header.Get("If-None-Match") == tag {
 		w.WriteHeader(304)
 		return nil
 	}
-	platform.Write(w, 200, map[string]any{"categories": categories, "units": units, "locations": []string{"chill", "freezer", "crisper", "door", "pantry_shelf"}})
+	platform.Write(w, 200, payload)
 	return nil
 }
 
@@ -119,7 +129,7 @@ func (s *Service) catalogAdmin(kind string) platform.Handler {
 		}
 		table := map[string]string{"food-categories": "food_categories", "units": "units", "foods": "foods"}[kind]
 		if r.Method == "GET" {
-			rows, err := queryMaps(r.Context(), s.db.Pool, "SELECT to_jsonb(x) AS item FROM catalog."+table+" x ORDER BY name LIMIT 100")
+			rows, err := queryMaps(r.Context(), s.db.Pool, "SELECT to_jsonb(x)-'field_versions' AS item FROM catalog."+table+" x ORDER BY name LIMIT 100")
 			if err != nil {
 				return err
 			}
@@ -146,11 +156,35 @@ func (s *Service) catalogAdmin(kind string) platform.Handler {
 				id = platform.ID()
 			}
 		}
+		var base, revision int64
+		if kind == "foods" && r.Method == "PUT" {
+			var err error
+			base, err = requestVersion(r)
+			if err != nil {
+				return err
+			}
+		}
 		err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
 			var old json.RawMessage
 			if r.Method != "POST" {
 				if err := tx.QueryRow(r.Context(), "SELECT to_jsonb(x) FROM catalog."+table+" x WHERE id=$1 FOR UPDATE", id).Scan(&old); err != nil {
 					return err
+				}
+			}
+			if kind == "foods" {
+				if r.Method == "POST" {
+					revision = 1
+				} else {
+					var previous struct {
+						Version int64 `json:"version"`
+					}
+					if err := json.Unmarshal(old, &previous); err != nil {
+						return err
+					}
+					revision = previous.Version
+				}
+				if r.Method == "PUT" && base != revision {
+					return platform.Conflict()
 				}
 			}
 			var err error
@@ -240,7 +274,13 @@ func (s *Service) catalogAdmin(kind string) platform.Handler {
 		if r.Method == "POST" {
 			status = 201
 		}
-		platform.Write(w, status, map[string]any{"id": id})
+		if kind == "foods" {
+			if r.Method != "POST" {
+				revision++
+			}
+			versionTag(w, revision)
+		}
+		platform.Write(w, status, map[string]any{"id": id, "version": revision})
 		return nil
 	}
 }
@@ -272,9 +312,9 @@ func (s *Service) reviewFood(w http.ResponseWriter, r *http.Request) error {
 	}
 	id := r.PathValue("id")
 	err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
-		var status, scope string
+		var status, scope, dimension string
 		var old json.RawMessage
-		if err := tx.QueryRow(r.Context(), "SELECT status,scope,to_jsonb(f) FROM catalog.foods f WHERE id=$1 FOR UPDATE", id).Scan(&status, &scope, &old); err != nil {
+		if err := tx.QueryRow(r.Context(), "SELECT f.status,f.scope,to_jsonb(f),u.dimension FROM catalog.foods f JOIN catalog.units u ON u.id=f.default_unit_id WHERE f.id=$1 FOR UPDATE OF f", id).Scan(&status, &scope, &old, &dimension); err != nil {
 			return err
 		}
 		if status != "pending_review" || scope != "space" {
@@ -288,12 +328,15 @@ func (s *Service) reviewFood(w http.ResponseWriter, r *http.Request) error {
 			if in.Target == id {
 				return platform.Invalid("Thực phẩm đích phải khác nguồn")
 			}
-			var ok bool
-			if err := tx.QueryRow(r.Context(), "SELECT EXISTS(SELECT 1 FROM catalog.foods WHERE id=$1 AND scope='global' AND status='active')", in.Target).Scan(&ok); err != nil {
+			var targetDimension string
+			if err := tx.QueryRow(r.Context(), "SELECT u.dimension FROM catalog.foods f JOIN catalog.units u ON u.id=f.default_unit_id WHERE f.id=$1 AND f.scope='global' AND f.status='active' FOR SHARE OF f", in.Target).Scan(&targetDimension); err != nil {
+				if errors.Is(err, pgx.ErrNoRows) {
+					return platform.NotFound()
+				}
 				return err
 			}
-			if !ok {
-				return platform.NotFound()
+			if dimension != targetDimension {
+				return platform.Rule("Không thể gộp thực phẩm khác nhóm đại lượng")
 			}
 			if _, err := tx.Exec(r.Context(), "UPDATE catalog.foods SET status='inactive',merged_into=$2,version=version+1 WHERE id=$1", id, in.Target); err != nil {
 				return err

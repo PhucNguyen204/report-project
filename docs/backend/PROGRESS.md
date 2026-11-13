@@ -281,3 +281,13 @@ Feature-ID: F03-command-idempotency. Trạng thái LOCAL_PASS.
 - [x] Root `go test -tags integration ./... -count=1 -race -cover -timeout 5m`: PASS exit0 ngày13/11; platform69.0%, app76.5%; các module nghiệp vụ85.1–90.7%.
 - [x] `go vet ./...` và `git diff --check`: PASS.
 - [ ] Coverage hạ tầng và release gates chưa hoàn tất; không đánh dấu toàn backend DONE.
+
+### F12–F14 — nhóm, mã mời và chuyển quyền — 13/11/2026
+
+Feature-ID: F12-household. Trạng thái LOCAL_PASS.
+- [x] Tạo/xem/sửa nhóm, mã mời có rotate/thu hồi, preview không ghi dữ liệu, một family/user và giới hạn thành viên.
+- [x] Tranh chỗ cuối chỉ một người thành công; trưởng nhóm phải chuyển quyền, người cuối giải tán; hook bỏ phân công rollback cùng membership.
+- [x] If-Match/ETag và lịch sử trường: PATCH metadata ghi đè từng trường, báo overwrittenFields chính xác; quyết định quyền/status và PUT danh mục dùng version nghiêm ngặt.
+- [x] Review sửa ETag danh mục, chặn khác dimension/tự khóa admin, khóa dòng canonical khi kiểm thực phẩm, thông báo email khi admin khóa.
+- [x] Root full regression `go test -tags integration ./... -count=1 -race -cover -timeout 5m`: PASS; accounts86.1%. `go vet ./...`: PASS.
+- [ ] Copy/purge toàn module và delivery thật được ghi ở task riêng; không suy ra từ test nhóm.

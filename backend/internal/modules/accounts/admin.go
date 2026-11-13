@@ -133,7 +133,7 @@ func (s *Service) adminUsers(w http.ResponseWriter, r *http.Request) error {
 	if err := platform.Admin(r); err != nil {
 		return err
 	}
-	items, err := queryMaps(r.Context(), s.db.Pool, `SELECT id::text,email,full_name AS "fullName",system_role AS "systemRole",status,last_login_at AS "lastLoginAt",lock_reason AS "lockReason" FROM identity.users WHERE deleted_at IS NULL AND ($1='' OR email::text ILIKE '%'||$1||'%' OR full_name ILIKE '%'||$1||'%') ORDER BY created_at DESC,id DESC LIMIT 100`, r.URL.Query().Get("q"))
+	items, err := queryMaps(r.Context(), s.db.Pool, `SELECT id::text,email,version,full_name AS "fullName",system_role AS "systemRole",status,last_login_at AS "lastLoginAt",lock_reason AS "lockReason" FROM identity.users WHERE deleted_at IS NULL AND ($1='' OR email::text ILIKE '%'||$1||'%' OR full_name ILIKE '%'||$1||'%') ORDER BY created_at DESC,id DESC LIMIT 100`, r.URL.Query().Get("q"))
 	if err != nil {
 		return err
 	}
@@ -165,14 +165,25 @@ func (s *Service) adminUser(w http.ResponseWriter, r *http.Request) error {
 		return platform.Invalid("Cần lý do khóa tài khoản")
 	}
 	id := r.PathValue("id")
-	err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
+	if id == platform.Current(r).UserID && in.Status == "disabled" {
+		return platform.Rule("Không thể tự khóa tài khoản quản trị")
+	}
+	base, err := requestVersion(r)
+	if err != nil {
+		return err
+	}
+	var revision int64
+	err = s.db.Tx(r.Context(), func(tx pgx.Tx) error {
 		if _, err := tx.Exec(r.Context(), "SELECT pg_advisory_xact_lock(hashtext('admin_roles'))"); err != nil {
 			return err
 		}
 		var old json.RawMessage
-		var role, status string
-		if err := tx.QueryRow(r.Context(), "SELECT system_role,status,to_jsonb(u)-'password_hash' FROM identity.users u WHERE id=$1 AND deleted_at IS NULL FOR UPDATE", id).Scan(&role, &status, &old); err != nil {
+		var role, status, email string
+		if err := tx.QueryRow(r.Context(), "SELECT system_role,status,email,version,to_jsonb(u)-'password_hash' FROM identity.users u WHERE id=$1 AND deleted_at IS NULL FOR UPDATE", id).Scan(&role, &status, &email, &revision, &old); err != nil {
 			return err
+		}
+		if base != revision {
+			return platform.Conflict()
 		}
 		if role == "admin" && (in.Role == "user" || in.Status == "disabled") {
 			var count int
@@ -189,17 +200,24 @@ func (s *Service) adminUser(w http.ResponseWriter, r *http.Request) error {
 		if in.Status == "" {
 			in.Status = status
 		}
-		if _, err := tx.Exec(r.Context(), "UPDATE identity.users SET system_role=$2,status=$3,lock_reason=NULLIF($4,''),token_version=token_version+1 WHERE id=$1", id, in.Role, in.Status, in.Reason); err != nil {
+		if err := tx.QueryRow(r.Context(), "UPDATE identity.users SET system_role=$2,status=$3,lock_reason=NULLIF($4,''),token_version=token_version+1,version=version+1 WHERE id=$1 RETURNING version", id, in.Role, in.Status, in.Reason).Scan(&revision); err != nil {
 			return err
 		}
 		if _, err := tx.Exec(r.Context(), "UPDATE identity.refresh_sessions SET revoked_at=$2,revoke_reason='admin' WHERE user_id=$1 AND revoked_at IS NULL", id, s.db.Clock.Now()); err != nil {
 			return err
 		}
-		return s.audit(r.Context(), tx, platform.Current(r).UserID, "user.update", id, old, in)
+		if err := s.audit(r.Context(), tx, platform.Current(r).UserID, "user.update", id, old, in); err != nil {
+			return err
+		}
+		if in.Status == "disabled" {
+			return s.db.Enqueue(r.Context(), tx, "email", "disabled:"+id+":"+platform.ID(), map[string]any{"to": email, "subject": "Tài khoản bị khóa", "body": in.Reason}, s.db.Clock.Now())
+		}
+		return nil
 	})
 	if err != nil {
 		return err
 	}
-	platform.Write(w, 200, map[string]any{"id": id})
+	versionTag(w, revision)
+	platform.Write(w, 200, map[string]any{"id": id, "version": revision})
 	return nil
 }

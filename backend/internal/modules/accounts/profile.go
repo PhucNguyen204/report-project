@@ -24,11 +24,13 @@ func (s *Service) RegisterProfile(mux *http.ServeMux) {
 func (s *Service) getProfile(w http.ResponseWriter, r *http.Request) error {
 	var id, email, name, locale string
 	var avatar, lastSpace *string
-	err := s.db.Pool.QueryRow(r.Context(), "SELECT id::text,email,full_name,locale,avatar_object_id::text,last_space_id::text FROM identity.users WHERE id=$1 AND deleted_at IS NULL", platform.Current(r).UserID).Scan(&id, &email, &name, &locale, &avatar, &lastSpace)
+	var revision int64
+	err := s.db.Pool.QueryRow(r.Context(), "SELECT id::text,email,full_name,locale,avatar_object_id::text,last_space_id::text,version FROM identity.users WHERE id=$1 AND deleted_at IS NULL", platform.Current(r).UserID).Scan(&id, &email, &name, &locale, &avatar, &lastSpace, &revision)
 	if err != nil {
 		return err
 	}
-	platform.Write(w, 200, map[string]any{"id": id, "email": email, "fullName": name, "locale": locale, "avatarObjectId": avatar, "lastSpaceId": lastSpace})
+	versionTag(w, revision)
+	platform.Write(w, 200, map[string]any{"id": id, "email": email, "fullName": name, "locale": locale, "avatarObjectId": avatar, "lastSpaceId": lastSpace, "version": revision})
 	return nil
 }
 func (s *Service) updateProfile(w http.ResponseWriter, r *http.Request) error {
@@ -51,10 +53,35 @@ func (s *Service) updateProfile(w http.ResponseWriter, r *http.Request) error {
 		return platform.Invalid("Ngôn ngữ không hợp lệ")
 	}
 	uid := platform.Current(r).UserID
-	err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
+	base, err := requestVersion(r)
+	if err != nil {
+		return err
+	}
+	var revision int64
+	overwritten := []string{}
+	err = s.db.Tx(r.Context(), func(tx pgx.Tx) error {
 		var name, locale string
 		var avatar *string
-		if err := tx.QueryRow(r.Context(), "SELECT full_name,locale,avatar_object_id::text FROM identity.users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE", uid).Scan(&name, &locale, &avatar); err != nil {
+		if err := tx.QueryRow(r.Context(), "SELECT full_name,locale,avatar_object_id::text,version FROM identity.users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE", uid).Scan(&name, &locale, &avatar, &revision); err != nil {
+			return err
+		}
+		patch := map[string]any{}
+		if in.FullName != nil {
+			patch["fullName"] = *in.FullName
+		}
+		if in.Locale != nil {
+			patch["locale"] = *in.Locale
+		}
+		if in.Avatar != nil {
+			var desired any
+			if *in.Avatar != "" {
+				desired = *in.Avatar
+			}
+			patch["avatarObjectId"] = desired
+		}
+		var err error
+		overwritten, err = overwrittenFields(r.Context(), tx, "identity.users", uid, base, revision, patch, map[string]any{"fullName": name, "locale": locale, "avatarObjectId": avatar})
+		if err != nil {
 			return err
 		}
 		if in.FullName != nil {
@@ -76,7 +103,7 @@ func (s *Service) updateProfile(w http.ResponseWriter, r *http.Request) error {
 				avatar = in.Avatar
 			}
 		}
-		if _, err := tx.Exec(r.Context(), "UPDATE identity.users SET full_name=$2,locale=$3,avatar_object_id=$4,version=version+1 WHERE id=$1", uid, name, locale, avatar); err != nil {
+		if err := tx.QueryRow(r.Context(), "UPDATE identity.users SET full_name=$2,locale=$3,avatar_object_id=$4,version=version+1 WHERE id=$1 RETURNING version", uid, name, locale, avatar).Scan(&revision); err != nil {
 			return err
 		}
 		rows, err := tx.Query(r.Context(), "SELECT space_id::text FROM household.space_members WHERE user_id=$1 ORDER BY space_id", uid)
@@ -106,7 +133,8 @@ func (s *Service) updateProfile(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	platform.Write(w, 200, map[string]any{"updated": true})
+	versionTag(w, revision)
+	platform.Write(w, 200, map[string]any{"updated": true, "version": revision, "overwrittenFields": overwritten})
 	return nil
 }
 func (s *Service) getSettings(w http.ResponseWriter, r *http.Request) error {

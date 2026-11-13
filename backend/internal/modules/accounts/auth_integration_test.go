@@ -59,6 +59,9 @@ func (f *authFixture) call(t *testing.T, method, url string, payload any, token 
 	if token != "" {
 		r.Header.Set("Authorization", "Bearer "+token)
 	}
+	if match := fixtureMatch(f, method, url, token); match != "" {
+		r.Header.Set("If-Match", match)
+	}
 	w := httptest.NewRecorder()
 	f.router.ServeHTTP(w, r)
 	var result map[string]any
