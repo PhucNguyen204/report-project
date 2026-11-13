@@ -477,3 +477,13 @@ Feature-ID: F16-inventory-pagination. Trạng thái LOCAL_PASS.
 - [x] make verify integration PASS345 case/0 fail/0 skip, race/vet/build/mod verify đạt; không có provider giả được ghi là smoke thật.
 - [x] Fix UUID aa1bc51 đã push và fast-forward vào baocao sau kiểm lại333 case trong main worktree.
 - [ ] R01/M01/admin/search và các release gates khác tiếp tục theo plan pagination; chưa gọi toàn backend DONE.
+
+### F09 — quyền ảnh theo vai trò hiện tại — 13/11/2026
+
+Feature-ID: F09-media-roles. Trạng thái LOCAL_PASS.
+- [x] Ba RED thực tế: admin đọc ảnh gia đình qua membership cũ; admin được cấp upload/complete grant cũ; admin không upload được ảnh template.
+- [x] Media kiểm actor active/role từ DB trong transaction; admin không kế thừa quyền ảnh nhóm, công thức riêng, thực phẩm riêng hay avatar của thành viên cũ. Avatar của chính mình vẫn dùng được.
+- [x] Admin upload/complete/preview ảnh template ẩn; người dùng thường bị chặn đến khi published. Giữ ownership/purpose/target và ảnh chia sẻ bất biến khi copy.
+- [x] Focused media integration/race PASS86.4%. Full đầu gặp TestAdministratorDoesNotReadFamilyImagesThroughFormerMembership lỗi fixture thiếu category_id; sửa fixture đúng schema, không nới constraint, rerun make verify integration PASS348 case/0 fail/0 skip.
+- [x] Snapshot348 được chạy trước khi sub-agent bắt đầu pagination planning tiếp theo; source media này độc lập thay đổi đang làm ở planning.
+- [ ] Sub-agent lại chạm quota, root tiếp tục kiểm tra các phần bàn giao và recovery; không coi phần chưa verify là DONE.

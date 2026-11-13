@@ -31,13 +31,18 @@ type Service struct {
 }
 
 func New(db *platform.DB, store *S3Store) *Service { return &Service{db, store} }
-func (s *Service) authorize(ctx context.Context, tx pgx.Tx, user, purpose, target string) error {
-	var active bool
-	if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM identity.users WHERE id=$1 AND status='active' AND deleted_at IS NULL)", user).Scan(&active); err != nil {
-		return err
+func (s *Service) actorRole(ctx context.Context, tx pgx.Tx, user string) (string, error) {
+	var role string
+	err := tx.QueryRow(ctx, "SELECT system_role FROM identity.users WHERE id=$1 AND status='active' AND deleted_at IS NULL", user).Scan(&role)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", platform.NotFound()
 	}
-	if !active {
-		return platform.NotFound()
+	return role, err
+}
+func (s *Service) authorize(ctx context.Context, tx pgx.Tx, user, purpose, target string) error {
+	systemRole, err := s.actorRole(ctx, tx, user)
+	if err != nil {
+		return err
 	}
 	switch purpose {
 	case "avatar":
@@ -46,6 +51,9 @@ func (s *Service) authorize(ctx context.Context, tx pgx.Tx, user, purpose, targe
 		}
 		return nil
 	case "space":
+		if systemRole != "user" {
+			return platform.NotFound()
+		}
 		role, err := s.db.LockMember(ctx, tx, target, user)
 		if err != nil {
 			return err
@@ -55,15 +63,25 @@ func (s *Service) authorize(ctx context.Context, tx pgx.Tx, user, purpose, targe
 		}
 		return nil
 	case "recipe":
-		var sid, owner string
-		err := tx.QueryRow(ctx, "SELECT space_id::text,created_by::text FROM recipe.recipes WHERE id=$1 AND kind='space' AND deleted_at IS NULL FOR SHARE", target).Scan(&sid, &owner)
+		var sid *string
+		var owner, kind string
+		err := tx.QueryRow(ctx, "SELECT space_id::text,created_by::text,kind FROM recipe.recipes WHERE id=$1 AND deleted_at IS NULL FOR SHARE", target).Scan(&sid, &owner, &kind)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return platform.NotFound()
 		}
 		if err != nil {
 			return err
 		}
-		role, err := s.db.LockMember(ctx, tx, sid, user)
+		if kind == "template" {
+			if systemRole != "admin" {
+				return platform.NotFound()
+			}
+			return nil
+		}
+		if systemRole != "user" || sid == nil {
+			return platform.NotFound()
+		}
+		role, err := s.db.LockMember(ctx, tx, *sid, user)
 		if err != nil {
 			return err
 		}
@@ -72,6 +90,9 @@ func (s *Service) authorize(ctx context.Context, tx pgx.Tx, user, purpose, targe
 		}
 		return nil
 	case "food":
+		if systemRole != "user" {
+			return platform.NotFound()
+		}
 		var sid string
 		err := tx.QueryRow(ctx, "SELECT owner_space_id::text FROM catalog.foods WHERE id=$1 AND scope='space' AND status!='inactive' FOR SHARE", target).Scan(&sid)
 		if errors.Is(err, pgx.ErrNoRows) {

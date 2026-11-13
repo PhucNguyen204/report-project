@@ -42,6 +42,8 @@ Hợp đồng tại `/openapi.json`, nguồn [api/build.py](api/build.py) và ar
 
 `S3_ENDPOINT` dùng cho I/O nội bộ. `S3_PUBLIC_ENDPOINT` dùng khi ký URL cho client, mặc định bằng endpoint nội bộ. Cả hai dùng cùng bucket/key/region/credentials; không sửa host của URL sau khi ký. Compose đặt internal=`http://s3:8333`, public=`http://127.0.0.1:59000`.
 
+Ảnh được kiểm quyền theo vai trò hiện tại trong DB. Admin quản lý ảnh template và ảnh đại diện của mình; membership cũ không cho admin truy cập ảnh gia đình/ảnh thực phẩm riêng.
+
 `TRUSTED_PROXIES` là danh sách CIDR của proxy thực sự tin cậy. Chuỗi X-Forwarded-For được đọc từ phía proxy về client đầu tiên không tin cậy. Bỏ trống để dùng địa chỉ kết nối trực tiếp.
 
 ## Kiểm chứng

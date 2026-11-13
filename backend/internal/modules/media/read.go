@@ -13,11 +13,11 @@ type Download struct {
 	ExpiresAt time.Time `json:"expiresAt"`
 }
 
-func (s *Service) canRead(ctx context.Context, tx pgx.Tx, user, purpose, target, id string) error {
+func (s *Service) canRead(ctx context.Context, tx pgx.Tx, user, systemRole, purpose, target, id string) error {
 	switch purpose {
 	case "avatar":
 		var allowed bool
-		err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM identity.users u WHERE u.id=$2 AND u.deleted_at IS NULL AND u.status='active' AND ($1=$2 OR EXISTS(SELECT 1 FROM household.space_members a JOIN household.space_members b ON b.space_id=a.space_id WHERE a.user_id=$1 AND b.user_id=$2 AND a.space_kind='family' AND b.space_kind='family')))`, user, target).Scan(&allowed)
+		err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM identity.users u WHERE u.id=$2 AND u.deleted_at IS NULL AND u.status='active' AND ($1=$2 OR ($3='user' AND u.system_role='user' AND EXISTS(SELECT 1 FROM household.space_members a JOIN household.space_members b ON b.space_id=a.space_id WHERE a.user_id=$1 AND b.user_id=$2 AND a.space_kind='family' AND b.space_kind='family'))))`, user, target, systemRole).Scan(&allowed)
 		if err != nil {
 			return err
 		}
@@ -26,11 +26,14 @@ func (s *Service) canRead(ctx context.Context, tx pgx.Tx, user, purpose, target,
 		}
 		return nil
 	case "space":
+		if systemRole != "user" {
+			return platform.NotFound()
+		}
 		_, err := s.db.LockMember(ctx, tx, target, user)
 		return err
 	case "recipe":
 		var allowed bool
-		err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM recipe.recipes r WHERE (r.id=$1 OR r.image_object_id=$2) AND r.deleted_at IS NULL AND r.status='published' AND (r.kind='template' OR EXISTS(SELECT 1 FROM household.space_members m WHERE m.space_id=r.space_id AND m.user_id=$3)))`, target, id, user).Scan(&allowed)
+		err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM recipe.recipes r WHERE (r.id=$1 OR r.image_object_id=$2) AND r.deleted_at IS NULL AND ((r.kind='template' AND (r.status='published' OR $4='admin')) OR (r.kind='space' AND r.status='published' AND $4='user' AND EXISTS(SELECT 1 FROM household.space_members m WHERE m.space_id=r.space_id AND m.user_id=$3))))`, target, id, user, systemRole).Scan(&allowed)
 		if err != nil {
 			return err
 		}
@@ -51,7 +54,7 @@ func (s *Service) canRead(ctx context.Context, tx pgx.Tx, user, purpose, target,
 		if scope == "global" {
 			return nil
 		}
-		if sid == nil {
+		if sid == nil || systemRole != "user" {
 			return platform.NotFound()
 		}
 		_, err = s.db.LockMember(ctx, tx, *sid, user)
@@ -63,14 +66,18 @@ func (s *Service) canRead(ctx context.Context, tx pgx.Tx, user, purpose, target,
 func (s *Service) Read(ctx context.Context, user, id string) (Download, error) {
 	var key, purpose, target string
 	err := s.db.Tx(ctx, func(tx pgx.Tx) error {
-		err := tx.QueryRow(ctx, "SELECT object_key,purpose,target_id::text FROM media.objects WHERE id=$1 AND status='ready' FOR SHARE", id).Scan(&key, &purpose, &target)
+		systemRole, err := s.actorRole(ctx, tx, user)
+		if err != nil {
+			return err
+		}
+		err = tx.QueryRow(ctx, "SELECT object_key,purpose,target_id::text FROM media.objects WHERE id=$1 AND status='ready' FOR SHARE", id).Scan(&key, &purpose, &target)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return platform.NotFound()
 		}
 		if err != nil {
 			return err
 		}
-		return s.canRead(ctx, tx, user, purpose, target, id)
+		return s.canRead(ctx, tx, user, systemRole, purpose, target, id)
 	})
 	if err != nil {
 		return Download{}, err
