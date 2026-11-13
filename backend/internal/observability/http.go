@@ -27,8 +27,11 @@ func (o *Observer) HTTP(mux *http.ServeMux, next http.Handler) http.Handler {
 		if route == "" {
 			route = "unmatched"
 		}
-		ctx := propagation.TraceContext{}.Extract(r.Context(), propagation.HeaderCarrier(r.Header))
+		ctx := propagation.TraceContext{}.Extract(r.Context(), propagation.MapCarrier{"traceparent": r.Header.Get("traceparent")})
 		ctx, span := o.tracer.Start(ctx, method+" "+route, trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attribute.String("http.request.method", method), attribute.String("http.route", route)))
+		if id := traceID(ctx); id != "" {
+			w.Header().Set("X-Trace-ID", id)
+		}
 		started := time.Now()
 		response := &responseWriter{ResponseWriter: w}
 		o.activeRequests.Inc()

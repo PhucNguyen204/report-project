@@ -3,6 +3,7 @@ package app
 import (
 	"crypto/ed25519"
 	"crypto/rand"
+	"dicho/internal/observability"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -19,6 +20,7 @@ type RuntimeConfig struct {
 	Development                                                               bool
 	AutoMigrate                                                               bool
 	Mode, ListenAddr, DatabaseURL, RedisURL                                   string
+	OpsListenAddr, TraceEndpoint                                              string
 	SigningKeyFile, QueueKeyFile                                              string
 	S3Endpoint, S3Region, S3AccessKey, S3SecretKey, MediaBucket, ExportBucket string
 	S3PublicEndpoint                                                          string
@@ -65,6 +67,16 @@ func LoadRuntimeConfig(get func(string) string) (RuntimeConfig, error) {
 	}
 	if _, _, err := net.SplitHostPort(c.ListenAddr); err != nil {
 		return c, errors.New("invalid LISTEN_ADDR")
+	}
+	c.OpsListenAddr = value("OPS_LISTEN_ADDR", "127.0.0.1:8081")
+	_, port, err := net.SplitHostPort(c.OpsListenAddr)
+	n, portErr := strconv.Atoi(port)
+	if err != nil || portErr != nil || n <= 0 || n > 65535 {
+		return c, errors.New("invalid OPS_LISTEN_ADDR")
+	}
+	c.TraceEndpoint = get("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
+	if err := observability.ValidateTraceEndpoint(c.TraceEndpoint); err != nil {
+		return c, err
 	}
 	for _, item := range []struct {
 		key string

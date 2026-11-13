@@ -2,6 +2,7 @@ package platform
 
 import (
 	"context"
+	"dicho/internal/observability"
 	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v5"
@@ -10,14 +11,17 @@ import (
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
 	"github.com/riverqueue/river/rivertype"
+	"go.opentelemetry.io/otel/propagation"
 	"time"
 )
 
 type Event struct {
-	Event     string          `json:"event"`
-	Key       string          `json:"key" river:"unique"`
-	Payload   json.RawMessage `json:"payload"`
-	Encrypted bool            `json:"encrypted,omitempty"`
+	Event       string          `json:"event"`
+	Key         string          `json:"key" river:"unique"`
+	Payload     json.RawMessage `json:"payload"`
+	Encrypted   bool            `json:"encrypted,omitempty"`
+	TraceParent string          `json:"traceparent,omitempty"`
+	TraceState  string          `json:"tracestate,omitempty"`
 }
 
 func (Event) Kind() string { return "domain_event" }
@@ -25,20 +29,28 @@ func (Event) Kind() string { return "domain_event" }
 type EventHandler func(context.Context, Event) error
 type eventWorker struct {
 	river.WorkerDefaults[Event]
-	handler EventHandler
-	cipher  *EventCipher
+	handler  EventHandler
+	cipher   *EventCipher
+	observer *observability.Observer
 }
 
 func (w *eventWorker) Work(ctx context.Context, job *river.Job[Event]) error {
-	event := job.Args
-	if w.cipher != nil {
-		var err error
-		event, err = w.cipher.Open(event)
-		if err != nil {
-			return err
+	ctx = propagation.TraceContext{}.Extract(ctx, propagation.MapCarrier{"traceparent": job.Args.TraceParent, "tracestate": job.Args.TraceState})
+	run := func(ctx context.Context) error {
+		event := job.Args
+		if w.cipher != nil {
+			var err error
+			event, err = w.cipher.Open(event)
+			if err != nil {
+				return err
+			}
 		}
+		return w.handler(ctx, event)
 	}
-	return w.handler(ctx, event)
+	if w.observer != nil {
+		return w.observer.Work(ctx, job.Args.Event, job.Attempt, run)
+	}
+	return run(ctx)
 }
 func ConfigureQueue(ctx context.Context, db *DB, handler EventHandler, keys ...[]byte) (*river.Client[pgx.Tx], error) {
 	if err := MigrateQueue(ctx, db.Pool.Pool); err != nil {
@@ -87,8 +99,12 @@ func OpenQueue(ctx context.Context, db *DB, handler EventHandler, keys ...[]byte
 	if handler == nil {
 		handler = func(_ context.Context, e Event) error { return fmt.Errorf("unhandled event %q", e.Event) }
 	}
-	river.AddWorker(workers, &eventWorker{handler: handler, cipher: cipher})
-	client, err := river.NewClient(driver, &river.Config{Queues: map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 8}}, Workers: workers})
+	river.AddWorker(workers, &eventWorker{handler: handler, cipher: cipher, observer: db.Observer})
+	cfg := &river.Config{Queues: map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 8}}, Workers: workers}
+	if db.Observer != nil {
+		cfg.Logger = db.Observer.RiverLogger()
+	}
+	client, err := river.NewClient(driver, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +118,9 @@ func OpenQueue(ctx context.Context, db *DB, handler EventHandler, keys ...[]byte
 			unique.ByState = []rivertype.JobState{rivertype.JobStateAvailable, rivertype.JobStatePending, rivertype.JobStateRunning, rivertype.JobStateRetryable, rivertype.JobStateScheduled}
 		}
 		event := Event{Event: kind, Key: kind + ":" + key, Payload: b}
+		carrier := propagation.MapCarrier{}
+		propagation.TraceContext{}.Inject(ctx, carrier)
+		event.TraceParent, event.TraceState = carrier["traceparent"], carrier["tracestate"]
 		if cipher != nil {
 			event, err = cipher.Seal(event)
 			if err != nil {

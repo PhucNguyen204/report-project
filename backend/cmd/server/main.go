@@ -5,6 +5,7 @@ import (
 	"dicho/internal/app"
 	"dicho/internal/modules/media"
 	"dicho/internal/modules/notification"
+	"dicho/internal/observability"
 	"dicho/internal/platform"
 	"dicho/migrations"
 	"errors"
@@ -13,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"log/slog"
@@ -107,7 +109,24 @@ func run() error {
 		push = notification.FCM{Project: cfg.FCMProject, Client: client}
 	}
 	db := platform.NewDB(pool)
-	system, err := app.NewSystem(initCtx, db, app.Options{SigningKey: key, QueueKey: queueKey, MediaStore: media.NewS3(s3client, cfg.MediaBucket).WithPublicClient(publicClient), ExportStore: media.NewS3(s3client, cfg.ExportBucket).WithPublicClient(publicClient), Email: notification.SMTP{Addr: cfg.SMTPAddr, From: cfg.SMTPFrom, User: cfg.SMTPUser, Password: cfg.SMTPPassword, RequireTLS: !cfg.Development}, Push: push, HTTP: app.Config{MinimumAppVersion: cfg.MinimumAppVersion, Limiter: platform.NewRateLimiter(redisClient, db.Clock), TrustedProxies: cfg.TrustedProxies}})
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(error) { slog.Warn("telemetry export failed") }))
+	provider, err := observability.NewTraceProvider(initCtx, cfg.TraceEndpoint)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		stop, done := context.WithTimeout(context.Background(), 5*time.Second)
+		defer done()
+		if err := provider.Shutdown(stop); err != nil {
+			slog.Warn("telemetry shutdown failed")
+		}
+	}()
+	observer := observability.New(observability.Options{Logger: slog.Default(), TracerProvider: provider, PoolStats: func() (int64, int64, int64) {
+		stats := pool.Stat()
+		return int64(stats.TotalConns()), int64(stats.AcquiredConns()), int64(stats.MaxConns())
+	}})
+	limiter := platform.NewRateLimiter(redisClient, db.Clock)
+	system, err := app.NewSystem(initCtx, db, app.Options{SigningKey: key, QueueKey: queueKey, MediaStore: media.NewS3(s3client, cfg.MediaBucket).WithPublicClient(publicClient), ExportStore: media.NewS3(s3client, cfg.ExportBucket).WithPublicClient(publicClient), Email: notification.SMTP{Addr: cfg.SMTPAddr, From: cfg.SMTPFrom, User: cfg.SMTPUser, Password: cfg.SMTPPassword, RequireTLS: !cfg.Development}, Push: push, HTTP: app.Config{MinimumAppVersion: cfg.MinimumAppVersion, Limiter: limiter, TrustedProxies: cfg.TrustedProxies, Observer: observer}})
 	if err != nil {
 		return err
 	}
@@ -118,7 +137,12 @@ func run() error {
 		go system.RunScheduler(ctx, func(err error) { slog.Error("scheduled maintenance failed", "error", err) })
 	}
 	server := &http.Server{Addr: cfg.ListenAddr, Handler: system.Handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 20 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
-	failed := make(chan error, 1)
+	ops := &http.Server{Addr: cfg.OpsListenAddr, Handler: app.NewOpsHandler(db, limiter, observer), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 8 << 10}
+	failed := make(chan error, 2)
+	go func() {
+		slog.Info("operations listening", "address", cfg.OpsListenAddr, "mode", cfg.Mode)
+		failed <- ops.ListenAndServe()
+	}()
 	if cfg.Mode != "worker" {
 		go func() {
 			slog.Info("backend listening", "address", cfg.ListenAddr, "mode", cfg.Mode)
@@ -134,7 +158,7 @@ func run() error {
 	}
 	stopCtx, stopCancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer stopCancel()
-	shutdownErr := server.Shutdown(stopCtx)
+	shutdownErr := errors.Join(server.Shutdown(stopCtx), ops.Shutdown(stopCtx))
 	if cfg.Mode != "api" {
 		shutdownErr = errors.Join(shutdownErr, system.Worker.Stop(stopCtx))
 	}

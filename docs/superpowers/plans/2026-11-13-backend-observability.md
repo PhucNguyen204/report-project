@@ -42,12 +42,14 @@ Files: internal/platform/{db.go,queue.go,*integration_test.go}; internal/app/{ht
 
 Interfaces: DB.Observer *observability.Observer; Event TraceParent/TraceState optional strings; app.Config.Observer; NewOpsHandler(db,limiter,observer)http.Handler. RuntimeConfig OpsListenAddr/TraceEndpoint; OTLP endpoint đầy đủ URL, no userinfo/query/fragment, http/https; blank không export. NewTraceProvider(ctx,endpoint) returns provider with bounded batch queue+timeouts, shutdown caller bounded5s.
 
-- [ ] RED app/config tests ops default127.0.0.1:8081, malformed endpoint/listener bị từ chối không lộ input; ops metrics có, API metrics404, ops không có business route; readiness503 nếu DB unavailable.
-- [ ] RED real PostgreSQL encrypted queue API-span→persisted context→2attempt worker spans cùngtrace, một lần lỗi rồi retry, no payload inlogs; job không context vẫn hoàn tất.
-- [ ] Implement runtime server vàops start/stop chung context; fail listener nào cũng shutdown; worker-only vẫn cóops, appObserver được set trướcOpenQueue.
-- [ ] Real local OTLP protobuf receiver test nhận spans qua HTTP và boundedshutdown; không gọi đây là Tempo/production smoke.
-- [ ] Verify full unit/integration/race/build/openapi/security/secrets, runtime Docker smoke latest; report, commit, push feature và merge main.
+- [x] RED app/config tests ops default127.0.0.1:8081, malformed endpoint/listener bị từ chối không lộ input; ops metrics có, API metrics404, ops không có business route; readiness503 nếu DB unavailable.
+- [x] RED real PostgreSQL encrypted queue API-span→persisted context→2attempt worker spans cùngtrace, một lần lỗi rồi retry, no payload inlogs; job không context vẫn hoàn tất.
+- [x] Implement runtime server vàops start/stop chung context; fail listener nào cũng shutdown; worker-only vẫn cóops, appObserver được set trướcOpenQueue.
+- [x] Real local OTLP protobuf receiver test nhận spans qua HTTP và boundedshutdown; không gọi đây là Tempo/production smoke.
+- [x] Verify full unit/integration/race/build/security, runtime Docker smoke latest; report. Reproducible OpenAPI/staged secret scan và Git thực hiện ngay sau gate.
 
 Self-review: public healthz/readyz hiện dùng bởi clients/smoke được giữ tương thích ở checkpoint này; metrics chỉ ops. Không tự tick yêu cầu private toàn bộ health/API proxy từ compose development. Logs không ghi rawerror. Chưa làm filesystem/nodeexporter, SLO alerts hoặc deploy telemetry backend production.
 
 Task1 evidence: missing Observer APIs RED→GREEN, rồi flush test RED vì unwrap bỏ qua status200 thực tế→FlushError ghi status trước flush→GREEN. `make verify integration security`:495Go/0fail/0skip,7Python tests; global85.95%, observability95.65%; No vulnerabilities found. Task1 chỉ cung cấp observer, runtime chưa nối tới Task2.
+
+Task2 evidence: RED gateway thiếu traceId/X-Trace-ID và HTTP giữ tracestate client; GREEN sau error correlation và chỉ nhận traceparent từ client. Command error trong recorder RED mất trace→seed recorder + không cache/copy correlation metadata→GREEN; contract optionaltraceId RED→GREEN. Full `make verify integration security`:504Go/0fail/0skip,7Python/global85.84%, app88.86/platform86.96/observer94.07; No vulnerabilities found. Docker defaultUID10001 build PASS, QA K1–K5/84HTTP +SMTP/S3/CSV/PDF PASS; ops không publish, runtime/pool/HTTP scrape và401trace khớpbody/header PASS; worker-only/noAPI, second-process ops bind conflict exit1/originalhealthy, SIGTERMexit0 và temporaryDB cleanup PASS. Staticcheck experimental có5findings (deprecated credential API/ResponseRecorder và3error string), giữ task riêng, không claim lint PASS.

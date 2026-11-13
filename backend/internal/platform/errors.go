@@ -48,5 +48,9 @@ func Fail(w http.ResponseWriter, err error) {
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(e.Status)
-	_ = json.NewEncoder(w).Encode(map[string]any{"code": e.Code, "message": e.Message})
+	body := map[string]any{"code": e.Code, "message": e.Message}
+	if id := w.Header().Get("X-Trace-ID"); id != "" {
+		body["traceId"] = id
+	}
+	_ = json.NewEncoder(w).Encode(body)
 }

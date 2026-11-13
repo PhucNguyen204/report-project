@@ -88,14 +88,14 @@ func Idempotency(db *DB, next http.Handler) http.Handler {
 				_, _ = result.Write(cached)
 				return nil
 			}
-			result = httptest.NewRecorder()
+			result = commandRecorder(w)
 			r.Body = io.NopCloser(bytes.NewReader(body))
 			ctx := context.WithValue(r.Context(), transactionKey{}, tx)
 			next.ServeHTTP(result, r.WithContext(ctx))
 			if result.Code >= 400 {
 				return &responseError{}
 			}
-			headers, _ := json.Marshal(result.Header())
+			headers := cacheHeaders(result.Header())
 			_, e = tx.Exec(r.Context(), "UPDATE platform.idempotency_keys SET status=$3,response=$4,headers=$5 WHERE user_id=$1 AND key=$2", p.UserID, key, result.Code, result.Body.Bytes(), headers)
 			return e
 		})
@@ -112,6 +112,9 @@ func Idempotency(db *DB, next http.Handler) http.Handler {
 			return
 		}
 		for k, values := range result.Header() {
+			if strings.EqualFold(k, "X-Trace-ID") || strings.EqualFold(k, "X-Request-ID") {
+				continue
+			}
 			for _, v := range values {
 				w.Header().Add(k, v)
 			}
@@ -150,14 +153,14 @@ func externalCommand(db *DB, next http.Handler, w http.ResponseWriter, r *http.R
 		Fail(w, err)
 		return
 	}
-	result := httptest.NewRecorder()
+	result := commandRecorder(w)
 	next.ServeHTTP(result, r)
 	err = db.Tx(r.Context(), func(tx pgx.Tx) error {
 		if result.Code >= 400 {
 			_, err := tx.Exec(r.Context(), "DELETE FROM platform.idempotency_keys WHERE user_id=$1 AND key=$2 AND status=102", Current(r).UserID, key)
 			return err
 		}
-		headers, _ := json.Marshal(result.Header())
+		headers := cacheHeaders(result.Header())
 		_, err := tx.Exec(r.Context(), "UPDATE platform.idempotency_keys SET status=$3,response=$4,headers=$5 WHERE user_id=$1 AND key=$2", Current(r).UserID, key, result.Code, result.Body.Bytes(), headers)
 		return err
 	})
@@ -169,12 +172,31 @@ func externalCommand(db *DB, next http.Handler, w http.ResponseWriter, r *http.R
 		result.Header().Set("Idempotent-Replayed", "true")
 	}
 	for k, values := range result.Header() {
+		if strings.EqualFold(k, "X-Trace-ID") || strings.EqualFold(k, "X-Request-ID") {
+			continue
+		}
 		for _, v := range values {
 			w.Header().Add(k, v)
 		}
 	}
 	w.WriteHeader(result.Code)
 	_, _ = w.Write(result.Body.Bytes())
+}
+
+func commandRecorder(w http.ResponseWriter) *httptest.ResponseRecorder {
+	result := httptest.NewRecorder()
+	if id := w.Header().Get("X-Trace-ID"); id != "" {
+		result.Header().Set("X-Trace-ID", id)
+	}
+	return result
+}
+
+func cacheHeaders(headers http.Header) []byte {
+	copy := headers.Clone()
+	copy.Del("X-Trace-ID")
+	copy.Del("X-Request-ID")
+	raw, _ := json.Marshal(copy)
+	return raw
 }
 
 type responseError struct{}

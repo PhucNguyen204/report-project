@@ -53,6 +53,7 @@ func NewSystem(ctx context.Context, db *platform.DB, opts Options) (*System, err
 	a.ValidateMedia = m.Validate
 	p.ValidateMedia = m.Validate
 	dispatch := &Dispatcher{DB: db, Accounts: a, Inventory: i, Planning: p, Media: m, Exports: e, Notifications: n}
+	db.Observer = opts.HTTP.Observer
 	queue, err := platform.OpenQueue(ctx, db, dispatch.Handle, opts.QueueKey)
 	if err != nil {
 		return nil, err

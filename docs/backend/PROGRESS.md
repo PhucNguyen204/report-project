@@ -632,3 +632,15 @@ Feature-ID: F37-observer. Trạng thái LOCAL_PASS library; runtime wiring là t
 - [x] Test headers1xx/final/duplicate, no-content/body,5xx status, parent trace, worker retry/error/panic, concurrent requests/scrapes. Regression flush RED ghi204 sau khi response thực đã200→tracking FlushError→GREEN; gauges về0 và panic được chuyển tiếp.
 - [x] `make verify integration security`:495Go pass/0fail/0skip,7Python tests; race/vet/mod verify/build đạt, global85.95%, observer95.65%, mọi gate đạt. Govulncheck No vulnerabilities found với dependency graph mới.
 - [ ] Chưa nối runtime/ops port và encrypted queue ở checkpoint này; in-memory trace tests không thay collector smoke. Pipeline remote vẫn chờ runner, không đánh release DONE.
+
+### F01/F37 — cổng vận hành và trace API xuyên queue — 13/11/2026
+
+Feature-ID: F37-runtime-observability. Trạng thái LOCAL_PASS runtime.
+- [x] OPS_LISTEN_ADDR default127.0.0.1:8081; API/worker/all đều có ops health/readiness/metrics riêng, compose không publish8081. API không đăng ký metrics; HTTP/runtime/process/pool và worker-attempt metrics qua registry riêng.
+- [x] Traceparent W3C qua encrypted River event, mỗi attempt span riêng cùng API trace, legacy thiếu context vẫn chạy; giữ AES AAD/unique key cũ. Chỉ traceparent từ client được nhận, loại tracestate/baggage chứa metadata tùy ý. River opaque logs được lọc, giữ severity/component và worker logs có kind/attempt/result/trace_id.
+- [x] TDD RED gateway thiếu correlation và nhận tracestate không tin cậy→GREEN; lỗi JSON/header có traceId/X-Trace-ID. Command error trong idempotency recorder RED mấttrace→seed metadata nhưng loại khỏi response cache/copy→GREEN; retry/replay giữ currenttrace mới, không duplicate header. OpenAPI203schemas/101operations đồng bộoptional traceId và headers.
+- [x] OTLP/HTTP local receiver đọc protobuf thật, explicitendpoint/ambientheaders không tự dùng, blank không export dù có SDK env destination; collector503 không retry, shutdownbounded. Batch1024/128, timeout2s, parent-based10% roots; không gọi network trong DB transaction.
+- [x] `make verify integration security`:504Go pass/0fail/0skip,7Python tests; race/vet/mod verify/build đạt. Combined global85.84%, app88.86/platform86.96/observability94.07%; mọi gate đạt; No vulnerabilities found.
+- [x] Docker image build PASS/defaultUID10001. QA image mới K1–K5/84HTTP checks, SMTP Mailpit/S3 signed URLs/CSV/PDF PASS. Ops private/scrape HTTP-runtime-pool và401error body/header trace khớp PASS; worker-only cóops/noAPI, bindconflict process2exit1/originalhealthy, SIGTERMexit0; database tạm đã xóa. Artifact observability-network-smoke.json, observability-runtime-check.json, observability-worker-runtime.json.
+- [ ] Staticcheckv0.8.2 experimental trả5findings: deprecated credential loader/ResponseRecorder.HeaderMap và3error-string capitalization, xử lý checkpoint kế tiếp; không tick lint. Remote pipeline229/main tại8ea2a02 vẫn pending; runner chưa có.
+- [ ] Local OTLP test không thay Tempo/Alloy/Loki production; chưa có queue waiting-age/backlog/node filesystem/SLO alert deployment hoặc monitoring đủ kỳ, chưa xác nhận SLA99%/RPO/RTO production.

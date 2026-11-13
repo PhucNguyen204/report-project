@@ -59,6 +59,21 @@ func TestStaticContractAndHealthDoNotRequireApplicationHeaders(t *testing.T) {
 	}
 }
 
+func TestErrorContractAllowsValidOptionalTraceCorrelation(t *testing.T) {
+	c, err := apicontract.New(api.Document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, body := range []string{`{"code":3001,"message":"unauthorized"}`, `{"code":3001,"message":"unauthorized","traceId":"11111111111111111111111111111111"}`} {
+		if err := c.Response("GET", "/it4788/v1/me", 401, nil, []byte(body)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := c.Response("GET", "/it4788/v1/me", 401, nil, []byte(`{"code":3001,"message":"unauthorized","traceId":"invalid"}`)); err == nil {
+		t.Fatal("invalid trace correlation accepted")
+	}
+}
+
 func TestCollectionContractsRequirePaginationMetadata(t *testing.T) {
 	c, err := apicontract.New(api.Document)
 	if err != nil {

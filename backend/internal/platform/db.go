@@ -3,6 +3,7 @@ package platform
 import (
 	"context"
 	"crypto/rand"
+	"dicho/internal/observability"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -19,6 +20,7 @@ type DB struct {
 	MemberLeave  MemberLeaveHook
 	RecipeDelete RecipeDeleteHook
 	EnqueueFunc  func(context.Context, pgx.Tx, string, string, any, time.Time) error
+	Observer     *observability.Observer
 }
 
 func NewDB(pool *pgxpool.Pool) *DB { return &DB{Pool: &ContextPool{Pool: pool}, Clock: RealClock{}} }

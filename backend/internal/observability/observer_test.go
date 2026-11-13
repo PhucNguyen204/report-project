@@ -75,6 +75,7 @@ func TestHTTPUsesRegisteredRoutesAndSanitizedCorrelatedLogs(t *testing.T) {
 		r := httptest.NewRequest("GET", "/objects/"+id+"?token=PRIVATE-TOKEN", strings.NewReader("PRIVATE-BODY"))
 		r.Header.Set("Authorization", "Bearer PRIVATE-AUTH")
 		r.Header.Set("traceparent", "00-11111111111111111111111111111111-2222222222222222-01")
+		r.Header.Set("tracestate", "vendor=PRIVATE-STATE")
 		handler.ServeHTTP(httptest.NewRecorder(), r)
 	}
 	labels := map[string]string{"method": "GET", "route": "/objects/{id}", "status": "204"}
@@ -106,6 +107,9 @@ func TestHTTPUsesRegisteredRoutesAndSanitizedCorrelatedLogs(t *testing.T) {
 		}
 		if strings.Contains(string(mustJSON(t, span.Attributes)), "PRIVATE") {
 			t.Fatal("private input in span attributes")
+		}
+		if span.SpanContext.TraceState().String() != "" {
+			t.Fatal("untrusted external tracestate propagated")
 		}
 	}
 	response := httptest.NewRecorder()

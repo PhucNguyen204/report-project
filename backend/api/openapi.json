@@ -88,6 +88,21 @@
                   "$ref": "#/components/schemas/A01_postResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "200": {
@@ -96,6 +111,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/A01_postResponse200"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -179,6 +209,21 @@
                   "$ref": "#/components/schemas/A02_postResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -257,6 +302,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/A03_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -339,6 +399,21 @@
                   "$ref": "#/components/schemas/A04_postResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -415,6 +490,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/A05_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -500,6 +590,21 @@
                   "$ref": "#/components/schemas/A06_postResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -567,6 +672,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/A07_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -657,6 +777,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/A08_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -757,6 +892,21 @@
                   "$ref": "#/components/schemas/A09_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -828,6 +978,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/A10_patchResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -906,6 +1071,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/A16_deleteResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -994,6 +1174,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/A11_putResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -1088,6 +1283,21 @@
                   "$ref": "#/components/schemas/A12_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -1156,6 +1366,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/A13_putResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -1238,6 +1463,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/A14_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -1331,6 +1571,21 @@
                   "$ref": "#/components/schemas/A15_deleteResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -1422,6 +1677,21 @@
                   "$ref": "#/components/schemas/A17_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -1492,6 +1762,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/A18_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -1586,6 +1871,21 @@
                   "$ref": "#/components/schemas/G01_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -1654,6 +1954,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/G02_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -1744,6 +2059,21 @@
                   "$ref": "#/components/schemas/G03_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -1824,6 +2154,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/G04_patchResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -1917,6 +2262,21 @@
                   "$ref": "#/components/schemas/G05_postResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -1998,6 +2358,21 @@
                   "$ref": "#/components/schemas/G06_deleteResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -2068,6 +2443,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/G07_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -2170,6 +2560,21 @@
                   "$ref": "#/components/schemas/G08_deleteResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -2249,6 +2654,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/G09_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -2350,6 +2770,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/G10_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -2510,6 +2945,21 @@
                   "$ref": "#/components/schemas/P01_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -2587,6 +3037,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/P02_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -2708,6 +3173,21 @@
                   "$ref": "#/components/schemas/P03_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -2798,6 +3278,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/P04_patchResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -2899,6 +3394,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/P05_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -3020,6 +3530,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/P06_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -3204,6 +3729,21 @@
                   "$ref": "#/components/schemas/P07_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -3354,6 +3894,21 @@
                   "$ref": "#/components/schemas/S01_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -3431,6 +3986,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/S02_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -3530,6 +4100,21 @@
                   "$ref": "#/components/schemas/S03_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -3619,6 +4204,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/S04_patchResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -3719,6 +4319,21 @@
                   "$ref": "#/components/schemas/S05_deleteResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -3807,6 +4422,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/S06_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -3936,6 +4566,21 @@
                   "$ref": "#/components/schemas/S07_postResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -4039,6 +4684,21 @@
                   "$ref": "#/components/schemas/S08_patchResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -4137,6 +4797,21 @@
                   "$ref": "#/components/schemas/S09_deleteResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -4228,6 +4903,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/S10_putResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -4341,6 +5031,21 @@
                   "$ref": "#/components/schemas/S11_deleteResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -4420,6 +5125,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/S12_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -4536,6 +5256,21 @@
                   "$ref": "#/components/schemas/S13_postResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -4615,6 +5350,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/S14_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -4722,6 +5472,21 @@
                   "$ref": "#/components/schemas/S15_postResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "200": {
@@ -4730,6 +5495,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/S15_postResponse200"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -4866,6 +5646,21 @@
                   "$ref": "#/components/schemas/R01_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -4943,6 +5738,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/R02_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -5053,6 +5863,21 @@
                   "$ref": "#/components/schemas/R03_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -5142,6 +5967,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/R04_putResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -5242,6 +6082,21 @@
                   "$ref": "#/components/schemas/R05_deleteResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -5323,6 +6178,21 @@
                   "$ref": "#/components/schemas/R06_putResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -5400,6 +6270,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/R07_deleteResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -5492,6 +6377,21 @@
                   "$ref": "#/components/schemas/R08_postResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "200": {
@@ -5500,6 +6400,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/R08_postResponse200"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -5601,6 +6516,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/R09_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -5741,6 +6671,21 @@
                   "$ref": "#/components/schemas/M01_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -5818,6 +6763,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/M02_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -5923,6 +6883,21 @@
                   "$ref": "#/components/schemas/M03_patchResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -6019,6 +6994,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/M04_deleteResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -6156,6 +7146,21 @@
                   "$ref": "#/components/schemas/M05_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -6247,6 +7252,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/M06_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -6418,6 +7438,21 @@
                   "$ref": "#/components/schemas/Q01_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -6521,6 +7556,21 @@
                   "$ref": "#/components/schemas/Q02_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -6592,6 +7642,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Q03_getResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -6710,6 +7775,21 @@
                   "$ref": "#/components/schemas/B01_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -6822,6 +7902,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/B02_getResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -6938,6 +8033,21 @@
                   "$ref": "#/components/schemas/B03_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -7018,6 +8128,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/B04_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -7117,6 +8242,21 @@
                   "$ref": "#/components/schemas/B05_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -7189,6 +8329,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Y03_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -7284,6 +8439,21 @@
                   "$ref": "#/components/schemas/Y04_postResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -7363,6 +8533,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HELPER-MEDIA-READ_getResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -7465,6 +8650,21 @@
                   "$ref": "#/components/schemas/D01_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -7547,6 +8747,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/D02_patchResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -7650,6 +8865,21 @@
                   "$ref": "#/components/schemas/D03_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -7718,6 +8948,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/D03_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -7814,6 +9059,21 @@
                   "$ref": "#/components/schemas/D04_putResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -7901,6 +9161,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/D04_deleteResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -7994,6 +9269,21 @@
                   "$ref": "#/components/schemas/D05_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -8062,6 +9352,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/D05_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -8155,6 +9460,21 @@
                   "$ref": "#/components/schemas/D05_putResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -8242,6 +9562,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/D05_deleteResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -8335,6 +9670,21 @@
                   "$ref": "#/components/schemas/D06_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -8403,6 +9753,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/D06_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -8496,6 +9861,21 @@
                   "$ref": "#/components/schemas/D06_putResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -8583,6 +9963,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/D06_deleteResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -8676,6 +10071,21 @@
                   "$ref": "#/components/schemas/D07_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -8744,6 +10154,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/D07_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -8840,6 +10265,21 @@
                   "$ref": "#/components/schemas/D07_putResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -8929,6 +10369,21 @@
                   "$ref": "#/components/schemas/D07_deleteResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -8996,6 +10451,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/D08_getResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -9066,6 +10536,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/D09_putResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -9170,6 +10655,21 @@
                   "$ref": "#/components/schemas/D10_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -9249,6 +10749,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/D11_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -9341,6 +10856,21 @@
                   "$ref": "#/components/schemas/OPS-HEALTH_getResponse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
             }
           },
           "400": {
@@ -9403,6 +10933,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OPS-READY_getResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
                 }
               }
             }
@@ -9616,6 +11161,11 @@
           "message": {
             "type": "string",
             "minLength": 1
+          },
+          "traceId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$",
+            "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
           }
         },
         "additionalProperties": false,
@@ -16878,6 +18428,13 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          "X-Trace-ID": {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$",
+              "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
             }
           }
         },

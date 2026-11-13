@@ -46,6 +46,8 @@ Hợp đồng tại `/openapi.json`, nguồn [api/build.py](api/build.py) và ar
 
 `TRUSTED_PROXIES` là danh sách CIDR của proxy thực sự tin cậy. Chuỗi X-Forwarded-For được đọc từ phía proxy về client đầu tiên không tin cậy. Bỏ trống để dùng địa chỉ kết nối trực tiếp.
 
+Runtime có cổng vận hành riêng `OPS_LISTEN_ADDR` (mặc định127.0.0.1:8081), kể cả worker-only. Compose không publish cổng này; Prometheus scrape `/metrics` qua mạng nội bộ. Log JSON và lỗi API có mã trace; đặt `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` URL đầy đủ khi có collector, bỏ trống để không export. Xem [runbook observability](../docs/backend/runbooks/observability.md) về labels, sampling, queue propagation và giới hạn đo SLA.
+
 ## Kiểm chứng
 
 ```sh

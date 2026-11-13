@@ -9,5 +9,5 @@ FROM alpine:3.23@sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada1
 RUN apk add --no-cache ca-certificates tzdata && addgroup -S -g 10001 dicho && adduser -S -u 10001 -G dicho dicho
 COPY --from=build /out/dicho /out/dicho-keygen /out/dicho-migrate /usr/local/bin/
 USER 10001:10001
-EXPOSE 8080
+EXPOSE 8080 8081
 ENTRYPOINT ["/usr/local/bin/dicho"]

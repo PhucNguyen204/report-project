@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"dicho/api"
+	"dicho/internal/observability"
 	"dicho/internal/platform"
 	"fmt"
 	"io"
@@ -20,9 +21,16 @@ type Config struct {
 	MinimumAppVersion string
 	Limiter           *platform.RateLimiter
 	TrustedProxies    []net.IPNet
+	Observer          *observability.Observer
 }
 
 func NewHandler(db *platform.DB, auth platform.AuthenticateFunc, cfg Config, register ...func(*http.ServeMux)) http.Handler {
+	if cfg.MinimumAppVersion == "" {
+		cfg.MinimumAppVersion = "1.0.0"
+	}
+	if cfg.Limiter == nil {
+		cfg.Limiter = platform.NewRateLimiter(nil, platform.RealClock{})
+	}
 	mux := cfg.Mux
 	if mux == nil {
 		mux = http.NewServeMux()
@@ -37,25 +45,9 @@ func NewHandler(db *platform.DB, auth platform.AuthenticateFunc, cfg Config, reg
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		platform.Write(w, 200, map[string]string{"status": "ok"})
 	})
-	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
-		if db == nil || db.Pool == nil || db.Pool.Ping(r.Context()) != nil {
-			platform.Fail(w, platform.Err(503, 5003, "Cơ sở dữ liệu chưa sẵn sàng"))
-			return
-		}
-		state := "ok"
-		if cfg.Limiter != nil && cfg.Limiter.Degraded() {
-			state = "degraded"
-		}
-		platform.Write(w, 200, map[string]string{"status": state})
-	})
-	if cfg.MinimumAppVersion == "" {
-		cfg.MinimumAppVersion = "1.0.0"
-	}
-	if cfg.Limiter == nil {
-		cfg.Limiter = platform.NewRateLimiter(nil, platform.RealClock{})
-	}
+	mux.HandleFunc("GET /readyz", readiness(db, cfg.Limiter))
 	protected := platform.Auth(auth, scopeGuard(rate(cfg, platform.Idempotency(db, mux))))
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Request-ID", platform.ID())
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Cache-Control", "no-store")
@@ -95,6 +87,10 @@ func NewHandler(db *platform.DB, auth platform.AuthenticateFunc, cfg Config, reg
 		}
 		protected.ServeHTTP(w, r)
 	})
+	if cfg.Observer != nil {
+		return cfg.Observer.HTTP(mux, handler)
+	}
+	return handler
 }
 func compareVersion(a, b string) (int, error) {
 	parse := func(s string) ([3]int, error) {
