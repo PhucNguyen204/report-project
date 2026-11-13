@@ -534,3 +534,12 @@ Feature-ID: F34-admin-revocation. Trạng thái LOCAL_PASS.
 - [x] Đọc API thật bằng curl (urllib bị Cloudflare1010): pipeline206/main và205/feature tại651da36 failed. Job949 backend-verify: runner=null, started_at=null, queued_duration6051.25s, failure_reason=stuck_or_timeout_failure; integration950 skipped.
 - [x] Pipeline197 cũng không có runner/started_at. Đây là lỗi scheduling/runner chưa chạy job, không phải bằng chứng unit/integration fail.
 - [ ] Đang kiểm runner/tags/quyền project; không đánh CI remote PASS bằng local tests. Artifact gitlab-pipeline-206-jobs.json.
+
+
+### F37 — runner scheduling và quyền GitLab — 13/11/2026
+
+Feature-ID: F37-ci-runner-diagnosis. Trạng thái WAITING_EXTERNAL_ACCESS cho CI remote, code local tiếp tục.
+- [x] UI job949 xác nhận không có trace, queued1h40m51s. Members xác nhận phucnn220041=Developer; Settings CI/CD và runners trả404. Không có credential API GitLab lưu trong credential helper.
+- [x] Chuẩn bị [runbook GitLab CI](runbooks/gitlab-ci.md) với điều kiện Docker/Linux, online/project scope, untagged jobs và bảo vệ nhánh; đối chiếu tài liệu GitLab chính thức.
+- [ ] Owner/Maintainer cần gán/bật runner đủ điều kiện, rồi retry. Chưa kiểm được runner inventory/tags nên không sửa YAML bằng tag phỏng đoán; không tắt test/allow_failure hoặc tăng timeout để che scheduling failure.
+- [ ] Remote pipeline chưa pass. Root vẫn commit/push/merge từng checkpoint đã được full tests; việc cấp quyền runner là thay đổi hạ tầng ngoài quyền Developer đang có.
