@@ -88,3 +88,14 @@ Năm kịch bản giá trị (bảng trong `chapters/c2/uc-tong-quan.tex`): K1 g
 - Slide chỉ biên dịch phần chương 3; các khung chương 1 và 2 đang bị comment (đã cập nhật mã nhưng chưa bật lại).
 - Chương 4, 5, 6 vẫn là khung (`\pending`).
 - Cảnh báo căn lề còn lại: tràn 1 pt ở hai dòng tiêu đề bảng ở `c2/gioi-thieu.tex`.
+
+## Quy trình backend từ 09/11/2026
+
+- Người dùng yêu cầu triển khai backend tại `backend/`, sử dụng sub-agent, tự review plan rồi code, không hỏi lại các lựa chọn thông thường.
+- Đọc `docs/superpowers/plans/2026-11-09-backend.md` và báo cáo chung `docs/backend/PROGRESS.md` trước khi tiếp tục; kiểm tra Git để không làm lại tính năng đã commit.
+- Skill coding đã cài từ obra/superpowers: `~/.codex/skills/writing-plans/SKILL.md`, `~/.codex/skills/test-driven-development/SKILL.md`, `~/.codex/skills/verification-before-completion/SKILL.md`. Dùng đúng nội dung skill khi lập plan/code/kiểm chứng.
+- Mỗi tính năng: test hành vi thất bại trước, code, chạy unit và test tích hợp phù hợp, review, cập nhật báo cáo/checklist, commit với trailer `Feature-ID: Fxx`. Root giữ thao tác Git khi có nhiều agent.
+- Không đánh dấu pass/done cho test chưa chạy, test bị skip hoặc dịch vụ thật mới chỉ được fake. Báo cáo ghi rõ lệnh, kết quả, giới hạn và bằng chứng.
+- Comment code hạn chế, chỉ câu ngắn về vai trò function khi cần. Tham chiếu ADR trong plan khi đặc tả mâu thuẫn; không sửa âm thầm phạm vi báo cáo LaTeX.
+
+- Từ yêu cầu tiếp theo của người dùng: mỗi phần đã verify phải commit và push ngay lên GitLab nhánh `baocao-phucnn`; root thực hiện Git tuần tự. Không sửa migration đã commit, thêm migration số mới cho nâng cấp.

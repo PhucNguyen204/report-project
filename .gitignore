@@ -13,3 +13,9 @@ output/
 tmp/
 bao-cao-latex.zip
 .DS_Store
+backend/.local/
+backend/bin/
+backend/.env
+backend/.env.*
+!backend/.env.example
+**/__pycache__/

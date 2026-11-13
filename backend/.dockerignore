@@ -1,0 +1,6 @@
+.local
+.env
+.env.*
+bin
+coverage*
+*.test

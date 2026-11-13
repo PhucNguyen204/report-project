@@ -3,6 +3,10 @@
 Báo cáo bài tập lớn môn Phát triển ứng dụng đa nền tảng của **Nhóm 7**, mục lục bám theo mẫu `dsds.docx`.
 Hiện đã hoàn thiện **Chương 1** (Khảo sát bài toán), **Chương 2** (Đặc tả yêu cầu bài toán), **Chương 3** (Thiết kế backend) và các phụ lục liên quan; Chương 4–6 và phần Kết luận vẫn đang ở dạng khung, được ẩn mặc định khỏi bản biên dịch.
 
+Lộ trình triển khai backend: [plan](docs/superpowers/plans/2026-11-09-backend.md).
+Kết quả kiểm thử, checklist chất lượng và commit theo tính năng được cập nhật tại
+[báo cáo backend chung](docs/backend/PROGRESS.md). Mã ứng dụng đặt trong `backend/`.
+
 ## Chạy nhanh trên macOS
 
 Cần có Git và [Homebrew](https://brew.sh). Nếu máy chưa có Git, chạy
