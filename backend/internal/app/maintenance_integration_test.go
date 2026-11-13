@@ -38,3 +38,84 @@ func TestSchedulerRunsNotificationRetentionAndReplaysOncePerMinute(t *testing.T)
 		t.Fatalf("retention/replay: notices=%d slots=%d OTP=%d", notices, slots, otps)
 	}
 }
+
+func TestSchedulerStopsAfterCleanupFailureAndLeavesSlotRetryable(t *testing.T) {
+	h := newAPIHarness(t)
+	waitCtx, deadlineCancel := context.WithTimeout(context.Background(), 8*time.Second)
+	defer deadlineCancel()
+	ctx, cancel := context.WithCancel(waitCtx)
+	defer cancel()
+	if _, err := h.system.DB.Pool.Exec(ctx, `CREATE FUNCTION platform.scheduler_fixture_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'scheduler fixture failure'; RETURN NULL; END; $$;
+ CREATE TRIGGER cleanup_failure BEFORE DELETE ON identity.otp_challenges FOR EACH STATEMENT EXECUTE FUNCTION platform.scheduler_fixture_failure();`); err != nil {
+		t.Fatal(err)
+	}
+	reported := make(chan error, 1)
+	done := make(chan struct{})
+	go func() { h.system.RunScheduler(ctx, func(err error) { reported <- err; cancel() }); close(done) }()
+	select {
+	case err := <-reported:
+		if err == nil {
+			t.Fatal("cleanup failure was not reported")
+		}
+	case <-waitCtx.Done():
+		t.Fatal("scheduler did not report cleanup failure")
+	}
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("scheduler did not stop after cancellation")
+	}
+	var slots int
+	if err := h.system.DB.Pool.QueryRow(context.Background(), "SELECT count(*) FROM platform.scheduler_runs").Scan(&slots); err != nil || slots != 0 {
+		t.Fatalf("failed tick committed a durable slot%d error%v", slots, err)
+	}
+	if _, err := h.system.DB.Pool.Exec(context.Background(), "DROP TRIGGER cleanup_failure ON identity.otp_challenges"); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.system.Tick(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.system.DB.Pool.QueryRow(context.Background(), "SELECT count(*) FROM platform.scheduler_runs").Scan(&slots); err != nil || slots != 1 {
+		t.Fatalf("next tick failed to recover slot%d error%v", slots, err)
+	}
+}
+
+func TestSchedulerRunsInitialTickBeforeWaitingAndCancelsCleanly(t *testing.T) {
+	h := newAPIHarness(t)
+	waitCtx, deadlineCancel := context.WithTimeout(context.Background(), 8*time.Second)
+	defer deadlineCancel()
+	ctx, cancel := context.WithCancel(waitCtx)
+	defer cancel()
+	done := make(chan struct{})
+	errors := make(chan error, 1)
+	go func() { h.system.RunScheduler(ctx, func(err error) { errors <- err; cancel() }); close(done) }()
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		var slots int
+		if err := h.system.DB.Pool.QueryRow(waitCtx, "SELECT count(*) FROM platform.scheduler_runs").Scan(&slots); err != nil {
+			t.Fatal(err)
+		}
+		if slots == 1 {
+			break
+		}
+		select {
+		case err := <-errors:
+			t.Fatalf("initial tick failed: %v", err)
+		case <-waitCtx.Done():
+			t.Fatal("initial tick waited for minute timer")
+		case <-ticker.C:
+		}
+	}
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("scheduler did not stop after successful tick")
+	}
+	select {
+	case err := <-errors:
+		t.Fatalf("successful cancellation reported as failure: %v", err)
+	default:
+	}
+}

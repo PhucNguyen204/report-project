@@ -77,7 +77,8 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 - [x] Scope authorization được kiểm ở API và DB; admin không đọc dữ liệu gia đình.
 - [x] Tiền/lượng/ngày chính xác; transaction/concurrency/idempotency có test PostgreSQL thật.
 - [x] TDD có RED/GREEN; unit/HTTP/integration/race/regression pass.
-- [ ] Coverage handwritten nghiệp vụ≥85%, core algorithms≥90%; case quan trọng không bỏ sót.
+- [x] Coverage combined toàn source≥85%, từng domain/app/platform≥85%, kernel và core algorithms≥90%; parser gate có test.
+- [ ] Hoàn tất audit mọi case quan trọng ở release review; coverage không thay thế kiểm tra này.
 - [x] Worker transactional, dedupe/retry/per-device; không gọi provider trong transaction.
 - [ ] Migration/seed/fresh checkout/OpenAPI khớp implementation.
 - [ ] Format/vet/lint/build và dependency/secret scan đạt.
@@ -601,3 +602,14 @@ Feature-ID: F03-resource-client-ids. Trạng thái LOCAL_PASS.
 - [x] OpenAPI ClientResourceID riêng cho input create/copy,203schemas/101operations; contract RED→GREEN cho7route. Không đổi foreign-key/path/device UUID; device UUIDv4 vẫn hợp lệ.
 - [x] `make verify integration security`:440 pass/0 fail/0 skip; race/vet/build/mod verify đạt, No vulnerabilities found. Không sửa migration cũ hoặc thêm bảng alias client ID.
 - [ ] CI remote và release gates còn mở theo runbook; số coverage từng package hiện đo bằng test binary riêng, cần tổng hợp coverage xuyên package để đánh giá các hàm platform dùng qua module.
+
+
+### F37 — coverage xuyên package và test lỗi runtime — 13/11/2026
+
+Feature-ID: F37-combined-coverage. Trạng thái LOCAL_PASS quality gate.
+- [x] Chạy coverpkg=./... để ghi cả platform được gọi qua module. Trước thêm tests: platform86.45%, app81.59%, global85.40%; gate thực sự FAIL app, không nới threshold hoặc loại mã khỏi global denominator.
+- [x] Bổ sung malformed infrastructure config/private keys (không thay key cũ hoặc lộ input), admin gateway không vào spaces nhưng vẫn vào own profile, limiter cancellation fail closed, scheduler immediate tick/cancellation/error callback/rollback và next tick recovery.
+- [x] `make verify integration`:5 Python tests PASS,457 Go cases pass/0 fail/0 skip. Combined global85.81%, app88.11%, platform86.45%, kernel95.95%, accounts86.86%, exports85.37%, inventory87.12%, media87.10%, notification90.70%, planning88.14%.
+- [x] Script đọc unique statement blocks, không đếm đôi dependencies; malformed/conflicting input, missing gated module/core hoặc test skip/build fail không thành PASS. CLI/tooling giữ trong global denominator và vẫn hiện tỷ lệ thấp riêng; không khẳng định main entrypoints được unit-cover85%.
+- [x] CI artifact coverage-summary.json + regex TOTAL_COVERAGE đọc từ summary đúng phương pháp; Ruby YAML parse đạt. Counter từng test binary với coverpkg không bị dùng làm coverage của package.
+- [ ] Remote CI vẫn chờ runner/Owner như runbook; fuzz campaign là task riêng, không tick từ seed tests hoặc tỷ lệ coverage.

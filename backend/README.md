@@ -55,7 +55,7 @@ make security secrets
 make smoke
 ```
 
-`verify` chạy format/vet/mod verify/unit race/build. `integration` cần PostgreSQL16, Redis7, S3 và Mailpit thật; tạo DB riêng từng test, không skip khi dịch vụ thiếu. Artifact tại `../output/backend-qa/{integration.jsonl,coverage.out}`. `smoke` cần API/worker đang chạy, thực hiện K1–K5 với tài khoản tổng hợp, OTP SMTP, ảnh S3 và CSV/PDF; không in token/OTP/mật khẩu.
+`verify` chạy format/vet/mod verify/unit Python/Go race/build. `integration` cần PostgreSQL16, Redis7, S3 và Mailpit thật; tạo DB riêng từng test, không skip khi dịch vụ thiếu. Artifact tại `../output/backend-qa/{integration.jsonl,coverage.out,coverage-summary.json}`. Coverage dùng `-coverpkg=./...`, gate total85%, domain/app/platform85%, kernel/core90%; test fail/skip làm gate fail. `smoke` cần API/worker đang chạy, thực hiện K1–K5 với tài khoản tổng hợp, OTP SMTP, ảnh S3 và CSV/PDF; không in token/OTP/mật khẩu.
 
 Đổi địa chỉ fixture cho CI hoặc project riêng:
 

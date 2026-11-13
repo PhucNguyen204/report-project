@@ -27,6 +27,7 @@ format:
 	@files="$$(gofmt -l cmd internal api migrations)"; if [ -n "$$files" ]; then printf '%s\n' "$$files"; exit 1; fi
 
 test:
+	python3 -m unittest discover -s scripts -p 'test_*.py'
 	go test ./... -count=1 -race
 
 verify: format
@@ -36,8 +37,9 @@ verify: format
 
 integration:
 	mkdir -p ../output/backend-qa
-	go test -tags integration ./... -count=1 -race -coverprofile=../output/backend-qa/coverage.out -json -timeout 5m > ../output/backend-qa/integration.jsonl
+	go test -tags integration -coverpkg=./... ./... -count=1 -race -coverprofile=../output/backend-qa/coverage.out -json -timeout 5m > ../output/backend-qa/integration.jsonl
 	@python3 -c 'import json,collections; c=collections.Counter(x["Action"] for line in open("../output/backend-qa/integration.jsonl") if "Test" in (x:=json.loads(line)) and x["Action"] in ("pass","fail","skip")); print("Test cases:",dict(c))'
+	python3 scripts/coverage_report.py ../output/backend-qa/coverage.out --tests ../output/backend-qa/integration.jsonl
 
 security:
 	go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...

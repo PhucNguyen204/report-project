@@ -99,3 +99,48 @@ func TestGatewayDoesNotTrustSpoofedForwardedIPForLoginLimit(t *testing.T) {
 		}
 	}
 }
+
+func TestAdministratorCannotReachSpaceHandlersThroughGateway(t *testing.T) {
+	calls := 0
+	h := NewHandler(nil, func(context.Context, string) (platform.Principal, error) {
+		return platform.Principal{UserID: "admin", SystemRole: "admin"}, nil
+	}, Config{}, func(m *http.ServeMux) {
+		for _, path := range []string{"/it4788/v1/spaces", "/it4788/v1/spaces/{sid}", "/it4788/v1/spaces/{sid}/lots", "/it4788/v1/me"} {
+			m.HandleFunc("GET "+path, func(w http.ResponseWriter, r *http.Request) {
+				calls++
+				platform.Write(w, 200, map[string]bool{"reached": true})
+			})
+		}
+	})
+	for _, path := range []string{"/it4788/v1/spaces", "/it4788/v1/spaces/household", "/it4788/v1/spaces/household/lots"} {
+		r := httptest.NewRequest("GET", path, nil)
+		r.Header.Set("X-App-Version", "1.0.0")
+		r.Header.Set("Authorization", "Bearer captured")
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		if w.Code != 404 || calls != 0 {
+			t.Fatalf("administrator reached family route%s status%d calls%d", path, w.Code, calls)
+		}
+	}
+	r := httptest.NewRequest("GET", "/it4788/v1/me", nil)
+	r.Header.Set("X-App-Version", "1.0.0")
+	r.Header.Set("Authorization", "Bearer captured")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != 200 || calls != 1 {
+		t.Fatalf("administrator own profile blocked status%d calls%d", w.Code, calls)
+	}
+}
+
+func TestCanceledLimiterRequestDoesNotReachHandler(t *testing.T) {
+	called := false
+	h := rate(Config{Limiter: platform.NewRateLimiter(nil, nil)}, http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
+	ctx, cancel := context.WithCancel(platform.WithPrincipal(context.Background(), platform.Principal{UserID: "user"}))
+	cancel()
+	r := httptest.NewRequest("GET", "/it4788/v1/me", nil).WithContext(ctx)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != 503 || called {
+		t.Fatalf("failed limiter bypassed status%d reached%v", w.Code, called)
+	}
+}

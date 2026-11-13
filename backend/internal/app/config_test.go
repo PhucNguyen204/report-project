@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -92,5 +93,47 @@ func TestLocalKeysArePrivatePersistentAndNeverOverwritten(t *testing.T) {
 	}
 	if _, _, err = ReadRuntimeKeys(signPath, queuePath); err == nil {
 		t.Fatal("world-readable queue key accepted")
+	}
+}
+
+func TestRuntimeConfigurationRejectsMalformedInfrastructureValues(t *testing.T) {
+	for key, value := range map[string]string{
+		"APP_ENV": "staging-secret", "MODE": "unknown-secret", "LISTEN_ADDR": "invalid-secret",
+		"DATABASE_URL": "https://secret@database.test", "REDIS_URL": "https://secret@cache.test",
+		"S3_ENDPOINT": "ftp://secret@storage.test", "S3_PUBLIC_ENDPOINT": "https://",
+		"SMTP_ADDR": "invalid-secret", "SMTP_FROM": "bad-secret\r\nBcc: hidden@example.test",
+		"MIN_APP_VERSION": "1.x.0", "TRUSTED_PROXIES": "secret-invalid-cidr",
+	} {
+		t.Run(key, func(t *testing.T) {
+			env := developmentEnv()
+			env[key] = value
+			_, err := LoadRuntimeConfig(func(k string) string { return env[k] })
+			if err == nil || strings.Contains(err.Error(), "secret") {
+				t.Fatalf("invalid configuration accepted or leaked its value for %s: %v", key, err)
+			}
+		})
+	}
+	env := developmentEnv()
+	env["TRUSTED_PROXIES"] = "10.0.0.0/8,2001:db8::/32"
+	cfg, err := LoadRuntimeConfig(func(k string) string { return env[k] })
+	if err != nil || len(cfg.TrustedProxies) != 2 {
+		t.Fatalf("valid trusted proxies lost: %v", err)
+	}
+}
+
+func TestMalformedExistingKeyIsRejectedWithoutReplacement(t *testing.T) {
+	for _, value := range []string{"invalid-key-format", "YQ=="} {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "signing.key")
+		if err := os.WriteFile(path, []byte(value), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if err := WriteLocalKeys(dir); err == nil {
+			t.Fatal("invalid persisted signing key accepted")
+		}
+		actual, err := os.ReadFile(path)
+		if err != nil || string(actual) != value {
+			t.Fatal("existing key was replaced")
+		}
 	}
 }
