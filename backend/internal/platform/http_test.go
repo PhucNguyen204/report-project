@@ -53,3 +53,13 @@ func TestPreviewDoesNotNeedIdempotencyKey(t *testing.T) {
 		}
 	}
 }
+
+func TestAuthenticatedLogoutRequiresIdempotencyKey(t *testing.T) {
+	r := httptest.NewRequest("POST", "/it4788/v1/auth/logout", strings.NewReader(`{}`))
+	r = r.WithContext(WithPrincipal(r.Context(), Principal{UserID: "actor"}))
+	w := httptest.NewRecorder()
+	Idempotency(nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) })).ServeHTTP(w, r)
+	if w.Code != 400 {
+		t.Fatalf("logout admitted without key: %d", w.Code)
+	}
+}

@@ -41,8 +41,9 @@ func TestIdempotencyConcurrentRequestsAndRollback(t *testing.T) {
 	var wg sync.WaitGroup
 	results := make(chan *httptest.ResponseRecorder, 2)
 	start := make(chan struct{})
+	sameKey := platform.ID()
 	for range 2 {
-		wg.Go(func() { <-start; results <- request(`{"n":1}`, "same") })
+		wg.Go(func() { <-start; results <- request(`{"n":1}`, sameKey) })
 	}
 	close(start)
 	wg.Wait()
@@ -56,7 +57,7 @@ func TestIdempotencyConcurrentRequestsAndRollback(t *testing.T) {
 	if err = db.Pool.QueryRow(ctx, "SELECT value FROM counter").Scan(&count); err != nil || count != 1 {
 		t.Fatalf("count %d %v", count, err)
 	}
-	if w := request(`{"n":2}`, "same"); w.Code != 400 {
+	if w := request(`{"n":2}`, sameKey); w.Code != 400 {
 		t.Fatalf("different body replayed: %d", w.Code)
 	}
 	failing := platform.Idempotency(db, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +65,7 @@ func TestIdempotencyConcurrentRequestsAndRollback(t *testing.T) {
 		platform.Fail(w, platform.Rule("reject"))
 	}))
 	r := httptest.NewRequest("POST", "/it4788/v1/test", strings.NewReader(`{}`))
-	r.Header.Set("Idempotency-Key", "failed")
+	r.Header.Set("Idempotency-Key", platform.ID())
 	r = r.WithContext(platform.WithPrincipal(r.Context(), platform.Principal{UserID: "00000000-0000-7000-8000-000000000099"}))
 	w := httptest.NewRecorder()
 	failing.ServeHTTP(w, r)

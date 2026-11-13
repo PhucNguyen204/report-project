@@ -271,3 +271,13 @@ Feature-ID: F04-encrypted-events.
 - [x] Runtime bắt buộc queue key riêng32byte, độc lập signing key để xoay khóa JWT không làm mất job30ngày; file0600 ngoàiDB/Git.
 - [x] PDO/HTTP smoke dùngSMTP thật tớiMailpit, không in OTP/token/mật khẩu; không để OTP hoặc người nhận rõ trong production River args.
 - [ ] Fixture NewDB không truyền key vẫn hỗ trợ plain event để kiểm thử từng module; factory ứng dụng đầy đủ luôn yêu cầu key.
+
+### F03 — khóa UUID, logout và hoàn tất media — 13/11/2026
+
+Feature-ID: F03-command-idempotency. Trạng thái LOCAL_PASS.
+- [x] Khóa sai UUID bị từ chối trước handler; logout có xác thực bắt buộc khóa.
+- [x] Hoàn tất media giữ reservation bền vững nhưng giải phóng transaction trước S3; replay kiểm tra quyền lại và khác object/body trả400.
+- [x] Regression RED→GREEN đã quan sát cho UUID, logout và transaction quanh external I/O.
+- [x] Root `go test -tags integration ./... -count=1 -race -cover -timeout 5m`: PASS exit0 ngày13/11; platform69.0%, app76.5%; các module nghiệp vụ85.1–90.7%.
+- [x] `go vet ./...` và `git diff --check`: PASS.
+- [ ] Coverage hạ tầng và release gates chưa hoàn tất; không đánh dấu toàn backend DONE.

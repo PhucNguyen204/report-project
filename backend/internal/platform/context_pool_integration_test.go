@@ -33,7 +33,7 @@ func TestIdempotentHandlerReadsItsUncommittedWrites(t *testing.T) {
 		platform.Write(w, 201, value)
 	}))
 	r := httptest.NewRequest("POST", "/it4788/v1/test", strings.NewReader(`{}`))
-	r.Header.Set("Idempotency-Key", "visible")
+	r.Header.Set("Idempotency-Key", platform.ID())
 	r = r.WithContext(platform.WithPrincipal(r.Context(), platform.Principal{UserID: "00000000-0000-7000-8000-000000000099"}))
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, r)

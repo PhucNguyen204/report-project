@@ -6,7 +6,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -18,7 +20,7 @@ type transactionKey struct{}
 func Idempotency(db *DB, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := Current(r)
-		if r.Method == "GET" || r.Method == "HEAD" || r.Method == "OPTIONS" || p.UserID == "" || strings.HasPrefix(r.URL.Path, "/it4788/v1/auth/") {
+		if r.Method == "GET" || r.Method == "HEAD" || r.Method == "OPTIONS" || p.UserID == "" || publicAuth(r.URL.Path) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -37,12 +39,17 @@ func Idempotency(db *DB, next http.Handler) http.Handler {
 			return
 		}
 		key := r.Header.Get("Idempotency-Key")
-		if key == "" || len(key) > 128 {
-			Fail(w, Invalid("Idempotency-Key bắt buộc, tối đa128 ký tự"))
+		if !uuidKey(key) {
+			Fail(w, Invalid("Idempotency-Key phải là UUID"))
 			return
 		}
+		key = strings.ToLower(key)
 		sum := sha256.Sum256(append([]byte(r.Method+" "+r.URL.RequestURI()+"\n"), body...))
 		hash := hex.EncodeToString(sum[:])
+		if r.Method == "POST" && strings.HasPrefix(r.URL.Path, "/it4788/v1/media/") && strings.HasSuffix(r.URL.Path, "/complete") {
+			externalCommand(db, next, w, r, key, hash)
+			return
+		}
 		var result *httptest.ResponseRecorder
 		err = db.Tx(r.Context(), func(tx pgx.Tx) error {
 			segments := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
@@ -56,6 +63,10 @@ func Idempotency(db *DB, next http.Handler) http.Handler {
 			}
 			tag, e := tx.Exec(r.Context(), "INSERT INTO platform.idempotency_keys(user_id,key,request_hash) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", p.UserID, key, hash)
 			if e != nil {
+				var pe *pgconn.PgError
+				if errors.As(e, &pe) && pe.Code == "55P03" {
+					return Err(409, 4002, "Yêu cầu cùng khóa đang được xử lý")
+				}
 				return e
 			}
 			if tag.RowsAffected() == 0 {
@@ -89,6 +100,10 @@ func Idempotency(db *DB, next http.Handler) http.Handler {
 			return e
 		})
 		if _, ok := err.(*responseError); err != nil && !ok {
+			var typed *Error
+			if errors.As(err, &typed) && typed.Status == 409 {
+				w.Header().Set("Retry-After", "1")
+			}
 			Fail(w, err)
 			return
 		}
@@ -104,6 +119,62 @@ func Idempotency(db *DB, next http.Handler) http.Handler {
 		w.WriteHeader(result.Code)
 		_, _ = w.Write(result.Body.Bytes())
 	})
+}
+
+func uuidKey(key string) bool {
+	if len(key) != 36 || key[8] != '-' || key[13] != '-' || key[18] != '-' || key[23] != '-' {
+		return false
+	}
+	_, err := hex.DecodeString(strings.ReplaceAll(key, "-", ""))
+	return err == nil
+}
+
+func externalCommand(db *DB, next http.Handler, w http.ResponseWriter, r *http.Request, key, hash string) {
+	replay := false
+	err := db.Tx(r.Context(), func(tx pgx.Tx) error {
+		if _, err := tx.Exec(r.Context(), "INSERT INTO platform.idempotency_keys(user_id,key,request_hash,status) VALUES($1,$2,$3,102) ON CONFLICT DO NOTHING", Current(r).UserID, key, hash); err != nil {
+			return err
+		}
+		var old string
+		var status int
+		if err := tx.QueryRow(r.Context(), "SELECT request_hash,status FROM platform.idempotency_keys WHERE user_id=$1 AND key=$2", Current(r).UserID, key).Scan(&old, &status); err != nil {
+			return err
+		}
+		if old != hash {
+			return Invalid("Idempotency-Key đã dùng cho yêu cầu khác")
+		}
+		replay = status >= 200 && status < 300
+		return nil
+	})
+	if err != nil {
+		Fail(w, err)
+		return
+	}
+	result := httptest.NewRecorder()
+	next.ServeHTTP(result, r)
+	err = db.Tx(r.Context(), func(tx pgx.Tx) error {
+		if result.Code >= 400 {
+			_, err := tx.Exec(r.Context(), "DELETE FROM platform.idempotency_keys WHERE user_id=$1 AND key=$2 AND status=102", Current(r).UserID, key)
+			return err
+		}
+		headers, _ := json.Marshal(result.Header())
+		_, err := tx.Exec(r.Context(), "UPDATE platform.idempotency_keys SET status=$3,response=$4,headers=$5 WHERE user_id=$1 AND key=$2", Current(r).UserID, key, result.Code, result.Body.Bytes(), headers)
+		return err
+	})
+	if err != nil {
+		Fail(w, err)
+		return
+	}
+	if replay && result.Code < 400 {
+		result.Header().Set("Idempotent-Replayed", "true")
+	}
+	for k, values := range result.Header() {
+		for _, v := range values {
+			w.Header().Add(k, v)
+		}
+	}
+	w.WriteHeader(result.Code)
+	_, _ = w.Write(result.Body.Bytes())
 }
 
 type responseError struct{}
