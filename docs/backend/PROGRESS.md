@@ -301,3 +301,12 @@ Feature-ID: F18-shopping-http. Trạng thái LOCAL_PASS.
 - [x] HTTP tủ lạnh có lọc/cursor/facet, scope và version; stale remaining409, metadata merge theo lịch sử trường.
 - [x] Root full suite integration/race PASS13/11; inventory87.0%, không test skip. Migration021 bảo vệ dimension đơn vị đang tham chiếu.
 - [ ] Phân trang mặc định và toàn bộ endpoint danh sách còn cần audit theo đặc tả default20/max100; không tick toàn hợp đồng đã khớp.
+
+### F09 — ảnh riêng tư qua S3 — 13/11/2026
+
+Feature-ID: F09-private-media. Trạng thái LOCAL_PASS.
+- [x] Signed PUT5 phút, JPEG/PNG≤5MB, kiểm MIME/kích thước/giải mã ảnh thật và giới hạn pixel trước hoàn tất.
+- [x] Snapshot key bất biến, kiểm lại quyền khi complete/read, signed GET≤15 phút; không public bucket.
+- [x] Giữ ảnh còn được gia đình/template tham chiếu khi copy/purge/anonymize; dọn staging/orphan bằng job bền vững.
+- [x] Root full integration/race PASS; media85.8%. Test dùng S3 thật SeaweedFS qua AWS SDK và URL ký, gồm upload/download/delete/deny và race thu hồi quyền.
+- [ ] Chưa smoke MinIO/AWS production; không gọi fixture S3 tương thích là MinIO thật.
