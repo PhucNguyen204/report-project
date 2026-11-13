@@ -518,3 +518,19 @@ Feature-ID: F17-movement-pagination. Trạng thái LOCAL_PASS.
 - [x] Test lấy đủ1003 dòng/không trùng/sum lượng đúng sau chèn hai adjustment trước cursor; lịch sử vượt1000 truy cập được. Migration047 mới, OpenAPI query/metadata khớp handler.
 - [x] Focused PostgreSQL/race PASS. Root export staged snapshot để tách thay đổi search/admin đang làm; trên snapshot đó `make verify integration`: PASS380 case/0 fail/0 skip, vet/build/mod verify/race đạt. Evidence output/backend-qa/movement-integration.jsonl và movement-coverage.out.
 - [ ] Phân trang không cung cấp snapshot giữa các lần cập nhật lô; ETag/phần lot phản ánh trạng thái lần đọc. Search và review quyền quản trị tiếp tục ở task riêng.
+
+
+### F34 — thu hồi quyền quản trị khi request đang chờ khóa — 13/11/2026
+
+Feature-ID: F34-admin-revocation. Trạng thái LOCAL_PASS.
+- [x] Review độc lập tái hiện HIGH: admin đã được middleware nhận diện, chờ admin_roles; bị demote rồi vẫn tự cấp lại admin, HTTP200/version3. RED lưu lại trước fix; GREEN403/role user/version2.
+- [x] Kiểm active/role/deleted trong transaction với actor FOR SHARE; admin_roles trước actor lock cho thay đổi quyền, tránh vòng khóa giữa hai admin. Giữ quyền đến commit cho catalog/config/review và các GET quản trị.
+- [x] Test stale principal demoted/disabled/deleted trên12 route không đọc/ghi trái quyền; test demotion chờ mutation catalog đã được authorize commit. Không chỉ kiểm role trong JWT/context.
+- [x] Agent accounts/race coverage86.8% PASS; root review diff và staged snapshot `make verify integration`:386 case pass/0 fail/0 skip, vet/build/mod verify/race đạt. Artifact admin-revocation-integration.jsonl/coverage.out.
+- [ ] Review tiếp cửa sổ tương tự ở template/media; chưa đánh toàn hệ thống hết mọi race authorization. Runtime/search đang triển khai được giữ ngoài snapshot commit này.
+
+### F37 — chẩn đoán pipeline GitLab chưa được runner nhận — 13/11/2026
+
+- [x] Đọc API thật bằng curl (urllib bị Cloudflare1010): pipeline206/main và205/feature tại651da36 failed. Job949 backend-verify: runner=null, started_at=null, queued_duration6051.25s, failure_reason=stuck_or_timeout_failure; integration950 skipped.
+- [x] Pipeline197 cũng không có runner/started_at. Đây là lỗi scheduling/runner chưa chạy job, không phải bằng chứng unit/integration fail.
+- [ ] Đang kiểm runner/tags/quyền project; không đánh CI remote PASS bằng local tests. Artifact gitlab-pipeline-206-jobs.json.

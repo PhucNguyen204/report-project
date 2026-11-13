@@ -133,7 +133,7 @@ func (s *Service) catalogAdmin(kind string) platform.Handler {
 			if err != nil {
 				return err
 			}
-			rows, err := queryMaps(r.Context(), s.db.Pool, `SELECT to_jsonb(x)-'field_versions' AS item,name AS "__pageName",id::text AS "__pageId" FROM catalog.`+table+` x WHERE ($1='' OR (name,id)>($1,NULLIF($2,'')::uuid)) ORDER BY name,id LIMIT $3`, page.After[0], page.After[1], page.Limit+1)
+			rows, err := s.adminQuery(r.Context(), platform.Current(r).UserID, `SELECT to_jsonb(x)-'field_versions' AS item,name AS "__pageName",id::text AS "__pageId" FROM catalog.`+table+` x WHERE ($1='' OR (name,id)>($1,NULLIF($2,'')::uuid)) ORDER BY name,id LIMIT $3`, page.After[0], page.After[1], page.Limit+1)
 			if err != nil {
 				return err
 			}
@@ -175,6 +175,9 @@ func (s *Service) catalogAdmin(kind string) platform.Handler {
 			}
 		}
 		err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
+			if err := s.lockAdministrator(r.Context(), tx, platform.Current(r).UserID); err != nil {
+				return err
+			}
 			var old json.RawMessage
 			if r.Method != "POST" {
 				if err := tx.QueryRow(r.Context(), "SELECT to_jsonb(x) FROM catalog."+table+" x WHERE id=$1 FOR UPDATE", id).Scan(&old); err != nil {
@@ -322,6 +325,9 @@ func (s *Service) reviewFood(w http.ResponseWriter, r *http.Request) error {
 	}
 	id := r.PathValue("id")
 	err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
+		if err := s.lockAdministrator(r.Context(), tx, platform.Current(r).UserID); err != nil {
+			return err
+		}
 		var status, scope, dimension string
 		var old json.RawMessage
 		if err := tx.QueryRow(r.Context(), "SELECT f.status,f.scope,to_jsonb(f),u.dimension FROM catalog.foods f JOIN catalog.units u ON u.id=f.default_unit_id WHERE f.id=$1 FOR UPDATE OF f", id).Scan(&status, &scope, &old, &dimension); err != nil {

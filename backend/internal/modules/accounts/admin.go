@@ -67,7 +67,7 @@ func (s *Service) getConfigs(w http.ResponseWriter, r *http.Request) error {
 	if err := platform.Admin(r); err != nil {
 		return err
 	}
-	rows, err := queryMaps(r.Context(), s.db.Pool, "SELECT key,value FROM admin.system_configs ORDER BY key")
+	rows, err := s.adminQuery(r.Context(), platform.Current(r).UserID, "SELECT key,value FROM admin.system_configs ORDER BY key")
 	if err != nil {
 		return err
 	}
@@ -94,6 +94,9 @@ func (s *Service) setConfigs(w http.ResponseWriter, r *http.Request) error {
 	}
 	err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
 		if _, err := tx.Exec(r.Context(), "SELECT pg_advisory_xact_lock(hashtext('system_configs'))"); err != nil {
+			return err
+		}
+		if err := s.lockAdministrator(r.Context(), tx, platform.Current(r).UserID); err != nil {
 			return err
 		}
 		old := map[string]json.RawMessage{}
@@ -126,7 +129,7 @@ func (s *Service) auditLogs(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	items, err := queryMaps(r.Context(), s.db.Pool, `SELECT id::text,actor_id::text AS "actorId",action,entity_id AS "entityId",
+	items, err := s.adminQuery(r.Context(), platform.Current(r).UserID, `SELECT id::text,actor_id::text AS "actorId",action,entity_id AS "entityId",
  CASE WHEN jsonb_typeof(old_value)='object' THEN old_value-'field_versions' ELSE old_value END AS "oldValue",
  CASE WHEN jsonb_typeof(new_value)='object' THEN new_value-'field_versions' ELSE new_value END AS "newValue",
  created_at AS "createdAt" FROM admin.audit_logs
@@ -152,7 +155,7 @@ func (s *Service) adminUsers(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	items, err := queryMaps(r.Context(), s.db.Pool, `SELECT id::text,email,version,full_name AS "fullName",system_role AS "systemRole",status,last_login_at AS "lastLoginAt",lock_reason AS "lockReason",created_at AS "__pageCreatedAt"
+	items, err := s.adminQuery(r.Context(), platform.Current(r).UserID, `SELECT id::text,email,version,full_name AS "fullName",system_role AS "systemRole",status,last_login_at AS "lastLoginAt",lock_reason AS "lockReason",created_at AS "__pageCreatedAt"
  FROM identity.users WHERE deleted_at IS NULL AND ($1='' OR email::text ILIKE '%'||$1||'%' OR full_name ILIKE '%'||$1||'%')
  AND ($2='' OR (created_at,id)<(NULLIF($2,'')::timestamptz,NULLIF($3,'')::uuid))
  ORDER BY created_at DESC,id DESC LIMIT $4`, r.URL.Query().Get("q"), page.After[0], page.After[1], page.Limit+1)
@@ -206,6 +209,9 @@ func (s *Service) adminUser(w http.ResponseWriter, r *http.Request) error {
 	var revision int64
 	err = s.db.Tx(r.Context(), func(tx pgx.Tx) error {
 		if _, err := tx.Exec(r.Context(), "SELECT pg_advisory_xact_lock(hashtext('admin_roles'))"); err != nil {
+			return err
+		}
+		if err := s.lockAdministrator(r.Context(), tx, platform.Current(r).UserID); err != nil {
 			return err
 		}
 		var old json.RawMessage
