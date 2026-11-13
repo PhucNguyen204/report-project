@@ -23,7 +23,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | Đọc phạm vi25 UC và kiểm tra thiết kế | PASS | AGENTS.md, chương1–3, phụ lục; audit độc lập từ sub-agent spec_audit |
 | Clone/cài skill coding upstream | PASS | Installer trả installed cho3 skill; clone SHA nêu trên |
 | Plan và ma trận kiểm thử | PASS | spec_audit chấp nhận sau sửa dependency/auth, activity log, contracts, River, precision, release gate |
-| Toolchain Go | PASS | `go version`: go1.26.6 darwin/arm64 |
+| Toolchain Go | PASS | `go version`: go1.26.11 darwin/arm64; nâng sau scanner RED |
 | PostgreSQL integration environment | PASS local | PostgreSQL16, SeaweedFS S3, Mailpit đang chạy; Redis7 bổ sung ngày12/11 |
 | Test backend/coverage/race/build | IN_PROGRESS | Baseline12/11: kernel95.9%, accounts60.4%, inventory85%, notification47.3%; media/planning còn task chưa hoàn tất lúc chạy baseline |
 | Email/FCM/S3 thật | NOT_RUN | Chưa xác minh credential/staging; sẽ ghi riêng adapter fake và smoke thật |
@@ -388,3 +388,12 @@ Feature-ID: F36-credential-retention. Trạng thái LOCAL_PASS.
 - [x] Test RED thiếu Cleanup rồi GREEN; lỗi xóa phiên rollback cả OTP, gọi lại không phá dữ liệu còn hạn.
 - [x] Root full integration/race/coverage và vet PASS13/11; accounts86.1%.
 - [x] Regression scheduler RED vì inbox/OTP cũ còn lại, đã nối cleanup vào Tick và GREEN; wiring được lưu ở checkpoint runtime kế tiếp.
+
+### F37 — nâng bản vá Go và dependency bảo mật — 13/11/2026
+
+Feature-ID: F37-security-toolchain. Trạng thái LOCAL_PASS scanner.
+- [x] govulncheck v1.9.0 trên Go1.26.6 báo11 lỗ hổng stdlib có call trace, thêm cảnh báo module x/crypto chưa gọi; lưu JSON tại output/backend-qa/govulncheck-before.json.
+- [x] Xác minh [Go release history](https://go.dev/doc/devel/release):1.26.11 phát hành10/11/2026. Nâng minimum go.mod lên1.26.11 và x/crypto0.59.0 (kèm sync/sys/text tương thích).
+- [x] `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`: exit0, No vulnerabilities found. Không diễn giải thành bằng chứng hệ thống không còn mọi lỗi bảo mật.
+- [x] Go1.26.11 full integration/race/coverage PASS exit0; `go mod verify` all modules verified; build server PASS.
+- [ ] Secret/container scan, tải, restore, CI remote và review release vẫn còn mở.

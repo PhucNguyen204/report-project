@@ -1,6 +1,6 @@
 module dicho
 
-go 1.26.0
+go 1.26.11
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.47.8
@@ -13,7 +13,7 @@ require (
 	github.com/riverqueue/river/rivertype v0.51.1
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/signintech/gopdf v0.38.4
-	golang.org/x/crypto v0.58.0
+	golang.org/x/crypto v0.59.0
 	golang.org/x/oauth2 v0.38.0
 )
 
@@ -41,7 +41,7 @@ require (
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
 	go.uber.org/atomic v1.12.0 // indirect
-	golang.org/x/sync v0.24.0 // indirect
-	golang.org/x/sys v0.49.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/sync v0.25.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 )
