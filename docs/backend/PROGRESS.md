@@ -371,3 +371,12 @@ Feature-ID: F11-notifications. Trạng thái LOCAL_PASS.
 - [x] SMTP MIME Unicode/cancellation và roundtrip Mailpit SMTP/API thật đã chạy; FCM adapter kiểm HTTP contract.
 - [x] Root full integration/race PASS13/11; notification90.7%, không skip.
 - [ ] FCM thật chưa có credential, SLA99%/15 phút chưa đo trong vận hành; không hứa exactly-once tới provider.
+
+### F31 — xuất CSV/PDF bất đồng bộ — 13/11/2026
+
+Feature-ID: F31-report-exports. Trạng thái LOCAL_PASS.
+- [x] pending→ready/failed qua River cùng transaction; requester/member gates, URL15 phút và file7 ngày; retry/orphan/purge có test S3 thật.
+- [x] CSV UTF-8 chống formula injection, PDF nhúng NotoSans có giấy phép; PDF tiếng Việt18 trang đã render/kiểm tra ảnh và trích chữ.
+- [x] Root phát hiện boundary export khác report: test khoảng01/01/2026–01/01/2027 RED, sửa từ chối ngày cuối bằng mốc12 tháng, GREEN.
+- [x] `go test -tags integration ./internal/modules/exports -count=1 -race -cover`: PASS85.1%; full `./...` integration/race chạy lại sau sửa PASS exit0.
+- [ ] Live production object store/FCM chưa kiểm chứng. Bài test scheduler retention mới đang được triển khai ở task runtime tiếp theo.
