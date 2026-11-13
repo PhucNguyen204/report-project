@@ -362,3 +362,12 @@ Feature-ID: F35-space-lifecycle. Trạng thái LOCAL_PASS module.
 - [x] Remap food bảo toàn base quantity, gộp trùng chính xác, idempotent; purge chỉ namespace của space đã giải tán theo thứ tự dependency.
 - [x] Root full integration/race PASS13/11 cho accounts/inventory/planning, có scope/rollback/alias và state assertions.
 - [ ] Dispatcher cross-module và receipt replay được chốt riêng ở runtime; không dùng module fake thay bằng chứng hệ thống.
+
+### F11/F29 — inbox, delivery và nhắc hạn — 13/11/2026
+
+Feature-ID: F11-notifications. Trạng thái LOCAL_PASS.
+- [x] Inbox theo user, cursor default20/max100, đánh dấu đã đọc idempotent, dedupe event và expiry mỗi user/ngày.
+- [x] Delivery từng device: retry device lỗi, vô hiệu token hỏng, replay không gửi lại device đã thành công; retention inbox90 ngày/delivery30 ngày không làm fanout lại.
+- [x] SMTP MIME Unicode/cancellation và roundtrip Mailpit SMTP/API thật đã chạy; FCM adapter kiểm HTTP contract.
+- [x] Root full integration/race PASS13/11; notification90.7%, không skip.
+- [ ] FCM thật chưa có credential, SLA99%/15 phút chưa đo trong vận hành; không hứa exactly-once tới provider.
