@@ -457,3 +457,11 @@ Feature-ID: F37-main-merge. Theo yêu cầu trực tiếp của người dùng: 
 - [x] Trên kết quả merge: make verify integration PASS331 case/0 fail/0 skip, unit/race/vet/build/mod verify đạt. Evidence output/backend-qa/main-merge-integration.jsonl ở workspace chính.
 - [x] Backend local và fresh clone/K1–K5 đã có bằng chứng ở các entry trước. Merge không có nghĩa release production đã hoàn tất.
 - [ ] Pagination/load/restore/monitoring/FCM thật/CI remote còn mở; GitLab pipeline API đọc không token trả403.
+
+### F15 — giữ UUIDv7 của client khi nhập tủ — 13/11/2026
+
+Feature-ID: F15-client-uuid. Trạng thái LOCAL_PASS.
+- [x] Test RED phát hiện LotInput.id bị bỏ qua: trả id máy chủ thay vì id client, làm sai khóa đối tượng/kiểm trùng.
+- [x] StockInput truyền id qua cổng AddLots; UUIDv7 hợp lệ được giữ, thiếu id vẫn sinh mới; sai version/variant trả400, trùng id409.
+- [x] Unit UUID và PostgreSQL HTTP regression PASS; full integration/race/coverage snapshot root PASS sau sửa. Stock từ shopping không đổi luồng tạo id.
+- [ ] Pagination đang làm ở working tree, chưa gộp vào commit sửa UUID này; được test/chốt riêng.

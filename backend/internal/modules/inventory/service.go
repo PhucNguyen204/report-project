@@ -91,6 +91,9 @@ func (s *Service) reminderDays(ctx context.Context, q platform.Querier, uid stri
 }
 func (s *Service) CreateLot(ctx context.Context, sid, uid string, c LotInput) (Lot, error) {
 	var out Lot
+	if c.ID != "" && !platform.UUID7(c.ID) {
+		return out, platform.Invalid("id phải là UUIDv7")
+	}
 	if err := validQuantity(c.Quantity); err != nil {
 		return out, err
 	}
@@ -129,7 +132,7 @@ func (s *Service) CreateLot(ctx context.Context, sid, uid string, c LotInput) (L
 		if expiry.Before(s.db.Today()) && !c.ConfirmExpired {
 			return platform.Rule("Cần xác nhận thực phẩm đã hết hạn")
 		}
-		ids, err := s.AddLots(ctx, tx, sid, uid, []platform.StockInput{{FoodID: c.FoodID, UnitID: c.UnitID, Quantity: c.Quantity, Location: c.StorageLocation, PurchasedOn: purchased, ExpiresOn: expiry}})
+		ids, err := s.AddLots(ctx, tx, sid, uid, []platform.StockInput{{ID: c.ID, FoodID: c.FoodID, UnitID: c.UnitID, Quantity: c.Quantity, Location: c.StorageLocation, PurchasedOn: purchased, ExpiresOn: expiry}})
 		if err != nil {
 			return err
 		}
@@ -173,6 +176,12 @@ func (s *Service) AddLots(ctx context.Context, tx pgx.Tx, sid, uid string, input
 			return nil, platform.Invalid("Không thể quy đổi chính xác số lượng")
 		}
 		id := platform.ID()
+		if in.ID != "" {
+			if !platform.UUID7(in.ID) {
+				return nil, platform.Invalid("id phải là UUIDv7")
+			}
+			id = in.ID
+		}
 		var source any
 		if in.ItemID != "" {
 			source = in.ItemID

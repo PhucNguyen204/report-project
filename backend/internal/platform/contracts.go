@@ -33,6 +33,7 @@ type Consumption struct {
 	AllowExpired  bool
 }
 type StockInput struct {
+	ID                               string
 	ItemID, FoodID, UnitID, Location string
 	Quantity                         Quantity
 	ExpiresOn                        time.Time
