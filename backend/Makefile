@@ -62,3 +62,7 @@ recovery:
 .PHONY: migrate
 migrate:
 	go run ./cmd/migrate
+
+.PHONY: performance
+performance:
+	go test -tags performance ./internal/app -run '^TestPerformance' -count=1 -v -timeout 10m

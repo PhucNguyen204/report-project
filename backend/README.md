@@ -79,6 +79,8 @@ Cần stack `dicho-qa` đã có dữ liệu K1–K5. Lệnh kiểm snapshot/coun
 
 Production tách migrator khỏi role API/worker: chạy `dicho-migrate` với DSN schema owner trước, rồi dùng role DML và `AUTO_MIGRATE=false`. Xem [runbook database roles](../docs/backend/runbooks/database-roles.md). Runtime kiểm checksum/schema thay vì tự sửa DDL; development mặc định auto migrate.
 
+Đo tải local bằng `make performance`: fixture riêng16 user, mỗi scope500 recipes/200 lots, 50RPS×30s qua TCP/auth/Redis thật. Xem [runbook performance](../docs/backend/runbooks/performance.md); ngưỡng và lỗi được assert, artifact không chứa token/secret.
+
 ## Trạng thái release
 
-Local workflow và unit/integration/race đã có bằng chứng trong báo cáo. Còn mở: keyset/default pagination ở một số endpoint, đo tải, backup production/PITR, monitoring, CI remote và smoke FCM production. Phép thử role DB giới hạn chạy trên fixture riêng; quyền database production chưa được thay đổi. Chưa xác nhận SLA/RPO/RTO từ một lần smoke local.
+Local workflow và unit/integration/race đã có bằng chứng trong báo cáo. Còn mở: keyset/default pagination ở một số endpoint, mở rộng tải ghi/Q01, backup production/PITR, monitoring, CI remote và smoke FCM production. Phép thử role DB giới hạn chạy trên fixture riêng; quyền database production chưa được thay đổi. Chưa xác nhận SLA/RPO/RTO từ một lần smoke local.

@@ -27,7 +27,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | PostgreSQL integration environment | PASS local | PostgreSQL16, SeaweedFS S3, Mailpit đang chạy; Redis7 bổ sung ngày12/11 |
 | Test backend/coverage/race/build | LOCAL_PASS13/11 | Go1.26.11 full integration/race exit0; 378 case/0 fail/0 skip; accounts86.3%, inventory86.8%, planning87.1%, media86.4%, exports85.1%, notification90.7%; app81.0%, platform74.4%, kernel95.9% |
 | Email/FCM/S3 thật | PARTIAL | SMTP Mailpit + S3 SeaweedFS qua network thật PASS; FCM và production credentials NOT_RUN |
-| K1–K5 / load / restore | PARTIAL | K1–K5 network85 HTTP checks PASS; DB snapshot restore39 relations + River retry PASS; tải đang đo, PITR/S3/production RPO/RTO chưa xác nhận |
+| K1–K5 / load / restore | PARTIAL | K1–K5 network PASS; 50RPS×30s/1500 GET/0errors PASS; DB snapshot restore39 relations + River retry PASS; PITR/S3/production RPO/RTO chưa xác nhận |
 
 ## Tiến độ tính năng
 
@@ -567,3 +567,14 @@ Feature-ID: F32-search-pagination. Trạng thái LOCAL_PASS.
 - [x] Inventory query qua LotSearchPagePort, planning không đọc pantry trực tiếp. Mỗi nguồn dùng một SQL snapshot cho page+aggregate; membership giữ lock qua transaction. Không hứa snapshot giữa các HTTP calls.
 - [x] Root contract RED filterFacets/meta chưa được nhận rồi GREEN; OpenAPI202schemas/101operations. `make verify integration security`:407 pass/0 fail/0 skip; planning87.6%, inventory86.8%, accounts86.8%, media86.4%, exports85.1%, notification90.4%, app81.4%, platform77.9%, kernel95.9%; No vulnerabilities found.
 - [ ] Chưa đo riêng latency Q01/tải catalog lớn hoặc thêm index048 từ EXPLAIN; không dùng benchmark4route để tự tick phần đó. Coverage app/platform và CI runner còn mở.
+
+
+### F27/F37 — đo tải API qua TCP và xác thực thật — 13/11/2026
+
+Feature-ID: F37-performance-harness. Trạng thái LOCAL_PASS local experiment.
+- [x] Harness tag performance dùng NewSystem/router/JWT EdDSA/session DB thật, PostgreSQL/Redis/S3 thật.16 user/scope độc lập, mỗi scope500 recipes×5ingredients/200 lots/20favorites;250foods chung. Không bypass auth/quota hoặc FLUSHDB.
+- [x] TDD helpers percentile/balanced workload RED→GREEN từ agent. Root rerun sau tách runtime queue gặp RED River migrations pending; bổ sung bước MigrateQueue vào setup fixture, giữ runtime không chạy DDL, rerun GREEN.
+- [x] `go test -tags performance ./internal/app -run '^TestPerformance' -count=1 -v -timeout 10m`:1500requests/30s,375 mỗi route, errors0; p95 scheduled→body lots4.441ms, recipes13.620ms, suggestions35.684ms, autocomplete8.018ms. Max21.241/70.750/69.964/28.649ms, đều dưới ngưỡng local đã assert.
+- [x] Lịch phát open-loop50RPS với128workers, boundedqueue/drop thành lỗi; độ trễ gồm dispatch lag/pool/đọc body. Mỗi user≤101 requests gồm warmup, không vượt quota120/min; ghi fallback Redis là lỗi.
+- [x] Artifact output/backend-qa/performance.json ghi source HEAD0a1463b + dirty test/runbook, môi trường/dataset/latency/error và cleanup: DB tạm dropped,32 Redis keys removed/0remaining, bucket S3 xóa đúng. RED setup artifact được giữ riêng.
+- [ ] Đây là GET read workload local HTTP loopback; không đo Q01, tải ghi/FCM/SMTP/TLS/4G/thiết bị hoặc chứng minh SLA production. Remote runner chưa chạy nên không gán LOCAL_PASS thành CI_PASS.
