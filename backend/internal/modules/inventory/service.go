@@ -166,6 +166,8 @@ func (s *Service) AddLots(ctx context.Context, tx pgx.Tx, sid, uid string, input
 		if err != nil {
 			return nil, err
 		}
+		in.FoodID = food.FoodID
+		in.UnitID = food.UnitID
 		base, err := in.Quantity.Mul(food.Factor)
 		if err != nil {
 			return nil, platform.Invalid("Không thể quy đổi chính xác số lượng")

@@ -291,3 +291,13 @@ Feature-ID: F12-household. Trạng thái LOCAL_PASS.
 - [x] Review sửa ETag danh mục, chặn khác dimension/tự khóa admin, khóa dòng canonical khi kiểm thực phẩm, thông báo email khi admin khóa.
 - [x] Root full regression `go test -tags integration ./... -count=1 -race -cover -timeout 5m`: PASS; accounts86.1%. `go vet ./...`: PASS.
 - [ ] Copy/purge toàn module và delivery thật được ghi ở task riêng; không suy ra từ test nhóm.
+
+### F16–F21 — API mua sắm và tủ lạnh — 13/11/2026
+
+Feature-ID: F18-shopping-http. Trạng thái LOCAL_PASS.
+- [x] Danh sách/mặt hàng, sao chép danh sách, lịch sử, mua/undo và nhập tủ qua batch nguyên tử; nhập lại không tạo lô trùng.
+- [x] Giữ lượng/giá trị qua đổi đơn vị, lưu canonical food; quy tắc danh sách completed và lô đã stock có assertion.
+- [x] Phân công theo vai trò, bỏ phân công cùng transaction khi rời nhóm, digest5 giây và các đợt sau vẫn được gửi.
+- [x] HTTP tủ lạnh có lọc/cursor/facet, scope và version; stale remaining409, metadata merge theo lịch sử trường.
+- [x] Root full suite integration/race PASS13/11; inventory87.0%, không test skip. Migration021 bảo vệ dimension đơn vị đang tham chiếu.
+- [ ] Phân trang mặc định và toàn bộ endpoint danh sách còn cần audit theo đặc tả default20/max100; không tick toàn hợp đồng đã khớp.
