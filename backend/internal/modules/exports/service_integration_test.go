@@ -35,7 +35,7 @@ func setupExport(t *testing.T) (*Service, *platform.DB, *media.S3Store, string, 
 	if _, err := db.Pool.Exec(ctx, "INSERT INTO household.space_members(space_id,user_id,role,space_kind) VALUES($1,$2,'leader','personal')", sid, user); err != nil {
 		t.Fatal(err)
 	}
-	client := s3.New(s3.Options{Region: "us-east-1", BaseEndpoint: aws.String("http://127.0.0.1:59000"), UsePathStyle: true, Credentials: credentials.NewStaticCredentialsProvider("dicho-test", "dicho-local-storage-test", "")})
+	client := s3.New(s3.Options{Region: "us-east-1", BaseEndpoint: aws.String(testutil.S3Endpoint()), UsePathStyle: true, Credentials: credentials.NewStaticCredentialsProvider("dicho-test", "dicho-local-storage-test", "")})
 	bucket := "exports-" + user
 	if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: &bucket}); err != nil {
 		t.Fatalf("real S3 required: %v", err)

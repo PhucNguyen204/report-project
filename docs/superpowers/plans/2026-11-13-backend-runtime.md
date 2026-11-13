@@ -32,11 +32,13 @@ Files: `internal/modules/media/s3.go`, `s3_test.go`, `internal/app/config.go`, `
 
 Files: `backend/{Dockerfile,.dockerignore,compose.yaml,.env.example,Makefile,README.md}`, `backend/scripts/dev.py`, `.gitlab-ci.yml`.
 
-- [ ] Compose dependency có healthcheck; API profile app, secrets bind read-only và UID/GID local. S3 internal=http://s3:8333, public=http://127.0.0.1:59000.
-- [ ] dev.py init tạo keys và .env nếu chưa có; run truyền env bằng subprocess không source shell. Giữ nguyên key/config có sẵn.
-- [ ] Make verify: format/vet/unit/build/mod verify; integration/race và security thành target riêng; OpenAPI regen không đổi artifact.
-- [ ] CI dùng Go1.26.11, dịch vụ test thật, artifact coverage/testlog, vuln scanner pin v1.9.0; không auto deploy.
-- [ ] Docker build, compose config, project riêng up, health/OTP/mua sắm/signed S3 smoke qua network thật, shutdown giữ dữ liệu.
-- [ ] Cập nhật lệnh/giới hạn vào báo cáo chung, commit/push F01-runtime-packaging.
+- [x] Compose dependency có healthcheck; API profile app, secrets bind read-only và UID/GID local. S3 internal=http://s3:8333, public=http://127.0.0.1:59000.
+- [x] dev.py init tạo keys và .env nếu chưa có; run truyền env bằng subprocess không source shell. Giữ nguyên key/config có sẵn.
+- [x] Make verify: format/vet/unit/build/mod verify; integration/race và security thành target riêng; OpenAPI regen không đổi artifact.
+- [x] CI dùng Go1.26.11, dịch vụ test thật, artifact coverage/testlog, vuln scanner pin v1.9.0; không auto deploy.
+- [x] Docker build, compose config, project riêng up, health/OTP/mua sắm/signed S3 smoke qua network thật, shutdown giữ dữ liệu.
+- [x] Cập nhật lệnh/giới hạn vào báo cáo chung, commit/push F01-runtime-packaging.
 
 Self-review: hai endpoint tránh URL nội bộ không truy cập được; kiểm bí mật và startup health nằm trong test/smoke; CI remote không đánh PASS trước khi có runner result. Load/restore/observability/pagination vẫn theo F37, chưa bị loại khỏi phạm vi.
+
+Verification13/11: Docker nonroot48MB build/start health PASS; K1–K5 network smoke85 HTTP checks PASS; macOS/Linux full integration330 pass/0 fail/0 skip. Linux first run thiếu Poppler, đã sửa dependency và rerun. CI YAML parsed; remote runner chưa xác nhận, không đánh PASS thay.

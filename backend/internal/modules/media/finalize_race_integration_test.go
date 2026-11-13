@@ -5,6 +5,7 @@ package media
 import (
 	"context"
 	"dicho/internal/platform"
+	"dicho/internal/testutil"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -36,7 +37,7 @@ func TestFinalizeRevocationQueuesUnusedBlobDeletion(t *testing.T) {
 		t.Fatal(err)
 	}
 	putImage(t, g, data)
-	store.client = s3.New(s3.Options{Region: "us-east-1", BaseEndpoint: aws.String("http://127.0.0.1:59000"), UsePathStyle: true, Credentials: credentials.NewStaticCredentialsProvider("dicho-test", "dicho-local-storage-test", ""), HTTPClient: revokeAfterFinalPut{db, user, sid}})
+	store.client = s3.New(s3.Options{Region: "us-east-1", BaseEndpoint: aws.String(testutil.S3Endpoint()), UsePathStyle: true, Credentials: credentials.NewStaticCredentialsProvider("dicho-test", "dicho-local-storage-test", ""), HTTPClient: revokeAfterFinalPut{db, user, sid}})
 	if err = s.Complete(ctx, user, g.ObjectID); err == nil {
 		t.Fatal("revocation after physical upload ignored")
 	}

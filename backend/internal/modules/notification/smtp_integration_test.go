@@ -5,6 +5,7 @@ package notification
 import (
 	"context"
 	"dicho/internal/platform"
+	"dicho/internal/testutil"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -22,7 +23,7 @@ func mailpitMessage(t *testing.T, recipient string) map[string]any {
 	ticker := time.NewTicker(20 * time.Millisecond)
 	defer ticker.Stop()
 	for {
-		request, _ := http.NewRequestWithContext(ctx, "GET", "http://127.0.0.1:58025/api/v1/search?query="+url.QueryEscape("to:"+recipient), nil)
+		request, _ := http.NewRequestWithContext(ctx, "GET", testutil.MailpitURL()+"/api/v1/search?query="+url.QueryEscape("to:"+recipient), nil)
 		response, err := client.Do(request)
 		if err != nil {
 			t.Fatalf("real Mailpit HTTP required: %v", err)
@@ -38,7 +39,7 @@ func mailpitMessage(t *testing.T, recipient string) map[string]any {
 			t.Fatalf("Mailpit search %d %v", response.StatusCode, err)
 		}
 		if len(list.Messages) > 0 {
-			request, _ = http.NewRequestWithContext(ctx, "GET", "http://127.0.0.1:58025/api/v1/message/"+list.Messages[0].ID, nil)
+			request, _ = http.NewRequestWithContext(ctx, "GET", testutil.MailpitURL()+"/api/v1/message/"+list.Messages[0].ID, nil)
 			response, err = client.Do(request)
 			if err != nil {
 				t.Fatal(err)
@@ -62,7 +63,7 @@ func mailpitMessage(t *testing.T, recipient string) map[string]any {
 // Real SMTP acceptance plus a separately read mailbox must preserve the generated OTP, Unicode subject, and safe address headers.
 func TestRealMailpitSMTPAndWorkerEmailPreserveVietnamese(t *testing.T) {
 	recipient := platform.ID() + "@test.local"
-	smtp := SMTP{Addr: "127.0.0.1:51025", From: "Đi chợ tiện lợi <no-reply@test.local>"}
+	smtp := SMTP{Addr: testutil.SMTPAddr(), From: "Đi chợ tiện lợi <no-reply@test.local>"}
 	s := New(nil, smtp, nil)
 	payload, _ := json.Marshal(map[string]string{"to": recipient, "purpose": "register", "code": "317942"})
 	if err := s.Handle(context.Background(), platform.Event{Event: "email", Payload: payload}); err != nil {
@@ -85,7 +86,7 @@ func TestRealMailpitSMTPAndWorkerEmailPreserveVietnamese(t *testing.T) {
 
 // A transport configured to require TLS must not transmit an email through a plaintext-only SMTP server.
 func TestMailpitSMTPRequiredTLSFailsClosed(t *testing.T) {
-	err := (SMTP{Addr: "127.0.0.1:51025", From: "sender@test.local", RequireTLS: true}).Send(context.Background(), platform.ID()+"@test.local", "Subject", "private-body")
+	err := (SMTP{Addr: testutil.SMTPAddr(), From: "sender@test.local", RequireTLS: true}).Send(context.Background(), platform.ID()+"@test.local", "Subject", "private-body")
 	if err == nil || strings.Contains(err.Error(), "private-body") {
 		t.Fatalf("SMTP TLS policy %v", err)
 	}

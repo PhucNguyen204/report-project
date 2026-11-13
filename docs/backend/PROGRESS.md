@@ -27,7 +27,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | PostgreSQL integration environment | PASS local | PostgreSQL16, SeaweedFS S3, Mailpit đang chạy; Redis7 bổ sung ngày12/11 |
 | Test backend/coverage/race/build | LOCAL_PASS13/11 | Go1.26.11 full integration/race exit0; accounts86.1%, inventory87.0%, planning86.8%, media85.8%, exports85.1%, notification90.7%; app80.4%, platform71.3%, kernel95.9% |
 | Email/FCM/S3 thật | PARTIAL | SMTP Mailpit + S3 SeaweedFS qua network thật PASS; FCM và production credentials NOT_RUN |
-| Load/backup-restore | NOT_RUN | Hệ thống local đã chạy; phép đo tải và khôi phục còn mở |
+| K1–K5 / load / restore | PARTIAL | K1–K5 network85 HTTP checks PASS; tải và restore còn mở |
 
 ## Tiến độ tính năng
 
@@ -417,3 +417,16 @@ Feature-ID: F09-public-presigner. Trạng thái LOCAL_PASS.
 - [x] S3_PUBLIC_ENDPOINT mặc định S3_ENDPOINT; production bắt cả hai HTTPS. Runtime nối cùng credentials/region, không sửa host sau ký.
 - [x] Full integration/race/coverage PASS13/11; media85.9%, app81.0%; bộ test S3 thật cũ vẫn pass.
 - [ ] Smoke qua API trong container và chữ ký được S3 thật chấp nhận từ host thuộc packaging task tiếp theo.
+
+### F01/F37 — Docker, Make và cấu hình GitLab CI — 13/11/2026
+
+Feature-ID: F01-runtime-packaging. Trạng thái LOCAL_PASS packaging; CI remote NOT_RUN.
+- [x] Docker image Go1.26.11/Alpine khóa digest,48MB, nonroot, runtime CA/tzdata; `.env`/private keys không vào build context/Git.
+- [x] Compose PostgreSQL/Redis/SeaweedFS/Mailpit/app có healthcheck, bind secrets read-only, rootfs read-only, drop capabilities; project dicho-qa và cổng riêng, không đụng fixture cũ.
+- [x] Init giữ key/config đã có; Make verify/openapi/integration/security/secrets/build/run/up/down/smoke và README có lệnh cụ thể.
+- [x] Fixture hỗ trợ TEST_DATABASE_URL/TEST_REDIS_URL/TEST_S3_ENDPOINT/TEST_SMTP_ADDR/TEST_MAILPIT_URL; test chạy trên project/port riêng.
+- [x] macOS `make verify openapi`, `make integration`: PASS330 case/0 fail/0 skip. Linux runner local lần đầu FAIL TestPDFEmbedsVietnameseWrapsAndPaginates do thiếu Poppler; thêm poppler-utils/tzdata vào CI, rerun toàn bộ330 PASS.
+- [x] Docker app health PASS; `scripts/smoke.py` qua network thật K1–K5 PASS85 HTTP checks, OTP từ Mailpit, signed S3 PUT/complete/GET từ host, CSV/PDF qua worker. Mua20000đ/tiêu thụ12000đ/lãng phí2000đ đúng assertion. Artifact output/backend-qa/compose-smoke.json.
+- [x] govulncheck No vulnerabilities found. Gitleaks v8.30.1 history66 commits phát hiện4 ví dụ LaTeX có dấu `...`; review đúng từng giá trị rút gọn và ignore đúng4 fingerprint, rerun exit0. Staged diff39068 bytes scan exit0; không blanket-exclude file/rule.
+- [x] CI YAML parsed, job Linux dùng cùng Go image/dịch vụ thật, artifacts14 ngày; không auto deploy.
+- [ ] Remote runner, fresh Git clone smoke, tải/restore/monitoring, pagination và production FCM chưa hoàn tất. Không tick production release hay SLA từ kết quả local.

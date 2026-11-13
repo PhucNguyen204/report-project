@@ -1,0 +1,87 @@
+name: dicho-dev
+services:
+  postgres:
+    image: postgres@sha256:aa6cb33cf4c19c765cefcf48d96176258800870a9a1e930ad126200f9d825139
+    environment:
+      POSTGRES_USER: dicho
+      POSTGRES_PASSWORD: dicho-local-test
+      POSTGRES_DB: dicho_test
+    ports: ["127.0.0.1:${POSTGRES_PORT:-55432}:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dicho -d dicho_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  redis:
+    image: redis@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
+    ports: ["127.0.0.1:${REDIS_PORT:-56379}:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  s3:
+    image: chrislusf/seaweedfs@sha256:ccad23e18639c8b98cee17e7100b95830a06077b56d8e5b006d6dcf8ec5e94a0
+    command: ["mini", "-dir=/data"]
+    environment:
+      AWS_ACCESS_KEY_ID: dicho-test
+      AWS_SECRET_ACCESS_KEY: dicho-local-storage-test
+      S3_BUCKET: media
+    ports: ["127.0.0.1:${S3_PORT:-59000}:8333"]
+    volumes: ["s3-data:/data"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9333/cluster/status"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  mailpit:
+    image: axllent/mailpit@sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce
+    ports:
+      - "127.0.0.1:${SMTP_PORT:-51025}:1025"
+      - "127.0.0.1:${MAILPIT_PORT:-58025}:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  app:
+    profiles: ["app"]
+    build: .
+    image: dicho-backend:local
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    env_file: .env
+    environment:
+      LISTEN_ADDR: 0.0.0.0:8080
+      DATABASE_URL: postgres://dicho:dicho-local-test@postgres:5432/dicho_test?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+      S3_ENDPOINT: http://s3:8333
+      S3_PUBLIC_ENDPOINT: "http://127.0.0.1:${S3_PORT:-59000}"
+      SMTP_ADDR: mailpit:1025
+      SIGNING_KEY_FILE: /run/secrets/signing.key
+      QUEUE_KEY_FILE: /run/secrets/queue.key
+    ports: ["127.0.0.1:${API_PORT:-58080}:8080"]
+    volumes:
+      - type: bind
+        source: ./.local
+        target: /run/secrets
+        read_only: true
+    read_only: true
+    tmpfs: ["/tmp:size=64m,noexec,nosuid"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      s3: {condition: service_healthy}
+      mailpit: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/readyz"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+      start_period: 30s
+    stop_grace_period: 25s
+volumes:
+  postgres-data:
+  s3-data:

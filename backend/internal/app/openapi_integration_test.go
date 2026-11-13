@@ -49,7 +49,7 @@ func newAPIHarness(t *testing.T) *apiHarness {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := s3.NewFromConfig(aws.Config{Region: "us-east-1", Credentials: credentials.NewStaticCredentialsProvider("dicho-test", "dicho-local-storage-test", "")}, func(o *s3.Options) { o.BaseEndpoint = aws.String("http://127.0.0.1:59000"); o.UsePathStyle = true })
+	client := s3.NewFromConfig(aws.Config{Region: "us-east-1", Credentials: credentials.NewStaticCredentialsProvider("dicho-test", "dicho-local-storage-test", "")}, func(o *s3.Options) { o.BaseEndpoint = aws.String(testutil.S3Endpoint()); o.UsePathStyle = true })
 	mediaBucket := "api-media-" + platform.ID()
 	exportBucket := "api-exports-" + platform.ID()
 	for _, bucket := range []string{mediaBucket, exportBucket} {

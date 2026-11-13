@@ -37,7 +37,7 @@ func setupMedia(t *testing.T) (*Service, *platform.DB, *S3Store, string, string)
 	if _, err := db.Pool.Exec(ctx, "INSERT INTO household.space_members(space_id,user_id,role,space_kind) VALUES($1,$2,'leader','personal')", sid, user); err != nil {
 		t.Fatal(err)
 	}
-	client := s3.New(s3.Options{Region: "us-east-1", BaseEndpoint: aws.String("http://127.0.0.1:59000"), UsePathStyle: true, Credentials: credentials.NewStaticCredentialsProvider("dicho-test", "dicho-local-storage-test", "")})
+	client := s3.New(s3.Options{Region: "us-east-1", BaseEndpoint: aws.String(testutil.S3Endpoint()), UsePathStyle: true, Credentials: credentials.NewStaticCredentialsProvider("dicho-test", "dicho-local-storage-test", "")})
 	bucket := "media-" + user
 	if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: &bucket}); err != nil {
 		t.Fatalf("real S3 required: %v", err)
@@ -123,7 +123,7 @@ func TestRealS3UploadFinalizesPrivateOwnedImage(t *testing.T) {
 	if !bytes.Equal(got, data) {
 		t.Fatal("final image changed through staging URL")
 	}
-	req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:59000/"+store.bucket+"/"+key, nil)
+	req, _ := http.NewRequest(http.MethodGet, testutil.S3Endpoint()+"/"+store.bucket+"/"+key, nil)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
