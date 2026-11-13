@@ -623,3 +623,12 @@ Feature-ID: F37-fuzz-campaigns. Trạng thái LOCAL_PASS.
 - [x] `make fuzz`: 5campaign×15s/2workers PASS; executions quantity1678565/JSON175899/FEFO652081/Missing411225/dates361396, tổng3279166. Log output/backend-qa/fuzz-*.log; CI chạy cùng campaign và lưu logs/crash corpus14ngày.
 - [x] `make verify integration`: 7Python tests PASS, 490Go cases/0fail/0skip; format/vet/mod verify/unit race/integration race/build đạt. Combined global85.83%, app88.11/platform86.45/kernel95.95; mọi module vượt gate. Không đổi dependency hoặc migration.
 - [ ] Remote pipeline224/main tại ae790be vẫn pending, job983 runner=null/started_at=null. Owner/Maintainer cần gán runner như runbook; fuzz local không thay remote CI, smoke provider hoặc SLA production.
+
+### F01/F37 — observer cho HTTP và River — 13/11/2026
+
+Feature-ID: F37-observer. Trạng thái LOCAL_PASS library; runtime wiring là task kế tiếp.
+- [x] Observer inject logger/provider/registry riêng; RED metrics HTTP route/status/histogram/in-flight và worker kind/result/duration. Bounded methods/registered route patterns/event whitelist, không input-derived labels hoặc payload/headers/query/ID thật.
+- [x] Log JSON request_id/trace_id, span server/consumer qua OpenTelemetry1.47.0; counters/histograms/runtime/process/pool gauge qua prometheus/client_golang1.25.0. Versions xác minh module proxy và tài liệu official, không tự gửi collector nếu chỉ tạo observer.
+- [x] Test headers1xx/final/duplicate, no-content/body,5xx status, parent trace, worker retry/error/panic, concurrent requests/scrapes. Regression flush RED ghi204 sau khi response thực đã200→tracking FlushError→GREEN; gauges về0 và panic được chuyển tiếp.
+- [x] `make verify integration security`:495Go pass/0fail/0skip,7Python tests; race/vet/mod verify/build đạt, global85.95%, observer95.65%, mọi gate đạt. Govulncheck No vulnerabilities found với dependency graph mới.
+- [ ] Chưa nối runtime/ops port và encrypted queue ở checkpoint này; in-memory trace tests không thay collector smoke. Pipeline remote vẫn chờ runner, không đánh release DONE.

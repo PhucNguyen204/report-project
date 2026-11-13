@@ -12,6 +12,7 @@ import sys
 PACKAGE_MINIMUMS = {
     'dicho/internal/app': 85,
     'dicho/internal/platform': 85,
+    'dicho/internal/observability': 85,
     'dicho/internal/kernel': 90,
     **{'dicho/internal/modules/' + name: 85 for name in
        ['accounts', 'exports', 'inventory', 'media', 'notification', 'planning']},
