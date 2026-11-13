@@ -122,22 +122,53 @@ func (s *Service) auditLogs(w http.ResponseWriter, r *http.Request) error {
 	if err := platform.Admin(r); err != nil {
 		return err
 	}
-	items, err := queryMaps(r.Context(), s.db.Pool, `SELECT id::text,actor_id::text AS "actorId",action,entity_id AS "entityId",old_value AS "oldValue",new_value AS "newValue",created_at AS "createdAt" FROM admin.audit_logs ORDER BY created_at DESC,id DESC LIMIT 100`)
+	page, err := platform.ReadPage(r, platform.PageTime, platform.PageUUID)
 	if err != nil {
 		return err
 	}
-	platform.Write(w, 200, map[string]any{"items": items})
+	items, err := queryMaps(r.Context(), s.db.Pool, `SELECT id::text,actor_id::text AS "actorId",action,entity_id AS "entityId",
+ CASE WHEN jsonb_typeof(old_value)='object' THEN old_value-'field_versions' ELSE old_value END AS "oldValue",
+ CASE WHEN jsonb_typeof(new_value)='object' THEN new_value-'field_versions' ELSE new_value END AS "newValue",
+ created_at AS "createdAt" FROM admin.audit_logs
+ WHERE ($1='' OR (created_at,id)<(NULLIF($1,'')::timestamptz,NULLIF($2,'')::uuid))
+ ORDER BY created_at DESC,id DESC LIMIT $3`, page.After[0], page.After[1], page.Limit+1)
+	if err != nil {
+		return err
+	}
+	next := ""
+	if len(items) > page.Limit {
+		items = items[:page.Limit]
+		last := items[len(items)-1]
+		next = page.Next(last["createdAt"].(time.Time).Format(time.RFC3339Nano), last["id"].(string))
+	}
+	platform.WritePage(w, map[string]any{"items": items}, next, s.db.Clock.Now())
 	return nil
 }
 func (s *Service) adminUsers(w http.ResponseWriter, r *http.Request) error {
 	if err := platform.Admin(r); err != nil {
 		return err
 	}
-	items, err := queryMaps(r.Context(), s.db.Pool, `SELECT id::text,email,version,full_name AS "fullName",system_role AS "systemRole",status,last_login_at AS "lastLoginAt",lock_reason AS "lockReason" FROM identity.users WHERE deleted_at IS NULL AND ($1='' OR email::text ILIKE '%'||$1||'%' OR full_name ILIKE '%'||$1||'%') ORDER BY created_at DESC,id DESC LIMIT 100`, r.URL.Query().Get("q"))
+	page, err := platform.ReadPage(r, platform.PageTime, platform.PageUUID)
 	if err != nil {
 		return err
 	}
-	platform.Write(w, 200, map[string]any{"items": items})
+	items, err := queryMaps(r.Context(), s.db.Pool, `SELECT id::text,email,version,full_name AS "fullName",system_role AS "systemRole",status,last_login_at AS "lastLoginAt",lock_reason AS "lockReason",created_at AS "__pageCreatedAt"
+ FROM identity.users WHERE deleted_at IS NULL AND ($1='' OR email::text ILIKE '%'||$1||'%' OR full_name ILIKE '%'||$1||'%')
+ AND ($2='' OR (created_at,id)<(NULLIF($2,'')::timestamptz,NULLIF($3,'')::uuid))
+ ORDER BY created_at DESC,id DESC LIMIT $4`, r.URL.Query().Get("q"), page.After[0], page.After[1], page.Limit+1)
+	if err != nil {
+		return err
+	}
+	next := ""
+	if len(items) > page.Limit {
+		items = items[:page.Limit]
+		last := items[len(items)-1]
+		next = page.Next(last["__pageCreatedAt"].(time.Time).Format(time.RFC3339Nano), last["id"].(string))
+	}
+	for _, item := range items {
+		delete(item, "__pageCreatedAt")
+	}
+	platform.WritePage(w, map[string]any{"items": items}, next, s.db.Clock.Now())
 	return nil
 }
 func (s *Service) adminUser(w http.ResponseWriter, r *http.Request) error {

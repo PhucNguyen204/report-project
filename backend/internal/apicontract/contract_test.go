@@ -35,12 +35,12 @@ func TestContractRejectsMissingRequiredFieldsAndWrongTypes(t *testing.T) {
 	if err = c.Request(req, valid); err == nil {
 		t.Fatal("missing mutation key accepted")
 	}
-	for _, body := range []string{`{"code":1000}`, `{"code":"1000","data":{"items":[]}}`, `{"code":1000,"data":{"items":[{"name":"Canh"}]}}`} {
+	for _, body := range []string{`{"code":1000,"meta":{"nextCursor":"","serverTime":"2026-11-13T00:00:00Z"}}`, `{"code":"1000","data":{"items":[]},"meta":{"nextCursor":"","serverTime":"2026-11-13T00:00:00Z"}}`, `{"code":1000,"data":{"items":[{"name":"Canh"}]},"meta":{"nextCursor":"","serverTime":"2026-11-13T00:00:00Z"}}`} {
 		if err = c.Response("GET", path, 200, nil, []byte(body)); err == nil {
 			t.Fatalf("invalid response accepted %s", body)
 		}
 	}
-	if err = c.Response("GET", path, 200, nil, []byte(`{"code":1000,"data":{"items":[]}}`)); err != nil {
+	if err = c.Response("GET", path, 200, nil, []byte(`{"code":1000,"data":{"items":[]},"meta":{"nextCursor":"","serverTime":"2026-11-13T00:00:00Z"}}`)); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -55,5 +55,27 @@ func TestStaticContractAndHealthDoNotRequireApplicationHeaders(t *testing.T) {
 		if err := c.Request(req, nil); err != nil {
 			t.Fatalf("public %s: %v", path, err)
 		}
+	}
+}
+
+func TestCollectionContractsRequirePaginationMetadata(t *testing.T) {
+	c, err := apicontract.New(api.Document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{
+		"/it4788/v1/spaces/00000000-0000-7000-8000-000000000001/recipes",
+		"/it4788/v1/spaces/00000000-0000-7000-8000-000000000001/meals",
+		"/it4788/v1/admin/recipe-templates", "/it4788/v1/admin/users", "/it4788/v1/admin/audit-logs",
+		"/it4788/v1/admin/foods", "/it4788/v1/admin/food-categories", "/it4788/v1/admin/units",
+	} {
+		t.Run(path, func(t *testing.T) {
+			if err := c.Response("GET", path, 200, nil, []byte(`{"code":1000,"data":{"items":[]}}`)); err == nil {
+				t.Fatal("response without pagination metadata accepted")
+			}
+			if err := c.Response("GET", path, 200, nil, []byte(`{"code":1000,"data":{"items":[]},"meta":{"nextCursor":"","serverTime":"2026-11-13T00:00:00Z"}}`)); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }

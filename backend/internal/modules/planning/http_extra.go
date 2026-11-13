@@ -187,30 +187,41 @@ func (s *Service) RegisterTemplates(mux *http.ServeMux) {
 		if err := platform.Admin(r); err != nil {
 			return err
 		}
+		page, err := platform.ReadPage(r, platform.PageText, platform.PageUUID)
+		if err != nil {
+			return err
+		}
 		out := []Recipe{}
-		err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
+		next := ""
+		err = s.db.Tx(r.Context(), func(tx pgx.Tx) error {
 			if err := requireAdmin(r.Context(), tx, platform.Current(r).UserID); err != nil {
 				return err
 			}
-			rows, err := tx.Query(r.Context(), "SELECT id::text FROM recipe.recipes WHERE kind='template' AND deleted_at IS NULL ORDER BY name,id LIMIT 100")
+			rows, err := tx.Query(r.Context(), `SELECT id::text,name FROM recipe.recipes WHERE kind='template' AND deleted_at IS NULL AND ($1='' OR (name,id)>($2,NULLIF($1,'')::uuid)) ORDER BY name,id LIMIT $3`, page.After[1], page.After[0], page.Limit+1)
 			if err != nil {
 				return err
 			}
-			ids := []string{}
+			type templateKey struct{ id, name string }
+			keys := []templateKey{}
 			for rows.Next() {
-				var id string
-				if err = rows.Scan(&id); err != nil {
+				var key templateKey
+				if err = rows.Scan(&key.id, &key.name); err != nil {
 					rows.Close()
 					return err
 				}
-				ids = append(ids, id)
+				keys = append(keys, key)
 			}
 			rows.Close()
 			if err = rows.Err(); err != nil {
 				return err
 			}
-			for _, id := range ids {
-				item, err := s.readTemplate(r.Context(), tx, id)
+			if len(keys) > page.Limit {
+				last := keys[page.Limit-1]
+				next = page.Next(last.name, last.id)
+				keys = keys[:page.Limit]
+			}
+			for _, key := range keys {
+				item, err := s.readTemplate(r.Context(), tx, key.id)
 				if err != nil {
 					return err
 				}
@@ -221,7 +232,7 @@ func (s *Service) RegisterTemplates(mux *http.ServeMux) {
 		if err != nil {
 			return err
 		}
-		platform.Write(w, 200, map[string]any{"items": out})
+		platform.WritePage(w, map[string]any{"items": out}, next, s.db.Clock.Now())
 		return nil
 	}))
 }

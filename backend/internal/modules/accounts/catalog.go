@@ -129,15 +129,25 @@ func (s *Service) catalogAdmin(kind string) platform.Handler {
 		}
 		table := map[string]string{"food-categories": "food_categories", "units": "units", "foods": "foods"}[kind]
 		if r.Method == "GET" {
-			rows, err := queryMaps(r.Context(), s.db.Pool, "SELECT to_jsonb(x)-'field_versions' AS item FROM catalog."+table+" x ORDER BY name LIMIT 100")
+			page, err := platform.ReadPage(r, platform.PageText, platform.PageUUID)
 			if err != nil {
 				return err
+			}
+			rows, err := queryMaps(r.Context(), s.db.Pool, `SELECT to_jsonb(x)-'field_versions' AS item,name AS "__pageName",id::text AS "__pageId" FROM catalog.`+table+` x WHERE ($1='' OR (name,id)>($1,NULLIF($2,'')::uuid)) ORDER BY name,id LIMIT $3`, page.After[0], page.After[1], page.Limit+1)
+			if err != nil {
+				return err
+			}
+			next := ""
+			if len(rows) > page.Limit {
+				rows = rows[:page.Limit]
+				last := rows[len(rows)-1]
+				next = page.Next(last["__pageName"].(string), last["__pageId"].(string))
 			}
 			items := []any{}
 			for _, row := range rows {
 				items = append(items, row["item"])
 			}
-			platform.Write(w, 200, map[string]any{"items": items})
+			platform.WritePage(w, map[string]any{"items": items}, next, s.db.Clock.Now())
 			return nil
 		}
 		id := r.PathValue("id")

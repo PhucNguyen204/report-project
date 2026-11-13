@@ -35,17 +35,19 @@ Interfaces: `ReadPage(*http.Request,...PageKey)(Page,error)`; Page{Limit,After},
 
 Files: `internal/modules/planning/{http.go,http_extra.go,pagination_integration_test.go}`, OpenAPI generator/artifact.
 
-- [ ] RED R01 default20/name+id tie/favorite/source, chèn trước cursor, đủ mọi trang; M01 date+slot+id, giới hạn theo filter ngày.
-- [ ] R01 keyset name ASC/id ASC; M01 date ASC/slot ASC/id ASC; admin templates name/id. Parse cursor trước SQL, giữ quyền trong service.
-- [ ] Update schemas; full tests/review/report/commit/push F24-pagination.
+- [x] RED R01 default20/name+id tie/favorite/source, chèn trước cursor, đủ mọi trang; M01 date+slot+id, giới hạn theo filter ngày.
+- [x] R01 keyset name ASC/id ASC; M01 date ASC/slot ASC/id ASC; admin templates name/id. Parse cursor trước SQL, giữ quyền trong service.
+- [x] Update schemas; full tests/review/report/commit/push F24-pagination.
 
 ## Task3: Administration and remaining audit
 
 Files: `internal/modules/accounts/{admin.go,catalog.go,pagination_integration_test.go}`, OpenAPI generator/artifact.
 
-- [ ] RED D01/D10 default20/time+id tie, cursor không đổi filter/user, nonadmin403; catalog admin name/id với21+ entries.
-- [ ] SQL keyset users/audit createdAt DESC/id DESC, catalog name/id ASC; giữ field_versions nội bộ không trả ra ngoài.
-- [ ] Rà Q01/search filters, lịch sử stock movement và hoạt động; ghi gap cụ thể hoặc implement theo test trước khi đóng coverage requirement.
-- [ ] Full tests/security/contract, report, commit/push F34-pagination. CI remote không tự tick nếu chưa có runner result.
+- [x] RED D01/D10 default20/time+id tie, cursor không đổi filter/user, nonadmin403; catalog admin name/id với21+ entries.
+- [x] SQL keyset users/audit createdAt DESC/id DESC, catalog name/id ASC; giữ field_versions nội bộ không trả ra ngoài.
+- [x] Rà Q01/search filters, lịch sử stock movement và hoạt động; ghi gap cụ thể hoặc implement theo test trước khi đóng coverage requirement.
+- [x] Full tests/security/contract, report, commit/push F34-pagination. CI remote không tự tick nếu chưa có runner result.
 
 Self-review: không thay generic search/suggestion thành list một cách vô ý; keyset bảo đảm không lặp do insert trước cursor, không hứa snapshot qua mọi lần đổi sort key. Mọi caller vẫn kiểm quyền và scope; aggregate theo full filters tránh tổng tiền phụ thuộc page size.
+
+Verification13/11: root review SQL/cursor/DTO và contract RED thiếu meta cho8 GET rồi GREEN. `make verify integration`:378 case pass/0 fail/0 skip; planning87.1%, accounts86.3%. Q01 capped100/facets và stock movement detail capped1000 là gap đã audit, triển khai tiếp riêng; không tick toàn yêu cầu pagination là complete.

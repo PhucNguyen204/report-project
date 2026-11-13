@@ -25,7 +25,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | Plan và ma trận kiểm thử | PASS | spec_audit chấp nhận sau sửa dependency/auth, activity log, contracts, River, precision, release gate |
 | Toolchain Go | PASS | `go version`: go1.26.11 darwin/arm64; nâng sau scanner RED |
 | PostgreSQL integration environment | PASS local | PostgreSQL16, SeaweedFS S3, Mailpit đang chạy; Redis7 bổ sung ngày12/11 |
-| Test backend/coverage/race/build | LOCAL_PASS13/11 | Go1.26.11 full integration/race exit0; accounts86.1%, inventory87.0%, planning86.8%, media85.8%, exports85.1%, notification90.7%; app80.4%, platform71.3%, kernel95.9% |
+| Test backend/coverage/race/build | LOCAL_PASS13/11 | Go1.26.11 full integration/race exit0; 378 case/0 fail/0 skip; accounts86.3%, inventory86.8%, planning87.1%, media86.4%, exports85.1%, notification90.7%; app81.0%, platform74.4%, kernel95.9% |
 | Email/FCM/S3 thật | PARTIAL | SMTP Mailpit + S3 SeaweedFS qua network thật PASS; FCM và production credentials NOT_RUN |
 | K1–K5 / load / restore | PARTIAL | K1–K5 network85 HTTP checks PASS; tải và restore còn mở |
 
@@ -54,9 +54,9 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F19 | UC09 mua/undo | LOCAL_PASS | 2ddf402; purchase/undo/batch rollback/concurrency |
 | F20 | UC11 nhập từ mua sắm | LOCAL_PASS | 2ddf402; stock source unique và total cost bảo toàn |
 | F21 | UC08 phân công/push | LOCAL_PASS | 2ddf402; role/race/digest5 giây; live FCM chưa smoke |
-| F22 | UC15 công thức/yêu thích/copy | IN_PROGRESS | c498d1b/d5dac6a; ảnh/copy/favorite pass; recipe pagination còn mở |
+| F22 | UC15 công thức/yêu thích/copy | LOCAL_PASS | Ảnh/copy/favorite và keyset name/id có test PostgreSQL; metadata OpenAPI đã đồng bộ |
 | F23 | UC16 xem/đối chiếu | LOCAL_PASS | c498d1b/d5dac6a; scale/optional/dimension/stock comparison |
-| F24 | UC17 lịch | IN_PROGRESS | d39c0d5/d5dac6a; lịch/horizon/cooked rules pass; pagination còn mở |
+| F24 | UC17 lịch | LOCAL_PASS | Lịch/horizon/cooked rules và keyset date/slot/id đã kiểm thử |
 | F25 | UC10 từ công thức | LOCAL_PASS | 18a04e0; missing recipe preview/confirm |
 | F26 | UC10 từ lịch | LOCAL_PASS | 18a04e0; dated allocation và regression0,3kg |
 | F27 | UC18 gợi ý | LOCAL_PASS | e8e97be; score/live settings/fallback; tải NOT_RUN |
@@ -64,9 +64,9 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F29 | UC14 reminder | LOCAL_PASS | 153d0e8; Tick/reminder/retention pass; SLA vận hành chưa đo |
 | F30 | UC21 báo cáo | LOCAL_PASS | df7a33b; report views/previous period/inclusive range |
 | F31 | UC22 export | LOCAL_PASS | 96ef09c; exports85.1%, S3 và PDF/CSV thật |
-| F32 | UC20 search/suggest | LOCAL_PASS | df7a33b; scoped unaccent search/suggest và bounds |
-| F33 | UC23 templates/duyệt/gộp | IN_PROGRESS | 5e30ea9/d5dac6a/f97b6e8; review/template/remap pass; admin pagination còn mở |
-| F34 | UC24 quản trị tài khoản | IN_PROGRESS | 5e30ea9; status/role/revoke pass; admin list pagination còn mở |
+| F32 | UC20 search/suggest | IN_PROGRESS | df7a33b scoped search/suggest có test; audit phát hiện cap100 và facets cần tính toàn filter |
+| F33 | UC23 templates/duyệt/gộp | LOCAL_PASS | Review/template/remap và admin collection keysets có test quyền/scope |
+| F34 | UC24 quản trị tài khoản | LOCAL_PASS | Status/role/revoke và user/audit keysets đã kiểm thử |
 | F35 | Copy/PurgeSpace/xóa tài khoản | LOCAL_PASS | f97b6e8; copy/purge/anonymization; atomic dispatcher có test |
 | F36 | UC03 mật khẩu | LOCAL_PASS | 392b536/0b6cb74; reset/change/retention đúng thời hạn |
 | F37 | E2E/security/load/restore/release | IN_PROGRESS | 41caf63; scanner exit0; E2E mở rộng/load/restore/monitoring/CI/review còn mở |
@@ -487,3 +487,14 @@ Feature-ID: F09-media-roles. Trạng thái LOCAL_PASS.
 - [x] Focused media integration/race PASS86.4%. Full đầu gặp TestAdministratorDoesNotReadFamilyImagesThroughFormerMembership lỗi fixture thiếu category_id; sửa fixture đúng schema, không nới constraint, rerun make verify integration PASS348 case/0 fail/0 skip.
 - [x] Snapshot348 được chạy trước khi sub-agent bắt đầu pagination planning tiếp theo; source media này độc lập thay đổi đang làm ở planning.
 - [ ] Sub-agent lại chạm quota, root tiếp tục kiểm tra các phần bàn giao và recovery; không coi phần chưa verify là DONE.
+
+
+### F22/F24/F33/F34 — phân trang công thức, lịch và quản trị — 13/11/2026
+
+Feature-ID: F24-planning-pagination; F34-admin-pagination. Trạng thái LOCAL_PASS.
+- [x] Sub-agent quan sát RED21 bản ghi/default sai/thiếu meta rồi GREEN. R01 và template name ASC/id ASC; M01 date ASC/slot ASC/id ASC; user/audit createdAt DESC/id DESC; danh mục name ASC/id ASC.
+- [x] Default20/max100, limit+1 và cursor giữ user/path/filter; đổi page size hợp lệ, trùng sort key và chèn trước cursor không làm lặp dữ liệu. Giữ nguồn/favorite/q, ngày và quyền tenant/admin.
+- [x] Không trả field_versions, password_hash hay cột cursor nội bộ. Audit bỏ field_versions khỏi oldValue/newValue object; không thay các field nghiệp vụ khác.
+- [x] Migration045/046 thêm index mới, không sửa migration đã commit. Root review diff, contract RED8 GET thiếu meta rồi GREEN; OpenAPI201 schemas/101 operations, default/query/meta khớp handlers.
+- [x] Root `make verify integration`: PASS378 case/0 fail/0 skip; race/vet/build/mod verify đạt. accounts86.3%, planning87.1%; inventory86.8%, media86.4%, exports85.1%, notification90.7%, app81.0%, platform74.4%, kernel95.9%.
+- [ ] Q01 search còn cap100/full-filter facets; P03 movement detail cap1000. Đây là gap đang xử lý tiếp, không dùng pagination của các collection trên để đóng toàn F32/F37.

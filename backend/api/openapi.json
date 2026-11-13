@@ -4789,9 +4789,19 @@
               "type": "integer",
               "minimum": 1,
               "maximum": 100,
-              "default": 50
+              "default": 20
             },
             "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "description": "Giữ nguyên đường dẫn, người dùng và bộ lọc của trang trước; có thể đổi limit."
           },
           {
             "name": "q",
@@ -5648,6 +5658,28 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "description": "Giữ nguyên đường dẫn, người dùng và bộ lọc của trang trước; có thể đổi limit."
           },
           {
             "name": "from",
@@ -7303,6 +7335,28 @@
             "$ref": "#/components/parameters/AppVersion"
           },
           {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "description": "Giữ nguyên đường dẫn, người dùng và bộ lọc của trang trước; có thể đổi limit."
+          },
+          {
             "name": "q",
             "in": "query",
             "required": false,
@@ -7473,6 +7527,28 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/AppVersion"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "description": "Giữ nguyên đường dẫn, người dùng và bộ lọc của trang trước; có thể đổi limit."
           }
         ],
         "responses": {
@@ -7795,6 +7871,28 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/AppVersion"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "description": "Giữ nguyên đường dẫn, người dùng và bộ lọc của trang trước; có thể đổi limit."
           }
         ],
         "responses": {
@@ -8114,6 +8212,28 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/AppVersion"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "description": "Giữ nguyên đường dẫn, người dùng và bộ lọc của trang trước; có thể đổi limit."
           }
         ],
         "responses": {
@@ -8433,6 +8553,28 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/AppVersion"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "description": "Giữ nguyên đường dẫn, người dùng và bộ lọc của trang trước; có thể đổi limit."
           }
         ],
         "responses": {
@@ -8905,6 +9047,28 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/AppVersion"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "description": "Giữ nguyên đường dẫn, người dùng và bộ lọc của trang trước; có thể đổi limit."
           }
         ],
         "responses": {
@@ -15256,12 +15420,16 @@
             "required": [
               "items"
             ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
           }
         },
         "additionalProperties": false,
         "required": [
           "code",
-          "data"
+          "data",
+          "meta"
         ]
       },
       "R02_postResponse": {
@@ -15466,12 +15634,16 @@
             "required": [
               "items"
             ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
           }
         },
         "additionalProperties": false,
         "required": [
           "code",
-          "data"
+          "data",
+          "meta"
         ]
       },
       "M02_postResponse": {
@@ -15794,12 +15966,16 @@
             "required": [
               "items"
             ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
           }
         },
         "additionalProperties": false,
         "required": [
           "code",
-          "data"
+          "data",
+          "meta"
         ]
       },
       "D02_patchResponse": {
@@ -15855,12 +16031,16 @@
             "required": [
               "items"
             ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
           }
         },
         "additionalProperties": false,
         "required": [
           "code",
-          "data"
+          "data",
+          "meta"
         ]
       },
       "D03_postResponse": {
@@ -15980,12 +16160,16 @@
             "required": [
               "items"
             ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
           }
         },
         "additionalProperties": false,
         "required": [
           "code",
-          "data"
+          "data",
+          "meta"
         ]
       },
       "D05_postResponse": {
@@ -16105,12 +16289,16 @@
             "required": [
               "items"
             ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
           }
         },
         "additionalProperties": false,
         "required": [
           "code",
-          "data"
+          "data",
+          "meta"
         ]
       },
       "D06_postResponse": {
@@ -16230,12 +16418,16 @@
             "required": [
               "items"
             ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
           }
         },
         "additionalProperties": false,
         "required": [
           "code",
-          "data"
+          "data",
+          "meta"
         ]
       },
       "D07_postResponse": {
@@ -16376,12 +16568,16 @@
             "required": [
               "items"
             ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
           }
         },
         "additionalProperties": false,
         "required": [
           "code",
-          "data"
+          "data",
+          "meta"
         ]
       },
       "D11_postResponse": {
@@ -16540,7 +16736,7 @@
   },
   "x-implementation-notes": [
     "Thông báo trả data.items cùng meta.nextCursor và meta.serverTime; shopping dùng data.lists, pantry dùng data.lots và data.nextCursor.",
-    "GET danh mục có304 không body. Pantry/shopping/inbox có cursor; recipe/meal/admin pagination đang được hoàn thiện.",
+    "GET danh mục có304 không body. Pantry/shopping/inbox/recipe/meal/admin collections có cursor default20/max100; search đang được rà riêng.",
     "Các API xác nhận dryRun miễn Idempotency-Key khi chỉ xem trước.",
     "Các mutation cần quyền đang kiểm lại membership/admin trong dịch vụ và transaction."
   ]

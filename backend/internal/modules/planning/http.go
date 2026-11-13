@@ -116,43 +116,46 @@ func (s *Service) RegisterMeals(mux *http.ServeMux) {
 }
 
 func (s *Service) listRecipesHTTP(w http.ResponseWriter, r *http.Request) error {
-	sid, user := r.PathValue("sid"), platform.Current(r).UserID
-	limit := 50
-	if v := r.URL.Query().Get("limit"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 1 || n > 100 {
-			return platform.Invalid("Giới hạn từ 1–100")
-		}
-		limit = n
+	page, err := platform.ReadPage(r, platform.PageText, platform.PageUUID)
+	if err != nil {
+		return err
 	}
+	sid, user := r.PathValue("sid"), platform.Current(r).UserID
 	source := r.URL.Query().Get("source")
 	if source != "" && source != "space" && source != "template" && source != "favorite" {
 		return platform.Invalid("Nguồn công thức không hợp lệ")
 	}
 	out := []Recipe{}
-	err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
+	next := ""
+	err = s.db.Tx(r.Context(), func(tx pgx.Tx) error {
 		if _, err := s.db.RequireMember(r.Context(), tx, sid, user); err != nil {
 			return err
 		}
-		rows, err := tx.Query(r.Context(), "SELECT r.id::text FROM recipe.recipes r WHERE r.deleted_at IS NULL AND r.status='published' AND (r.space_id=$1 OR r.kind='template') AND ($2='' OR ($2='space' AND r.space_id=$1) OR ($2='template' AND r.kind='template') OR ($2='favorite' AND EXISTS(SELECT 1 FROM recipe.favorite_recipes f WHERE f.recipe_id=r.id AND f.user_id=$3))) AND ($4='' OR strpos(lower(unaccent(r.name)),lower(unaccent($4)))>0) ORDER BY r.name,r.id LIMIT $5", sid, source, user, r.URL.Query().Get("q"), limit)
+		rows, err := tx.Query(r.Context(), `SELECT r.id::text,r.name FROM recipe.recipes r WHERE r.deleted_at IS NULL AND r.status='published' AND (r.space_id=$1 OR r.kind='template') AND ($2='' OR ($2='space' AND r.space_id=$1) OR ($2='template' AND r.kind='template') OR ($2='favorite' AND EXISTS(SELECT 1 FROM recipe.favorite_recipes f WHERE f.recipe_id=r.id AND f.user_id=$3))) AND ($4='' OR strpos(lower(unaccent(r.name)),lower(unaccent($4)))>0) AND ($5='' OR (r.name,r.id)>($6,NULLIF($5,'')::uuid)) ORDER BY r.name,r.id LIMIT $7`, sid, source, user, r.URL.Query().Get("q"), page.After[1], page.After[0], page.Limit+1)
 		if err != nil {
 			return err
 		}
-		ids := []string{}
+		type recipeKey struct{ id, name string }
+		keys := []recipeKey{}
 		for rows.Next() {
-			var id string
-			if err = rows.Scan(&id); err != nil {
+			var key recipeKey
+			if err = rows.Scan(&key.id, &key.name); err != nil {
 				rows.Close()
 				return err
 			}
-			ids = append(ids, id)
+			keys = append(keys, key)
 		}
 		rows.Close()
 		if err = rows.Err(); err != nil {
 			return err
 		}
-		for _, id := range ids {
-			recipe, err := s.readRecipe(r.Context(), tx, sid, id, 0)
+		if len(keys) > page.Limit {
+			last := keys[page.Limit-1]
+			next = page.Next(last.name, last.id)
+			keys = keys[:page.Limit]
+		}
+		for _, key := range keys {
+			recipe, err := s.readRecipe(r.Context(), tx, sid, key.id, 0)
 			if err != nil {
 				return err
 			}
@@ -163,7 +166,7 @@ func (s *Service) listRecipesHTTP(w http.ResponseWriter, r *http.Request) error 
 	if err != nil {
 		return err
 	}
-	platform.Write(w, 200, map[string]any{"items": out})
+	platform.WritePage(w, map[string]any{"items": out}, next, s.db.Clock.Now())
 	return nil
 }
 func (s *Service) recipeDetailHTTP(w http.ResponseWriter, r *http.Request) error {
@@ -193,8 +196,11 @@ func (s *Service) recipeDetailHTTP(w http.ResponseWriter, r *http.Request) error
 	return nil
 }
 func (s *Service) listMealsHTTP(w http.ResponseWriter, r *http.Request) error {
+	page, err := platform.ReadPage(r, platform.PageDate, platform.PageText, platform.PageUUID)
+	if err != nil {
+		return err
+	}
 	from, to := s.db.Today(), s.db.Today().AddDate(0, 0, 6)
-	var err error
 	if v := r.URL.Query().Get("from"); v != "" {
 		from, err = parseDate(v)
 		if err != nil {
@@ -215,24 +221,30 @@ func (s *Service) listMealsHTTP(w http.ResponseWriter, r *http.Request) error {
 		if _, err := s.db.RequireMember(r.Context(), tx, r.PathValue("sid"), platform.Current(r).UserID); err != nil {
 			return err
 		}
-		rows, err := tx.Query(r.Context(), "SELECT id::text,recipe_id::text,name,meal_date::text,meal_slot,servings,status,version FROM mealplan.meal_entries WHERE space_id=$1 AND meal_date BETWEEN $2 AND $3 AND deleted_at IS NULL ORDER BY meal_date,meal_slot,id", r.PathValue("sid"), from, to)
+		rows, err := tx.Query(r.Context(), `SELECT id::text,recipe_id::text,name,meal_date::text,meal_slot,servings,status,version FROM mealplan.meal_entries WHERE space_id=$1 AND meal_date BETWEEN $2 AND $3 AND deleted_at IS NULL AND ($4='' OR (meal_date,meal_slot,id)>(NULLIF($4,'')::date,$5,NULLIF($6,'')::uuid)) ORDER BY meal_date,meal_slot,id LIMIT $7`, r.PathValue("sid"), from, to, page.After[0], page.After[1], page.After[2], page.Limit+1)
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
 		for rows.Next() {
-			var m Meal
-			if err = rows.Scan(&m.ID, &m.RecipeID, &m.Name, &m.Date, &m.MealSlot, &m.Servings, &m.Status, &m.Version); err != nil {
+			var meal Meal
+			if err = rows.Scan(&meal.ID, &meal.RecipeID, &meal.Name, &meal.Date, &meal.MealSlot, &meal.Servings, &meal.Status, &meal.Version); err != nil {
 				return err
 			}
-			out = append(out, m)
+			out = append(out, meal)
 		}
 		return rows.Err()
 	})
 	if err != nil {
 		return err
 	}
-	platform.Write(w, 200, map[string]any{"items": out})
+	next := ""
+	if len(out) > page.Limit {
+		last := out[page.Limit-1]
+		next = page.Next(last.Date, last.MealSlot, last.ID)
+		out = out[:page.Limit]
+	}
+	platform.WritePage(w, map[string]any{"items": out}, next, s.db.Clock.Now())
 	return nil
 }
 func (s *Service) patchMealHTTP(w http.ResponseWriter, r *http.Request) error {
