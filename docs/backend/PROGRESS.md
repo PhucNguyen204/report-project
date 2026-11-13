@@ -326,3 +326,11 @@ Feature-ID: F26-missing-workflow. Trạng thái LOCAL_PASS core.
 - [x] Confirm giữ lượng/dòng người dùng chọn, kiểm lại food/unit/target và rollback khi batch sai; không ghi trực tiếp schema shopping.
 - [x] Root full integration/race PASS13/11; test generate/missing/canonical/precision và các boundary không bị skip.
 - [ ] HTTP aggregate/contract được chốt checkpoint riêng.
+
+### F27 — gợi ý từ kho hiện tại — 13/11/2026
+
+Feature-ID: F27-suggestions. Trạng thái LOCAL_PASS core.
+- [x] Trọng số R/E/F từ config, ngưỡng/độ phủ lượng/nguyên liệu tùy chọn và ưu tiên sắp hết hạn; điểm0,75 xếp trên0,6.
+- [x] Top/tie ổn định, favorite theo user, fallback3, thay đổi kho/cấu hình phản ánh ở lần đọc kế tiếp.
+- [x] Root full integration/race PASS13/11; test không dùng cache fake để thay dữ liệu PostgreSQL.
+- [ ] Đo tải500 công thức/200 lô và target latency còn NOT_RUN.
