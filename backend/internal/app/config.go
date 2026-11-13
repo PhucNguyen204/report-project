@@ -11,11 +11,13 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
 type RuntimeConfig struct {
 	Development                                                               bool
+	AutoMigrate                                                               bool
 	Mode, ListenAddr, DatabaseURL, RedisURL                                   string
 	SigningKeyFile, QueueKeyFile                                              string
 	S3Endpoint, S3Region, S3AccessKey, S3SecretKey, MediaBucket, ExportBucket string
@@ -35,6 +37,17 @@ func LoadRuntimeConfig(get func(string) string) (RuntimeConfig, error) {
 		return c, errors.New("APP_ENV must be development or production")
 	}
 	c.Development = env == "development"
+	c.AutoMigrate = c.Development
+	if raw := get("AUTO_MIGRATE"); raw != "" {
+		var err error
+		c.AutoMigrate, err = strconv.ParseBool(raw)
+		if err != nil {
+			return c, errors.New("invalid AUTO_MIGRATE")
+		}
+	}
+	if !c.Development && c.AutoMigrate {
+		return c, errors.New("production requires a separate dicho-migrate process")
+	}
 	value := func(key, fallback string) string {
 		if v := get(key); v != "" {
 			return v

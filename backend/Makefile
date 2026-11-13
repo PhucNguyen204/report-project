@@ -21,6 +21,7 @@ build:
 	mkdir -p bin
 	go build -trimpath -o bin/dicho ./cmd/server
 	go build -trimpath -o bin/dicho-keygen ./cmd/keygen
+	go build -trimpath -o bin/dicho-migrate ./cmd/migrate
 
 format:
 	@files="$$(gofmt -l cmd internal api migrations)"; if [ -n "$$files" ]; then printf '%s\n' "$$files"; exit 1; fi
@@ -57,3 +58,7 @@ secrets:
 .PHONY: recovery
 recovery:
 	python3 scripts/recovery_check.py
+
+.PHONY: migrate
+migrate:
+	go run ./cmd/migrate

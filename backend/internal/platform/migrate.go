@@ -10,6 +10,47 @@ import (
 	"strings"
 )
 
+func CheckMigrations(ctx context.Context, pool *pgxpool.Pool, files fs.FS) error {
+	entries, err := fs.ReadDir(files, ".")
+	if err != nil {
+		return err
+	}
+	expected := map[string]string{}
+	for _, entry := range entries {
+		if !strings.HasSuffix(entry.Name(), ".sql") {
+			continue
+		}
+		body, err := fs.ReadFile(files, entry.Name())
+		if err != nil {
+			return err
+		}
+		expected[entry.Name()] = fmt.Sprintf("%x", sha256.Sum256(body))
+	}
+	rows, err := pool.Query(ctx, "SELECT name,checksum FROM schema_migrations")
+	if err != nil {
+		return fmt.Errorf("read migration ledger: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name, checksum string
+		if err := rows.Scan(&name, &checksum); err != nil {
+			return err
+		}
+		want, exists := expected[name]
+		if !exists || want != checksum {
+			return fmt.Errorf("migration %s is unknown or has a different checksum", name)
+		}
+		delete(expected, name)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if len(expected) > 0 {
+		return fmt.Errorf("%d application migrations are pending; run dicho-migrate", len(expected))
+	}
+	return nil
+}
+
 func Migrate(ctx context.Context, pool *pgxpool.Pool, files fs.FS) error {
 	conn, err := pool.Acquire(ctx)
 	if err != nil {

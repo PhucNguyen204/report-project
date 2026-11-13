@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
@@ -40,6 +41,22 @@ func (w *eventWorker) Work(ctx context.Context, job *river.Job[Event]) error {
 	return w.handler(ctx, event)
 }
 func ConfigureQueue(ctx context.Context, db *DB, handler EventHandler, keys ...[]byte) (*river.Client[pgx.Tx], error) {
+	if err := MigrateQueue(ctx, db.Pool.Pool); err != nil {
+		return nil, err
+	}
+	return OpenQueue(ctx, db, handler, keys...)
+}
+
+func MigrateQueue(ctx context.Context, pool *pgxpool.Pool) error {
+	m, err := rivermigrate.New(riverpgxv5.New(pool), nil)
+	if err != nil {
+		return err
+	}
+	_, err = m.Migrate(ctx, rivermigrate.DirectionUp, nil)
+	return err
+}
+
+func OpenQueue(ctx context.Context, db *DB, handler EventHandler, keys ...[]byte) (*river.Client[pgx.Tx], error) {
 	var cipher *EventCipher
 	if len(keys) > 1 {
 		return nil, fmt.Errorf("only one queue key is supported")
@@ -56,8 +73,15 @@ func ConfigureQueue(ctx context.Context, db *DB, handler EventHandler, keys ...[
 	if err != nil {
 		return nil, err
 	}
-	if _, err = m.Migrate(ctx, rivermigrate.DirectionUp, nil); err != nil {
+	if _, err = m.ExistingVersions(ctx); err != nil {
 		return nil, err
+	}
+	validation, err := m.Validate(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	if !validation.OK {
+		return nil, fmt.Errorf("River migrations are pending; run dicho-migrate")
 	}
 	workers := river.NewWorkers()
 	if handler == nil {

@@ -51,7 +51,15 @@ func run() error {
 	if err = pool.Ping(initCtx); err != nil {
 		return errors.New("database connection failed")
 	}
-	if err = platform.Migrate(initCtx, pool, migrations.Files); err != nil {
+	if cfg.AutoMigrate {
+		if err = platform.Migrate(initCtx, pool, migrations.Files); err != nil {
+			return err
+		}
+		if err = platform.MigrateQueue(initCtx, pool); err != nil {
+			return err
+		}
+	}
+	if err = platform.CheckMigrations(initCtx, pool, migrations.Files); err != nil {
 		return err
 	}
 	redisOpts, err := redis.ParseURL(cfg.RedisURL)

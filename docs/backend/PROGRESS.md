@@ -543,3 +543,15 @@ Feature-ID: F37-ci-runner-diagnosis. Trạng thái WAITING_EXTERNAL_ACCESS cho C
 - [x] Chuẩn bị [runbook GitLab CI](runbooks/gitlab-ci.md) với điều kiện Docker/Linux, online/project scope, untagged jobs và bảo vệ nhánh; đối chiếu tài liệu GitLab chính thức.
 - [ ] Owner/Maintainer cần gán/bật runner đủ điều kiện, rồi retry. Chưa kiểm được runner inventory/tags nên không sửa YAML bằng tag phỏng đoán; không tắt test/allow_failure hoặc tăng timeout để che scheduling failure.
 - [ ] Remote pipeline chưa pass. Root vẫn commit/push/merge từng checkpoint đã được full tests; việc cấp quyền runner là thay đổi hạ tầng ngoài quyền Developer đang có.
+
+
+### F01 — migrator riêng và runtime database không có quyền DDL — 13/11/2026
+
+Feature-ID: F01-migration-privileges. Trạng thái LOCAL_PASS fixture.
+- [x] CheckMigrations chỉ đọc ledger/checksum, từ chối missing/changed/ahead; OpenQueue kiểm River versions/schema, không tự migrate. ConfigureQueue giữ bootstrap wrapper cho fixtures/caller cũ.
+- [x] AUTO_MIGRATE default development=true/production=false; production true bị từ chối. Server và NewSystem không dùng migrator role ngầm; binary dicho-migrate chỉ cần DATABASE_URL, chạy app+River trước startup.
+- [x] TDD RED thiếu APIs/config/CLI rồi GREEN. Test bootstrap CLI đầu trỏ sai DB vì ConnString giữ DSN cũ; sửa fixture URL đích, không nới kiểm checksum. Migration ledger không khớp vẫn fail.
+- [x] PostgreSQL role mới không sở hữu DB/schema, CREATE TABLE và sửa ledger bị denied; encrypted River job hoàn thành; NewSystem đăng ký tài khoản, readback DB và readyz đạt với role đó. Cleanup chỉ role/DB tự tạo.
+- [x] Staged snapshot `make verify integration`:399 case pass/0 fail/0 skip. Thêm limited-role HTTP assertions targeted race PASS; root full working tree `make verify integration security`:407 pass/0 fail/0 skip, No vulnerabilities found (407 gồm search chưa commit, được chốt riêng).
+- [x] Docker image build PASS, UID10001; chạy migrator image2lần trên DB trống sinh riêng đều exit0, cleanup DB đạt. Make/Docker/README/runbook đã đồng bộ; không thay migration đã commit.
+- [ ] Chưa thay đổi quyền database production hoặc cấp credential mới. DBA cần áp role/grants tại môi trường triển khai; CI remote vẫn chờ runner đủ quyền/project scope.

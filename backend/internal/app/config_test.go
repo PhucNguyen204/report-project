@@ -10,6 +10,27 @@ import (
 func developmentEnv() map[string]string {
 	return map[string]string{"APP_ENV": "development", "DATABASE_URL": "postgres://dicho:local@localhost/dicho?sslmode=disable", "REDIS_URL": "redis://localhost:56379/0", "S3_ENDPOINT": "http://localhost:59000", "S3_ACCESS_KEY": "local", "S3_SECRET_KEY": "local", "SIGNING_KEY_FILE": "signing.key", "QUEUE_KEY_FILE": "queue.key", "SMTP_ADDR": "localhost:51025", "SMTP_FROM": "sender@example.test"}
 }
+func TestMigrationPolicyRequiresSeparateProductionMigrator(t *testing.T) {
+	for _, tt := range []struct {
+		env, value string
+		want, fail bool
+	}{
+		{"development", "", true, false}, {"development", "false", false, false},
+		{"development", "true", true, false}, {"development", "invalid", false, true},
+		{"production", "", false, false}, {"production", "false", false, false},
+		{"production", "true", false, true},
+	} {
+		t.Run(tt.env+"/"+tt.value, func(t *testing.T) {
+			env := developmentEnv()
+			env["APP_ENV"], env["AUTO_MIGRATE"] = tt.env, tt.value
+			env["S3_ENDPOINT"], env["FCM_PROJECT_ID"] = "https://storage.example.test", "fixture"
+			cfg, err := LoadRuntimeConfig(func(k string) string { return env[k] })
+			if (err != nil) != tt.fail || (err == nil && cfg.AutoMigrate != tt.want) {
+				t.Fatalf("migration policy auto%v error%v want%v fail%v", cfg.AutoMigrate, err, tt.want, tt.fail)
+			}
+		})
+	}
+}
 func TestRuntimeConfigurationRejectsInvalidPublicStorageEndpoint(t *testing.T) {
 	for _, endpoint := range []string{"bad", "ftp://storage.example.test"} {
 		env := developmentEnv()
