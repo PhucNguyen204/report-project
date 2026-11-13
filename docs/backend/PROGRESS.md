@@ -353,3 +353,12 @@ Feature-ID: F24-planning-http. Trạng thái LOCAL_PASS.
 - [x] Migration031 chặn đổi dimension đơn vị recipe; chấm điểm từ chối NaN.
 - [x] Root full integration/race PASS13/11; planning86.8%; contract route/schema được kiểm riêng ở task OpenAPI.
 - [ ] Keyset/default pagination toàn endpoint còn mở, chưa tuyên bố khớp toàn bộ phần phân trang của đặc tả.
+
+### F35 — riêng tư, sao chép và vòng đời không gian — 13/11/2026
+
+Feature-ID: F35-space-lifecycle. Trạng thái LOCAL_PASS module.
+- [x] Xóa tài khoản kiểm mật khẩu, thu hồi ngay phiên, chặn leader còn thành viên; ẩn danh sau30 ngày, không xóa lịch sử người khác.
+- [x] Clone private foods giữ shelf life và ánh xạ alias đã gộp về canonical; copy lists/lots/recipes giữ lượng/giá trị, bỏ trạng thái mua/assignment của nguồn.
+- [x] Remap food bảo toàn base quantity, gộp trùng chính xác, idempotent; purge chỉ namespace của space đã giải tán theo thứ tự dependency.
+- [x] Root full integration/race PASS13/11 cho accounts/inventory/planning, có scope/rollback/alias và state assertions.
+- [ ] Dispatcher cross-module và receipt replay được chốt riêng ở runtime; không dùng module fake thay bằng chứng hệ thống.
