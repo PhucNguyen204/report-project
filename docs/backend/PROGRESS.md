@@ -380,3 +380,11 @@ Feature-ID: F31-report-exports. Trạng thái LOCAL_PASS.
 - [x] Root phát hiện boundary export khác report: test khoảng01/01/2026–01/01/2027 RED, sửa từ chối ngày cuối bằng mốc12 tháng, GREEN.
 - [x] `go test -tags integration ./internal/modules/exports -count=1 -race -cover`: PASS85.1%; full `./...` integration/race chạy lại sau sửa PASS exit0.
 - [ ] Live production object store/FCM chưa kiểm chứng. Bài test scheduler retention mới đang được triển khai ở task runtime tiếp theo.
+
+### F36 — dọn dữ liệu xác thực hết thời hạn — 13/11/2026
+
+Feature-ID: F36-credential-retention. Trạng thái LOCAL_PASS.
+- [x] OTP hết hạn thêm24 giờ, refresh revoked/expired thêm30 ngày được xóa; giữ reset còn sống và phiên hợp lệ.
+- [x] Test RED thiếu Cleanup rồi GREEN; lỗi xóa phiên rollback cả OTP, gọi lại không phá dữ liệu còn hạn.
+- [x] Root full integration/race/coverage và vet PASS13/11; accounts86.1%.
+- [x] Regression scheduler RED vì inbox/OTP cũ còn lại, đã nối cleanup vào Tick và GREEN; wiring được lưu ở checkpoint runtime kế tiếp.
