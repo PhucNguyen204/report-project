@@ -120,7 +120,7 @@ func TestSearchPagesCountAllSourcesBeyondOneHundredAndKeepGlobalTuple(t *testing
 }
 
 func TestSearchFiltersApplyORAndANDToPhysicalHitsAndViewerExpiry(t *testing.T) {
-	s, db, user, sid, unit, carrot := setupPlanning(t)
+	s, db, user, _, unit, carrot := setupPlanning(t)
 	ctx := context.Background()
 	family := platform.ID()
 	if _, err := db.Pool.Exec(ctx, "INSERT INTO household.spaces(id,kind,name,created_by) VALUES($1,'family','Search family',$2)", family, user); err != nil {
@@ -129,7 +129,7 @@ func TestSearchFiltersApplyORAndANDToPhysicalHitsAndViewerExpiry(t *testing.T) {
 	if _, err := db.Pool.Exec(ctx, "INSERT INTO household.space_members(space_id,user_id,role,space_kind) VALUES($1,$2,'leader','family')", family, user); err != nil {
 		t.Fatal(err)
 	}
-	sid = family
+	sid := family
 	inv := inventory.New(db, s.catalog)
 	s.stock = inv
 	other := addPlanningUser(t, db, sid, "")

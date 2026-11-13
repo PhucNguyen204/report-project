@@ -123,7 +123,7 @@ func TestProfileMediaValidationAndGroupConstraintsDoNotPartiallyUpdate(t *testin
 		t.Fatal(body)
 	}
 	status, body = f.call(t, "GET", "/it4788/v1/me", nil, token)
-	if body["data"].(map[string]any)["avatarObjectId"] != avatar || body["data"].(map[string]any)["fullName"] != "Nguyễn An" {
+	if status != 200 || body["data"].(map[string]any)["avatarObjectId"] != avatar || body["data"].(map[string]any)["fullName"] != "Nguyễn An" {
 		t.Fatal(body)
 	}
 	status, _ = f.call(t, "PATCH", "/it4788/v1/me", map[string]any{"avatarObjectId": ""}, token)

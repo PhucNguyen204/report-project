@@ -82,7 +82,11 @@ func Idempotency(db *DB, next http.Handler) http.Handler {
 				}
 				result = httptest.NewRecorder()
 				r.Body = io.NopCloser(bytes.NewReader(body))
-				_ = json.Unmarshal(headers, &result.HeaderMap)
+				var cachedHeaders http.Header
+				_ = json.Unmarshal(headers, &cachedHeaders)
+				for name, values := range cachedHeaders {
+					result.Header()[name] = values
+				}
 				result.Header().Set("Idempotent-Replayed", "true")
 				result.WriteHeader(status)
 				_, _ = result.Write(cached)

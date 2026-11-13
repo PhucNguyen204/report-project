@@ -114,7 +114,7 @@ func TestRecipeHTTPTemplateCopyFavoriteListAndDelete(t *testing.T) {
 		t.Fatalf("copy %d %+v", status, body)
 	}
 	copyID := body["data"].(map[string]any)["id"].(string)
-	status, body = planningRequest(t, mux, p, "PUT", "/it4788/v1/me/favorite-recipes/"+copyID, nil, "")
+	status, _ = planningRequest(t, mux, p, "PUT", "/it4788/v1/me/favorite-recipes/"+copyID, nil, "")
 	if status != 200 {
 		t.Fatal(status)
 	}

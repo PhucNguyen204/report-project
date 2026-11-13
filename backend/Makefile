@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .SHELLFLAGS := -eu -o pipefail -c
-.PHONY: init deps up down run build format test verify integration security openapi
+.PHONY: init deps up down run build format test verify lint integration security openapi
 
 init:
 	python3 scripts/dev.py init
@@ -30,7 +30,11 @@ test:
 	python3 -m unittest discover -s scripts -p 'test_*.py'
 	go test ./... -count=1 -race
 
-verify: format
+lint:
+	go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
+	go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 -tags integration,performance ./...
+
+verify: format lint
 	go vet ./...
 	go mod verify
 	$(MAKE) test build

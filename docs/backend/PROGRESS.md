@@ -644,3 +644,14 @@ Feature-ID: F37-runtime-observability. Trạng thái LOCAL_PASS runtime.
 - [x] Docker image build PASS/defaultUID10001. QA image mới K1–K5/84HTTP checks, SMTP Mailpit/S3 signed URLs/CSV/PDF PASS. Ops private/scrape HTTP-runtime-pool và401error body/header trace khớp PASS; worker-only cóops/noAPI, bindconflict process2exit1/originalhealthy, SIGTERMexit0; database tạm đã xóa. Artifact observability-network-smoke.json, observability-runtime-check.json, observability-worker-runtime.json.
 - [ ] Staticcheckv0.8.2 experimental trả5findings: deprecated credential loader/ResponseRecorder.HeaderMap và3error-string capitalization, xử lý checkpoint kế tiếp; không tick lint. Remote pipeline229/main tại8ea2a02 vẫn pending; runner chưa có.
 - [ ] Local OTLP test không thay Tempo/Alloy/Loki production; chưa có queue waiting-age/backlog/node filesystem/SLO alert deployment hoặc monitoring đủ kỳ, chưa xác nhận SLA99%/RPO/RTO production.
+
+### F01/F37 — staticcheck bắt buộc và typed FCM credential loader — 13/11/2026
+
+Feature-ID: F37-lint-credentials. Trạng thái LOCAL_PASS.
+- [x] Baseline staticcheckv0.8.2 RED5findings; thêm lint vào make verify, pin version hỗ trợ Go1.26; chạy default và tags integration,performance. Tags mở rộng phát hiện thêm6findings test: bổ sung3HTTP status assertions, bỏ2unused assignments và t.Fatalf đúng cách. Không suppress rule.
+- [x] Thay deprecated CredentialsFromJSON bằng typed service_account loader, private0400/0600 regularfile≤64KiB, token_uri Google/default, universe public cloud, email serviceaccount vàRSA PKCS8≥2048bits. ADC branch giữ nguyên. Lỗi không echo path/email/key/config.
+- [x] RED thiếu loader→GREEN; namedpipe test RED startup treo→nonblocking open/stat→GREEN. Kiểm bad types/URLs/JSON/key/permissions/size/nonregular, weakRSA/nonRSA/invalidDER. Token_uri độc hại bị chặn trước network.
+- [x] Fixture sinh RSA trong tempdir, ký JWT thật, verify signature/issuer/Google audience/duy nhất scope firebase.messaging; explicit/default token endpoint đều đạt qua RoundTripper kiểm soát. Không lưu key/JWT/token vào repo; không gọi Google/FCM thật.
+- [x] Bỏ ResponseRecorder.HeaderMap, giữ replay/status/body/headers bằng API Header(); sửa3internal error string capitalization. Regression trace/idempotency và full module tests đạt.
+- [x] `make verify integration security`:520Go pass/0fail/0skip,7Python tests; staticcheck2buildsets/format/vet/mod verify/race/build PASS, global85.91%, app89.14/platform87.03/observability94.07; mọi gate đạt. Govulncheck No vulnerabilities found.
+- [ ] FCM live credential/device và CI remote runner còn thiếu; lỗi pipeline scheduling chưa được gọi là fixed bằng local gates.

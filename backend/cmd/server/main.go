@@ -74,7 +74,7 @@ func run() error {
 	redisClient := redis.NewClient(redisOpts)
 	defer redisClient.Close()
 	if err = redisClient.Ping(initCtx).Err(); err != nil {
-		return errors.New("Redis unavailable at startup")
+		return errors.New("redis unavailable at startup")
 	}
 	httpClient := &http.Client{Timeout: 20 * time.Second}
 	s3client := s3.NewFromConfig(aws.Config{Region: cfg.S3Region, Credentials: credentials.NewStaticCredentialsProvider(cfg.S3AccessKey, cfg.S3SecretKey, ""), HTTPClient: httpClient}, func(o *s3.Options) { o.BaseEndpoint = aws.String(cfg.S3Endpoint); o.UsePathStyle = true })
@@ -93,13 +93,9 @@ func run() error {
 	if cfg.FCMProject != "" {
 		var creds *google.Credentials
 		if cfg.FCMCredentialFile != "" {
-			raw, readErr := os.ReadFile(cfg.FCMCredentialFile)
-			if readErr != nil {
-				return errors.New("cannot read FCM credentials")
-			}
-			creds, err = google.CredentialsFromJSON(ctx, raw, "https://www.googleapis.com/auth/firebase.messaging")
+			creds, err = app.ReadFCMCredentials(ctx, cfg.FCMCredentialFile)
 		} else {
-			creds, err = google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/firebase.messaging")
+			creds, err = google.FindDefaultCredentials(ctx, app.FCMMessagingScope)
 		}
 		if err != nil {
 			return errors.New("invalid FCM credentials")

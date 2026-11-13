@@ -21,7 +21,7 @@ func TestProfileAndReminderSettings(t *testing.T) {
 		t.Fatalf("update %d %+v", status, body)
 	}
 	status, body = f.call(t, "GET", "/it4788/v1/me", nil, token)
-	if body["data"].(map[string]any)["fullName"] != "Trần Bình" {
+	if status != 200 || body["data"].(map[string]any)["fullName"] != "Trần Bình" {
 		t.Fatal(body)
 	}
 	status, _ = f.call(t, "PATCH", "/it4788/v1/me", map[string]any{"fullName": "X"}, token)
@@ -33,6 +33,9 @@ func TestProfileAndReminderSettings(t *testing.T) {
 		t.Fatalf("settings %d %+v", status, body)
 	}
 	status, body = f.call(t, "GET", "/it4788/v1/me/settings", nil, token)
+	if status != 200 {
+		t.Fatalf("read settings %d %+v", status, body)
+	}
 	data := body["data"].(map[string]any)
 	if data["reminderDays"] != float64(7) || data["expiryNotifyOn"] != false || data["reminderRunAt"] != "08:00" {
 		t.Fatal(body)

@@ -12,7 +12,6 @@ import (
 	"dicho/internal/platform"
 	"dicho/internal/testutil"
 	"dicho/migrations"
-	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -187,7 +186,7 @@ func TestQueueStartsAndCompletesWithRoleWithoutDDLPrivileges(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 	}
 	if complete != 1 {
-		t.Fatal(fmt.Sprintf("completed jobs%d", complete))
+		t.Fatalf("completed jobs%d", complete)
 	}
 	if err := client.Stop(ctx); err != nil {
 		t.Fatal(err)

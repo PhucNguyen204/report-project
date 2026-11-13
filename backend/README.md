@@ -40,6 +40,8 @@ Hợp đồng tại `/openapi.json`, nguồn [api/build.py](api/build.py) và ar
 
 `APP_ENV` là development hoặc production; `MODE` là api, worker hoặc all. Server đọc khóa Ed25519 và queue AES từ file0600 riêng. Queue key phải giữ được qua xoay signing key để đọc job tồn đọng. Production cần HTTPS S3, SMTP STARTTLS và FCM credentials/ADC hợp lệ.
 
+`FCM_CREDENTIALS_FILE` chỉ nhận file service_account private (0400/0600), tối đa64KiB, RSA PKCS8≥2048bits, Google public-cloud universe/token endpoint. Không dùng custom token proxy qua file này. Bỏ trống để dùng ADC của môi trường triển khai. Loader không gọi Google lúc đọc file; kiểm chứng FCM thật vẫn cần credential và thiết bị staging.
+
 `S3_ENDPOINT` dùng cho I/O nội bộ. `S3_PUBLIC_ENDPOINT` dùng khi ký URL cho client, mặc định bằng endpoint nội bộ. Cả hai dùng cùng bucket/key/region/credentials; không sửa host của URL sau khi ký. Compose đặt internal=`http://s3:8333`, public=`http://127.0.0.1:59000`.
 
 Ảnh được kiểm quyền theo vai trò hiện tại trong DB. Admin quản lý ảnh template và ảnh đại diện của mình; membership cũ không cho admin truy cập ảnh gia đình/ảnh thực phẩm riêng.
@@ -52,13 +54,14 @@ Runtime có cổng vận hành riêng `OPS_LISTEN_ADDR` (mặc định127.0.0.1:
 
 ```sh
 make verify
+make lint
 make integration
 make security secrets
 make fuzz
 make smoke
 ```
 
-`verify` chạy format/vet/mod verify/unit Python/Go race/build. `integration` cần PostgreSQL16, Redis7, S3 và Mailpit thật; tạo DB riêng từng test, không skip khi dịch vụ thiếu. Artifact tại `../output/backend-qa/{integration.jsonl,coverage.out,coverage-summary.json}`. Coverage dùng `-coverpkg=./...`, gate total85%, domain/app/platform85%, kernel/core90%; test fail/skip làm gate fail. `smoke` cần API/worker đang chạy, thực hiện K1–K5 với tài khoản tổng hợp, OTP SMTP, ảnh S3 và CSV/PDF; không in token/OTP/mật khẩu.
+`verify` chạy format/staticcheck/vet/mod verify/unit Python/Go race/build. `integration` cần PostgreSQL16, Redis7, S3 và Mailpit thật; tạo DB riêng từng test, không skip khi dịch vụ thiếu. Artifact tại `../output/backend-qa/{integration.jsonl,coverage.out,coverage-summary.json}`. Coverage dùng `-coverpkg=./...`, gate total85%, domain/app/platform85%, kernel/core90%; test fail/skip làm gate fail. `smoke` cần API/worker đang chạy, thực hiện K1–K5 với tài khoản tổng hợp, OTP SMTP, ảnh S3 và CSV/PDF; không in token/OTP/mật khẩu.
 
 `fuzz` chạy 5 campaign thực tế, mỗi campaign 15 giây/2 workers; log `../output/backend-qa/fuzz-*.log`. Quantity/JSON/FEFO/Missing/civil dates có invariants riêng. Seed tests trong `verify` không thay campaign; lỗi từ `go test` qua `tee` vẫn làm make fail, kể cả Make 3.81 trên macOS.
 

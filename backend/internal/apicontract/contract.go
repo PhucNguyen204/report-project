@@ -214,7 +214,7 @@ func (c *Contract) Request(r *http.Request, body []byte) error {
 	security, public := op.node["security"].([]any)
 	if !public || len(security) > 0 {
 		if token := r.Header.Get("Authorization"); !strings.HasPrefix(token, "Bearer ") || len(token) <= 7 {
-			return fmt.Errorf("Bearer authentication required")
+			return fmt.Errorf("bearer authentication required")
 		}
 	}
 	parameters, _ := op.node["parameters"].([]any)

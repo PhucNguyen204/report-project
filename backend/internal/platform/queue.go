@@ -93,7 +93,7 @@ func OpenQueue(ctx context.Context, db *DB, handler EventHandler, keys ...[]byte
 		return nil, err
 	}
 	if !validation.OK {
-		return nil, fmt.Errorf("River migrations are pending; run dicho-migrate")
+		return nil, fmt.Errorf("river migrations are pending; run dicho-migrate")
 	}
 	workers := river.NewWorkers()
 	if handler == nil {
