@@ -9,6 +9,10 @@ import (
 
 type ContextPool struct{ *pgxpool.Pool }
 
+func WithTransaction(ctx context.Context, tx pgx.Tx) context.Context {
+	return context.WithValue(ctx, transactionKey{}, tx)
+}
+
 func (p *ContextPool) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
 	if tx, ok := ctx.Value(transactionKey{}).(pgx.Tx); ok {
 		return tx.Exec(ctx, sql, args...)

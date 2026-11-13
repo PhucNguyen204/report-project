@@ -262,3 +262,12 @@ Feature-ID: F01-runtime-dependencies.
 - [x] .local privatekeys và bin được gitignore trước khi tạo khóa; helper tạo0600 và không ghi đè khóa đã có.
 - [x] Live smoke actual server13/11: health/ready/openapi200, register201, OTP quaSMTPMailpit+kích hoạt200, authenticatedcreate201, idempotentreplay201, read200. Artifact local: output/backend-qa/live-smoke.json.
 - [ ] Đây là checkpoint môi trường/runtime; chưa khẳng định toàn bộ releasegate đã hoàn tất.
+
+### F04 — mã hóa payload trong hàng đợi bền vững — 13/11/2026
+
+Feature-ID: F04-encrypted-events.
+- [x] EventCipher AES-256-GCM, nonce ngẫu nhiên, xác thực cả eventkind/key; sai key/tamper/bỏ cờ mã hóa bị từ chối.
+- [x] Root unit RED thiếu cipher rồi GREEN; actual System+worker+PG test pass đăng ký/kích hoạt với payload được giải mã chỉ ở worker.
+- [x] Runtime bắt buộc queue key riêng32byte, độc lập signing key để xoay khóa JWT không làm mất job30ngày; file0600 ngoàiDB/Git.
+- [x] PDO/HTTP smoke dùngSMTP thật tớiMailpit, không in OTP/token/mật khẩu; không để OTP hoặc người nhận rõ trong production River args.
+- [ ] Fixture NewDB không truyền key vẫn hỗ trợ plain event để kiểm thử từng module; factory ứng dụng đầy đủ luôn yêu cầu key.
