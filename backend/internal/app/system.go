@@ -76,6 +76,9 @@ func (s *System) Tick(ctx context.Context) error {
 				return err
 			}
 		}
+		if _, err = tx.Exec(ctx, "DELETE FROM platform.activities WHERE created_at<$1", now.Add(-90*24*time.Hour)); err != nil {
+			return err
+		}
 		if _, err = tx.Exec(ctx, "DELETE FROM platform.idempotency_keys WHERE created_at<$1", now.Add(-7*24*time.Hour)); err != nil {
 			return err
 		}

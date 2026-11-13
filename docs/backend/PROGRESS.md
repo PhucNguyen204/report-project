@@ -25,7 +25,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | Plan và ma trận kiểm thử | PASS | spec_audit chấp nhận sau sửa dependency/auth, activity log, contracts, River, precision, release gate |
 | Toolchain Go | PASS | `go version`: go1.26.11 darwin/arm64; nâng sau scanner RED |
 | PostgreSQL integration environment | PASS local | PostgreSQL16, SeaweedFS S3, Mailpit đang chạy; Redis7 bổ sung ngày12/11 |
-| Test backend/coverage/race/build | LOCAL_PASS13/11 | Go1.26.11 full integration/race exit0; 378 case/0 fail/0 skip; accounts86.3%, inventory86.8%, planning87.1%, media86.4%, exports85.1%, notification90.7%; app81.0%, platform74.4%, kernel95.9% |
+| Test backend/coverage/race/build | LOCAL_PASS13/11 | Go1.26.11; 522Go/0fail/0skip +7Python, staticcheck2buildsets/vet/build/race đạt. Combined toànsource85.92%, app89.19/platform87.03/observer94.07/kernel95.95;6modules85.37–90.70%, core≥90% |
 | Email/FCM/S3 thật | PARTIAL | SMTP Mailpit + S3 SeaweedFS qua network thật PASS; FCM và production credentials NOT_RUN |
 | K1–K5 / load / restore | PARTIAL | K1–K5 network PASS; 50RPS×30s/1500 GET/0errors PASS; DB snapshot restore39 relations + River retry PASS; PITR/S3/production RPO/RTO chưa xác nhận |
 
@@ -33,7 +33,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 
 | ID | Phạm vi | Trạng thái | Commit/evidence |
 |---|---|---|---|
-| F01 | Runtime, DB, migrations, harness/CI | IN_PROGRESS | Runtime/worker/OpenAPI local pass; Compose/CI/clean checkout đang hoàn thiện |
+| F01 | Runtime, DB, migrations, harness/CI | IN_PROGRESS | 66a2d25/49f33f9/e3b7ecd: migrator riêng/limitedrole/runtime Docker/privateops/typedcredentials đạt local; remoteCI chờ runner và fresh release audit |
 | F02 | Quantity/Money/clock/Tx/HTTP | LOCAL_PASS | Kernel95.9%; transaction/context/panic/cancellation có regression |
 | F03 | Auth scope/idempotency/request limits | LOCAL_PASS | f6accaf; Redis2 instance40 request chỉ10 được nhận; proxy-prefix regression |
 | F04 | Worker/email port | LOCAL_PASS | faa4860; actual River worker, encrypted events và SMTP Mailpit |
@@ -59,7 +59,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F24 | UC17 lịch | LOCAL_PASS | Lịch/horizon/cooked rules và keyset date/slot/id đã kiểm thử |
 | F25 | UC10 từ công thức | LOCAL_PASS | 18a04e0; missing recipe preview/confirm |
 | F26 | UC10 từ lịch | LOCAL_PASS | 18a04e0; dated allocation và regression0,3kg |
-| F27 | UC18 gợi ý | LOCAL_PASS | e8e97be; score/live settings/fallback; tải NOT_RUN |
+| F27 | UC18 gợi ý | LOCAL_PASS | e8e97be/31ad147; score/live settings/fallback, local50RPS30s read workload đạt; không gán thành SLA production |
 | F28 | UC19 đã nấu/trừ kho | LOCAL_PASS | d39c0d5/d5dac6a; atomic cook/If-Match/replay |
 | F29 | UC14 reminder | LOCAL_PASS | 153d0e8; Tick/reminder/retention pass; SLA vận hành chưa đo |
 | F30 | UC21 báo cáo | LOCAL_PASS | df7a33b; report views/previous period/inclusive range |
@@ -69,7 +69,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F34 | UC24 quản trị tài khoản | LOCAL_PASS | Status/role/revoke và user/audit keysets đã kiểm thử |
 | F35 | Copy/PurgeSpace/xóa tài khoản | LOCAL_PASS | f97b6e8; copy/purge/anonymization; atomic dispatcher có test |
 | F36 | UC03 mật khẩu | LOCAL_PASS | 392b536/0b6cb74; reset/change/retention đúng thời hạn |
-| F37 | E2E/security/load/restore/release | IN_PROGRESS | 41caf63; scanner exit0; E2E mở rộng/load/restore/monitoring/CI/review còn mở |
+| F37 | E2E/security/load/restore/release | IN_PROGRESS | Local K1–K5/84HTTP,50RPS,DBrestore,River retry,fuzz3.27m,coverage/lint/security đạt; CI runner,production provider/SLA và release review còn mở |
 
 ## Checklist chất lượng toàn dự án
 
@@ -655,3 +655,12 @@ Feature-ID: F37-lint-credentials. Trạng thái LOCAL_PASS.
 - [x] Bỏ ResponseRecorder.HeaderMap, giữ replay/status/body/headers bằng API Header(); sửa3internal error string capitalization. Regression trace/idempotency và full module tests đạt.
 - [x] `make verify integration security`:520Go pass/0fail/0skip,7Python tests; staticcheck2buildsets/format/vet/mod verify/race/build PASS, global85.91%, app89.14/platform87.03/observability94.07; mọi gate đạt. Govulncheck No vulnerabilities found.
 - [ ] FCM live credential/device và CI remote runner còn thiếu; lỗi pipeline scheduling chưa được gọi là fixed bằng local gates.
+
+### F29/F37 — nhật ký hoạt động chỉ giữ90ngày — 13/11/2026
+
+Feature-ID: F37-activity-retention. Trạng thái LOCAL_PASS.
+- [x] Đối chiếu bảng lưu giữcsdl.tex: platform.activities quá90×24h được xóa trong Tick; cutoff strict UTC, exactboundary/fresh/future giữ. Thêm index created_at qua migration048 mới, không sửa migration đã commit.
+- [x] Hai PostgreSQL tests RED thực tế: logoldseq1 vẫn còn và DELETE trigger không được gọi→GREEN.2spaces giữseq2/3/4, insert saucleanup nhậnseq5, không reset change_seq. Admin audit180ngày vẫn giữ.
+- [x] Trigger lỗi sau notification cleanup buộc rollback notification/logs/scheduler slot0; bỏ lỗi và retry cùngminute thành notices0/logs6/slot1. Không hard-delete business rows hoặc thay report retention.
+- [x] `make verify integration security`:522Go pass/0fail/0skip,7Python; lint2buildsets/format/vet/mod verify/race/build PASS; global85.92%, app89.19/platform87.03; No vulnerabilities found. Comment không thêm diễn giải dài.
+- [ ] Tombstone/delta sync ngoài phạm vi theo ADR; không tick offline cleanup hoặc production SLA. CI remote vẫn cần Owner/Maintainer gán runner như runbook.
