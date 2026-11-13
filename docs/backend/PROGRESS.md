@@ -74,11 +74,11 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 ## Checklist chất lượng toàn dự án
 
 - [ ] Đủ25 UC/biến thể và các API hỗ trợ trong scope, mỗi mục có test liên kết.
-- [ ] Scope authorization được kiểm ở API và DB; admin không đọc dữ liệu gia đình.
-- [ ] Tiền/lượng/ngày chính xác; transaction/concurrency/idempotency có test PostgreSQL thật.
-- [ ] TDD có RED/GREEN; unit/HTTP/integration/race/regression pass.
+- [x] Scope authorization được kiểm ở API và DB; admin không đọc dữ liệu gia đình.
+- [x] Tiền/lượng/ngày chính xác; transaction/concurrency/idempotency có test PostgreSQL thật.
+- [x] TDD có RED/GREEN; unit/HTTP/integration/race/regression pass.
 - [ ] Coverage handwritten nghiệp vụ≥85%, core algorithms≥90%; case quan trọng không bỏ sót.
-- [ ] Worker transactional, dedupe/retry/per-device; không gọi provider trong transaction.
+- [x] Worker transactional, dedupe/retry/per-device; không gọi provider trong transaction.
 - [ ] Migration/seed/fresh checkout/OpenAPI khớp implementation.
 - [ ] Format/vet/lint/build và dependency/secret scan đạt.
 - [ ] K1–K5 E2E, external smoke, load và backup restore có kết quả thực.
@@ -430,3 +430,21 @@ Feature-ID: F01-runtime-packaging. Trạng thái LOCAL_PASS packaging; CI remote
 - [x] govulncheck No vulnerabilities found. Gitleaks v8.30.1 history66 commits phát hiện4 ví dụ LaTeX có dấu `...`; review đúng từng giá trị rút gọn và ignore đúng4 fingerprint, rerun exit0. Staged diff39068 bytes scan exit0; không blanket-exclude file/rule.
 - [x] CI YAML parsed, job Linux dùng cùng Go image/dịch vụ thật, artifacts14 ngày; không auto deploy.
 - [ ] Remote runner, fresh Git clone smoke, tải/restore/monitoring, pagination và production FCM chưa hoàn tất. Không tick production release hay SLA từ kết quả local.
+
+### F01 — kiểm chứng bản clone mới từ GitLab — 13/11/2026
+
+Feature-ID: F01-fresh-checkout. Code checkpoint04f3203.
+- [x] Clone SSH mới nhánh baocao-phucnn từ GitLab, dùng SSH configuration hiện có; lần clone đầu thiếu ProxyCommand bị timeout, retry đúng cấu hình thành công.
+- [x] Trong checkout trống: make init verify openapi PASS; key mới0600, không cần file chưa commit trong workspace cũ.
+- [x] make up build lại image, project dicho-fresh/cổng/volume riêng; K1–K5 network PASS84 HTTP checks, SMTP/S3/CSV/PDF. make down graceful PASS, giữ volume.
+- [x] Artifact output/backend-qa/fresh-clone-smoke.json. Số request polling khác vòng trước là bình thường; không đếm mỗi poll thành một requirement riêng.
+- [ ] GitLab pipeline API trả403 khi đọc không có token; CI remote chưa được xác nhận. Linux job tương đương chạy local đã PASS330 case.
+
+### F03 — từ chối JSON null trước khi sửa hồ sơ — 13/11/2026
+
+Feature-ID: F03-json-object. Trạng thái LOCAL_PASS.
+- [x] Root RED: PATCH/me body null trả200, có thể tăng version/phát activity dù input không đúng object.
+- [x] Decoder kiểm root object, giữ strict unknown field, trailing JSON và UseNumber; null/primitive/array bị400 trước nghiệp vụ.
+- [x] Regression xác nhận không đổi version và không tạo member.updated. Unit decoder RED→GREEN.
+- [x] make verify integration PASS331 case/0 fail/0 skip, có race và coverage; build/vet/mod verify PASS.
+- [x] Core coverage từ profile trước: Quantity95.9%, Allocate FEFO94.7%, Missing95.0%, Score97.7%. Nghiệp vụ từng module≥85%; app/platform chưa đạt85%, giữ gate coverage toàn handwritten mở.

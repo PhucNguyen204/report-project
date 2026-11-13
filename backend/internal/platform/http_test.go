@@ -9,7 +9,7 @@ import (
 )
 
 func TestDecodeRejectsUnknownAndTrailingJSON(t *testing.T) {
-	for _, body := range []string{`{"name":"ok","admin":true}`, `{"name":"ok"}{}`, `null {}`} {
+	for _, body := range []string{`{"name":"ok","admin":true}`, `{"name":"ok"}{}`, `null {}`, `null`, `[]`, `false`, `1`, `"name"`} {
 		r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 		var input struct {
 			Name string `json:"name"`
