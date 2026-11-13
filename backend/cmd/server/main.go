@@ -68,6 +68,7 @@ func run() error {
 	}
 	httpClient := &http.Client{Timeout: 20 * time.Second}
 	s3client := s3.NewFromConfig(aws.Config{Region: cfg.S3Region, Credentials: credentials.NewStaticCredentialsProvider(cfg.S3AccessKey, cfg.S3SecretKey, ""), HTTPClient: httpClient}, func(o *s3.Options) { o.BaseEndpoint = aws.String(cfg.S3Endpoint); o.UsePathStyle = true })
+	publicClient := s3.NewFromConfig(aws.Config{Region: cfg.S3Region, Credentials: credentials.NewStaticCredentialsProvider(cfg.S3AccessKey, cfg.S3SecretKey, ""), HTTPClient: httpClient}, func(o *s3.Options) { o.BaseEndpoint = aws.String(cfg.S3PublicEndpoint); o.UsePathStyle = true })
 	for _, bucket := range []string{cfg.MediaBucket, cfg.ExportBucket} {
 		if _, err = s3client.HeadBucket(initCtx, &s3.HeadBucketInput{Bucket: aws.String(bucket)}); err != nil {
 			if !cfg.Development {
@@ -98,7 +99,7 @@ func run() error {
 		push = notification.FCM{Project: cfg.FCMProject, Client: client}
 	}
 	db := platform.NewDB(pool)
-	system, err := app.NewSystem(initCtx, db, app.Options{SigningKey: key, QueueKey: queueKey, MediaStore: media.NewS3(s3client, cfg.MediaBucket), ExportStore: media.NewS3(s3client, cfg.ExportBucket), Email: notification.SMTP{Addr: cfg.SMTPAddr, From: cfg.SMTPFrom, User: cfg.SMTPUser, Password: cfg.SMTPPassword, RequireTLS: !cfg.Development}, Push: push, HTTP: app.Config{MinimumAppVersion: cfg.MinimumAppVersion, Limiter: platform.NewRateLimiter(redisClient, db.Clock), TrustedProxies: cfg.TrustedProxies}})
+	system, err := app.NewSystem(initCtx, db, app.Options{SigningKey: key, QueueKey: queueKey, MediaStore: media.NewS3(s3client, cfg.MediaBucket).WithPublicClient(publicClient), ExportStore: media.NewS3(s3client, cfg.ExportBucket).WithPublicClient(publicClient), Email: notification.SMTP{Addr: cfg.SMTPAddr, From: cfg.SMTPFrom, User: cfg.SMTPUser, Password: cfg.SMTPPassword, RequireTLS: !cfg.Development}, Push: push, HTTP: app.Config{MinimumAppVersion: cfg.MinimumAppVersion, Limiter: platform.NewRateLimiter(redisClient, db.Clock), TrustedProxies: cfg.TrustedProxies}})
 	if err != nil {
 		return err
 	}

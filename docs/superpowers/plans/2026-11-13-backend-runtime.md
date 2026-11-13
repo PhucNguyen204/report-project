@@ -22,11 +22,11 @@
 
 Files: `internal/modules/media/s3.go`, `s3_test.go`, `internal/app/config.go`, `config_test.go`, `cmd/server/main.go`.
 
-- [ ] Test `TestPublicS3ClientSignsPublicURLsWhileWritesUseInternalEndpoint`: upload/download URL mang host public, Put chỉ tới internal, base store không bị đổi cấu hình. Quan sát RED vì thiếu capability.
-- [ ] `(*S3Store).WithPublicClient(*s3.Client) *S3Store` trả store mới với presigner riêng; NewS3 giữ hành vi cũ.
-- [ ] `RuntimeConfig.S3PublicEndpoint` đọc S3_PUBLIC_ENDPOINT, mặc định S3_ENDPOINT; production cả hai HTTPS.
-- [ ] Main tạo public client cùng region/credentials và nối cho media/exports.
-- [ ] Unit/integration/race/full regression, review, báo cáo, commit/push với Feature-ID F09-public-presigner.
+- [x] Test `TestPublicS3ClientSignsPublicURLsWhileWritesUseInternalEndpoint`: upload/download URL mang host public, Put chỉ tới internal, base store không bị đổi cấu hình. Quan sát RED vì thiếu capability.
+- [x] `(*S3Store).WithPublicClient(*s3.Client) *S3Store` trả store mới với presigner riêng; NewS3 giữ hành vi cũ.
+- [x] `RuntimeConfig.S3PublicEndpoint` đọc S3_PUBLIC_ENDPOINT, mặc định S3_ENDPOINT; production cả hai HTTPS.
+- [x] Main tạo public client cùng region/credentials và nối cho media/exports.
+- [x] Unit/integration/race/full regression, review, báo cáo, commit/push với Feature-ID F09-public-presigner.
 
 ## Task 2: Reproducible development and CI
 

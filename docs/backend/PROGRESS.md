@@ -408,3 +408,12 @@ Feature-ID: F01-system-runtime. Trạng thái LOCAL_PASS runtime, release IN_PRO
 - [x] OpenAPI3.1 có74 paths/101 operations/198 schemas,86 mã API trong scope; official schema/ref validation, registered mux và HTTP request/response thật khớp. UUID contract RED→GREEN.
 - [x] Go1.26.11 `go test -tags integration ./... -count=1 -race -cover -timeout 5m` PASS exit0; build/vet/mod verify PASS. Scanner No vulnerabilities found.
 - [ ] Phân trang ở một số endpoint, packaging/CI/load/restore/observability và FCM thật chưa hoàn tất. Bộ test contract hiện tại không thay thế review đủ mọi biến thể UC.
+
+### F09 — URL S3 công khai cho client — 13/11/2026
+
+Feature-ID: F09-public-presigner. Trạng thái LOCAL_PASS.
+- [x] Test RED thiếu public presigner và config bỏ qua endpoint không hợp lệ, GREEN sau sửa.
+- [x] WithPublicClient trả store mới: ký upload/download với host public, I/O vẫn đến internal endpoint; ký không gọi network và không đổi base store.
+- [x] S3_PUBLIC_ENDPOINT mặc định S3_ENDPOINT; production bắt cả hai HTTPS. Runtime nối cùng credentials/region, không sửa host sau ký.
+- [x] Full integration/race/coverage PASS13/11; media85.9%, app81.0%; bộ test S3 thật cũ vẫn pass.
+- [ ] Smoke qua API trong container và chữ ký được S3 thật chấp nhận từ host thuộc packaging task tiếp theo.

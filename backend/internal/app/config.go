@@ -19,6 +19,7 @@ type RuntimeConfig struct {
 	Mode, ListenAddr, DatabaseURL, RedisURL                                   string
 	SigningKeyFile, QueueKeyFile                                              string
 	S3Endpoint, S3Region, S3AccessKey, S3SecretKey, MediaBucket, ExportBucket string
+	S3PublicEndpoint                                                          string
 	SMTPAddr, SMTPFrom, SMTPUser, SMTPPassword                                string
 	FCMProject, FCMCredentialFile, MinimumAppVersion                          string
 	TrustedProxies                                                            []net.IPNet
@@ -82,6 +83,10 @@ func LoadRuntimeConfig(get func(string) string) (RuntimeConfig, error) {
 	if !validURL(c.S3Endpoint, "http", "https") {
 		return c, errors.New("invalid S3_ENDPOINT")
 	}
+	c.S3PublicEndpoint = value("S3_PUBLIC_ENDPOINT", c.S3Endpoint)
+	if !validURL(c.S3PublicEndpoint, "http", "https") {
+		return c, errors.New("invalid S3_PUBLIC_ENDPOINT")
+	}
 	if _, _, err := net.SplitHostPort(c.SMTPAddr); err != nil {
 		return c, errors.New("invalid SMTP_ADDR")
 	}
@@ -99,7 +104,7 @@ func LoadRuntimeConfig(get func(string) string) (RuntimeConfig, error) {
 	if _, err := compareVersion(c.MinimumAppVersion, c.MinimumAppVersion); err != nil {
 		return c, errors.New("invalid MIN_APP_VERSION")
 	}
-	if !c.Development && (!strings.HasPrefix(c.S3Endpoint, "https://") || c.FCMProject == "") {
+	if !c.Development && (!strings.HasPrefix(c.S3Endpoint, "https://") || !strings.HasPrefix(c.S3PublicEndpoint, "https://") || c.FCMProject == "") {
 		return c, errors.New("production requires HTTPS object storage and FCM_PROJECT_ID")
 	}
 	for _, raw := range strings.Split(get("TRUSTED_PROXIES"), ",") {

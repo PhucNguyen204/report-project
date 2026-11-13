@@ -10,6 +10,21 @@ import (
 func developmentEnv() map[string]string {
 	return map[string]string{"APP_ENV": "development", "DATABASE_URL": "postgres://dicho:local@localhost/dicho?sslmode=disable", "REDIS_URL": "redis://localhost:56379/0", "S3_ENDPOINT": "http://localhost:59000", "S3_ACCESS_KEY": "local", "S3_SECRET_KEY": "local", "SIGNING_KEY_FILE": "signing.key", "QUEUE_KEY_FILE": "queue.key", "SMTP_ADDR": "localhost:51025", "SMTP_FROM": "sender@example.test"}
 }
+func TestRuntimeConfigurationRejectsInvalidPublicStorageEndpoint(t *testing.T) {
+	for _, endpoint := range []string{"bad", "ftp://storage.example.test"} {
+		env := developmentEnv()
+		env["S3_PUBLIC_ENDPOINT"] = endpoint
+		if _, err := LoadRuntimeConfig(func(k string) string { return env[k] }); err == nil {
+			t.Fatalf("invalid public endpoint %s accepted", endpoint)
+		}
+	}
+	env := developmentEnv()
+	env["APP_ENV"], env["FCM_PROJECT_ID"] = "production", "test-project"
+	env["S3_ENDPOINT"], env["S3_PUBLIC_ENDPOINT"] = "https://internal.example.test", "http://public.example.test"
+	if _, err := LoadRuntimeConfig(func(k string) string { return env[k] }); err == nil {
+		t.Fatal("production public storage without TLS accepted")
+	}
+}
 func TestRuntimeConfigurationValidatesWithoutLeakingSecrets(t *testing.T) {
 	env := developmentEnv()
 	cfg, err := LoadRuntimeConfig(func(k string) string { return env[k] })

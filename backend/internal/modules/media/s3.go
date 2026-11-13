@@ -11,14 +11,21 @@ import (
 )
 
 type S3Store struct {
-	client *s3.Client
-	bucket string
+	client    *s3.Client
+	presigner *s3.PresignClient
+	bucket    string
 }
 
-func NewS3(client *s3.Client, bucket string) *S3Store { return &S3Store{client, bucket} }
+func NewS3(client *s3.Client, bucket string) *S3Store {
+	return &S3Store{client: client, presigner: s3.NewPresignClient(client), bucket: bucket}
+}
+
+func (s *S3Store) WithPublicClient(client *s3.Client) *S3Store {
+	return &S3Store{client: s.client, presigner: s3.NewPresignClient(client), bucket: s.bucket}
+}
 
 func (s *S3Store) uploadURL(ctx context.Context, key, contentType string, size int64) (string, map[string]string, error) {
-	out, err := s3.NewPresignClient(s.client).PresignPutObject(ctx, &s3.PutObjectInput{Bucket: &s.bucket, Key: &key, ContentType: &contentType, ContentLength: &size}, s3.WithPresignExpires(5*time.Minute))
+	out, err := s.presigner.PresignPutObject(ctx, &s3.PutObjectInput{Bucket: &s.bucket, Key: &key, ContentType: &contentType, ContentLength: &size}, s3.WithPresignExpires(5*time.Minute))
 	if err != nil {
 		return "", nil, err
 	}
@@ -59,7 +66,7 @@ func (s *S3Store) DownloadURL(ctx context.Context, key, filename string, expiry 
 	if filename != "" {
 		input.ResponseContentDisposition = aws.String("attachment; filename=\"" + filename + "\"")
 	}
-	out, err := s3.NewPresignClient(s.client).PresignGetObject(ctx, input, s3.WithPresignExpires(expiry))
+	out, err := s.presigner.PresignGetObject(ctx, input, s3.WithPresignExpires(expiry))
 	if err != nil {
 		return "", err
 	}
