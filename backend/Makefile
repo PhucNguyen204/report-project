@@ -53,3 +53,7 @@ smoke:
 secrets:
 	mkdir -p ../output/backend-qa
 	go run github.com/zricethezav/gitleaks/v8@v8.30.1 git --redact --no-banner --report-format json --report-path ../output/backend-qa/gitleaks-reviewed.json ..
+
+.PHONY: recovery
+recovery:
+	python3 scripts/recovery_check.py

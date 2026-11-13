@@ -27,7 +27,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | PostgreSQL integration environment | PASS local | PostgreSQL16, SeaweedFS S3, Mailpit đang chạy; Redis7 bổ sung ngày12/11 |
 | Test backend/coverage/race/build | LOCAL_PASS13/11 | Go1.26.11 full integration/race exit0; 378 case/0 fail/0 skip; accounts86.3%, inventory86.8%, planning87.1%, media86.4%, exports85.1%, notification90.7%; app81.0%, platform74.4%, kernel95.9% |
 | Email/FCM/S3 thật | PARTIAL | SMTP Mailpit + S3 SeaweedFS qua network thật PASS; FCM và production credentials NOT_RUN |
-| K1–K5 / load / restore | PARTIAL | K1–K5 network85 HTTP checks PASS; tải và restore còn mở |
+| K1–K5 / load / restore | PARTIAL | K1–K5 network85 HTTP checks PASS; DB snapshot restore39 relations + River retry PASS; tải đang đo, PITR/S3/production RPO/RTO chưa xác nhận |
 
 ## Tiến độ tính năng
 
@@ -498,3 +498,13 @@ Feature-ID: F24-planning-pagination; F34-admin-pagination. Trạng thái LOCAL_P
 - [x] Migration045/046 thêm index mới, không sửa migration đã commit. Root review diff, contract RED8 GET thiếu meta rồi GREEN; OpenAPI201 schemas/101 operations, default/query/meta khớp handlers.
 - [x] Root `make verify integration`: PASS378 case/0 fail/0 skip; race/vet/build/mod verify đạt. accounts86.3%, planning87.1%; inventory86.8%, media86.4%, exports85.1%, notification90.7%, app81.0%, platform74.4%, kernel95.9%.
 - [ ] Q01 search còn cap100/full-filter facets; P03 movement detail cap1000. Đây là gap đang xử lý tiếp, không dùng pagination của các collection trên để đóng toàn F32/F37.
+
+
+### F37 — khôi phục snapshot PostgreSQL và retry worker thật — 13/11/2026
+
+Feature-ID: F37-database-recovery. Trạng thái LOCAL_PASS fixture; production recovery chưa nghiệm thu.
+- [x] `scripts/recovery_check.py` giữ exported REPEATABLE READ snapshot cho cả fingerprint và pg_dump, source API/worker vẫn chạy. Archive custom0600/checksum, chỉ restore vào DB tên sinh mới; không overwrite nguồn/đích có sẵn.
+- [x] Root chạy lại `python3 backend/scripts/recovery_check.py` và `make -C backend recovery`: exit0. Cả39 application tables/report views khớp counts/SHA256, tiền/lượng numeric;42 FK validate và8 integrity violation counts đều0. Artifact output/backend-qa/recovery.json.
+- [x] River queue cô lập trên DB restore dùng production Dispatcher từ current checkout, chạy space.copy rồi JobRetry cùng job attempt1→2. Fingerprint business không đổi; đúng1list/item/lot/movement/recipe,500g/10000đ và1worker receipt.
+- [x] Cleanup xác nhận DB tạm đã xóa; source app healthy/running trước và sau. Lệnh/JSON không ghi credential; không đọc signing/queue key. Runbook và Make target được review, Python syntax compile đạt.
+- [ ] Chưa chứng minh PITR/WAL/offsite/giữ7bản, restore S3/SMTP/Redis hoặc replay encrypted jobs có sẵn. Không dùng thời gian fixture nhỏ làm RPO≤5phút/RTO≤1giờ production; cần key management và diễn tập hạ tầng riêng.

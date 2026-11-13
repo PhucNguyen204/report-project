@@ -69,6 +69,14 @@ TEST_MAILPIT_URL='http://127.0.0.1:58026' make integration
 
 `.gitlab-ci.yml` chạy verify/security và integration với dịch vụ thật, lưu test/coverage14 ngày. Trạng thái CI remote chỉ được ghi PASS sau khi có kết quả runner; cấu hình CI không tự deploy.
 
+Khôi phục fixture QA PostgreSQL đang chạy, giữ source hoạt động và restore vào database sinh mới:
+
+```sh
+make recovery
+```
+
+Cần stack `dicho-qa` đã có dữ liệu K1–K5. Lệnh kiểm snapshot/count/SHA256/tiền/lượng và retry River, dọn đúng database tạm, giữ archive0600 trong output. Xem [runbook recovery](../docs/backend/runbooks/recovery.md) để đổi nguồn/đọc giới hạn; đây là phép kiểm DB local, chưa gồm external S3/PITR hay RPO/RTO production.
+
 ## Trạng thái release
 
-Local workflow và unit/integration/race đã có bằng chứng trong báo cáo. Còn mở: keyset/default pagination ở một số endpoint, đo tải, backup/restore, monitoring, CI remote và smoke FCM production. Runtime hiện chạy migration lúc khởi động, nên cần tách migrator và role DB giới hạn trước production. Chưa xác nhận SLA/RPO/RTO từ một lần smoke local.
+Local workflow và unit/integration/race đã có bằng chứng trong báo cáo. Còn mở: keyset/default pagination ở một số endpoint, đo tải, backup production/PITR, monitoring, CI remote và smoke FCM production. Runtime hiện chạy migration lúc khởi động, nên cần tách migrator và role DB giới hạn trước production. Chưa xác nhận SLA/RPO/RTO từ một lần smoke local.
