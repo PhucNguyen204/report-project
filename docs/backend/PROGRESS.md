@@ -318,3 +318,11 @@ Feature-ID: F24-meals-cook. Trạng thái LOCAL_PASS core.
 - [x] Nấu trừ kho FEFO cùng transaction, thiếu kho rollback cả meal/lots; hai request khác key chỉ tiêu thụ một lần.
 - [x] Cook dùng version, cooked replay không tiêu thụ thêm; không sửa/xóa món đã nấu.
 - [x] Root full integration/race PASS13/11. HTTP If-Match và contract thuộc checkpoint transport tiếp theo.
+
+### F25/F26 — bù nguyên liệu từ công thức và lịch — 13/11/2026
+
+Feature-ID: F26-missing-workflow. Trạng thái LOCAL_PASS core.
+- [x] Preview theo servings, ngày nấu/hạn dùng và pending đến kịp; nguồn cung không tính hai lần, regression thiếu0,3kg.
+- [x] Confirm giữ lượng/dòng người dùng chọn, kiểm lại food/unit/target và rollback khi batch sai; không ghi trực tiếp schema shopping.
+- [x] Root full integration/race PASS13/11; test generate/missing/canonical/precision và các boundary không bị skip.
+- [ ] HTTP aggregate/contract được chốt checkpoint riêng.
