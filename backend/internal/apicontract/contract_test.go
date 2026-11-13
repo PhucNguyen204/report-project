@@ -79,3 +79,23 @@ func TestCollectionContractsRequirePaginationMetadata(t *testing.T) {
 		})
 	}
 }
+
+func TestSearchContractIncludesTypedFacetsAndCursorMetadata(t *testing.T) {
+	c, err := apicontract.New(api.Document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := "/it4788/v1/spaces/00000000-0000-7000-8000-000000000001/search"
+	valid := `{"code":1000,"data":{"items":[],"facets":{"food":0,"recipe":0,"lot":0},"filterFacets":{"categoryId":{},"location":{},"expiryState":{}}},"meta":{"nextCursor":"","serverTime":"2026-11-13T00:00:00Z"}}`
+	if err := c.Response("GET", path, 200, nil, []byte(valid)); err != nil {
+		t.Fatal(err)
+	}
+	for _, invalid := range []string{
+		`{"code":1000,"data":{"items":[],"facets":{},"filterFacets":{"categoryId":{},"location":{},"expiryState":{}}}}`,
+		`{"code":1000,"data":{"items":[],"facets":{}},"meta":{"nextCursor":"","serverTime":"2026-11-13T00:00:00Z"}}`,
+	} {
+		if err := c.Response("GET", path, 200, nil, []byte(invalid)); err == nil {
+			t.Fatalf("incomplete search metadata accepted %s", invalid)
+		}
+	}
+}

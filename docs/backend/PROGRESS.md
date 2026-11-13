@@ -64,7 +64,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F29 | UC14 reminder | LOCAL_PASS | 153d0e8; Tick/reminder/retention pass; SLA vận hành chưa đo |
 | F30 | UC21 báo cáo | LOCAL_PASS | df7a33b; report views/previous period/inclusive range |
 | F31 | UC22 export | LOCAL_PASS | 96ef09c; exports85.1%, S3 và PDF/CSV thật |
-| F32 | UC20 search/suggest | IN_PROGRESS | df7a33b scoped search/suggest có test; audit phát hiện cap100 và facets cần tính toàn filter |
+| F32 | UC20 search/suggest | LOCAL_PASS | Keyset mixed types, literal unaccent search, typed filters và full-filter facets có test; load Q01 chưa đo riêng |
 | F33 | UC23 templates/duyệt/gộp | LOCAL_PASS | Review/template/remap và admin collection keysets có test quyền/scope |
 | F34 | UC24 quản trị tài khoản | LOCAL_PASS | Status/role/revoke và user/audit keysets đã kiểm thử |
 | F35 | Copy/PurgeSpace/xóa tài khoản | LOCAL_PASS | f97b6e8; copy/purge/anonymization; atomic dispatcher có test |
@@ -555,3 +555,15 @@ Feature-ID: F01-migration-privileges. Trạng thái LOCAL_PASS fixture.
 - [x] Staged snapshot `make verify integration`:399 case pass/0 fail/0 skip. Thêm limited-role HTTP assertions targeted race PASS; root full working tree `make verify integration security`:407 pass/0 fail/0 skip, No vulnerabilities found (407 gồm search chưa commit, được chốt riêng).
 - [x] Docker image build PASS, UID10001; chạy migrator image2lần trên DB trống sinh riêng đều exit0, cleanup DB đạt. Make/Docker/README/runbook đã đồng bộ; không thay migration đã commit.
 - [ ] Chưa thay đổi quyền database production hoặc cấp credential mới. DBA cần áp role/grants tại môi trường triển khai; CI remote vẫn chờ runner đủ quyền/project scope.
+
+
+### F32 — tìm kiếm có phân trang và facets toàn tập lọc — 13/11/2026
+
+Feature-ID: F32-search-pagination. Trạng thái LOCAL_PASS.
+- [x] Agent TDD >100 matches/source và wildcard literal RED→GREEN. Q01 giữ data.items union food/recipe/lot, keyset name/type/id theo COLLATE C, default20/max100. Mỗi nguồn lấy limit+1; count/facets không bị cắt100.
+- [x] categoryId/location/expiryState hỗ trợ OR cùng trường/AND khác trường, trạng thái theo N người xem. ADR09 trong search plan làm rõ category áp food/lot, vị trí/hạn dùng chỉ lot thực tế; không tự suy diễn category công thức từ nguyên liệu.
+- [x] Giữ data.facets type counts, thêm filterFacets category/location/expiry; mọi count tính trên toàn tập lọc trước cursor. Q02 bounded10, q2–100, không cursor, trả unit/defaultLocation/shelfLives đúng như trước.
+- [x] Test315 mixed hits, tie/insert-before/page resize; full-set facets qua mọi trang; foreign/private/unpublished bị loại khỏi cả items và counts. Root RED uppercase categoryUUID0hits→SQL uuid[] comparison→GREEN food+lot; query literal %/_ không thành wildcard.
+- [x] Inventory query qua LotSearchPagePort, planning không đọc pantry trực tiếp. Mỗi nguồn dùng một SQL snapshot cho page+aggregate; membership giữ lock qua transaction. Không hứa snapshot giữa các HTTP calls.
+- [x] Root contract RED filterFacets/meta chưa được nhận rồi GREEN; OpenAPI202schemas/101operations. `make verify integration security`:407 pass/0 fail/0 skip; planning87.6%, inventory86.8%, accounts86.8%, media86.4%, exports85.1%, notification90.4%, app81.4%, platform77.9%, kernel95.9%; No vulnerabilities found.
+- [ ] Chưa đo riêng latency Q01/tải catalog lớn hoặc thêm index048 từ EXPLAIN; không dùng benchmark4route để tự tick phần đó. Coverage app/platform và CI runner còn mở.

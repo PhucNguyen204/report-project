@@ -95,6 +95,18 @@ type PlannedListComposer interface {
 	ComposePlanned(context.Context, pgx.Tx, string, string, Composition) (string, error)
 }
 
-type LotSearchPort interface {
-	SearchLots(context.Context, pgx.Tx, string, string) ([]map[string]any, error)
+type SearchKey struct{ Name, Type, ID string }
+type LotSearchQuery struct {
+	Query                                string
+	CategoryIDs, Locations, ExpiryStates []string
+	After                                SearchKey
+	Limit                                int
+}
+type LotSearchPage struct {
+	Items                                        []map[string]any
+	Total                                        int
+	CategoryCounts, LocationCounts, ExpiryCounts map[string]int
+}
+type LotSearchPagePort interface {
+	SearchLotsPage(context.Context, pgx.Tx, string, string, LotSearchQuery) (LotSearchPage, error)
 }

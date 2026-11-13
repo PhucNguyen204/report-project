@@ -6321,6 +6321,28 @@
             }
           },
           {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "description": "Giữ nguyên đường dẫn, người dùng và bộ lọc của trang trước; có thể đổi limit."
+          },
+          {
             "name": "q",
             "in": "query",
             "required": false,
@@ -6331,14 +6353,51 @@
             "description": ""
           },
           {
-            "name": "limit",
+            "name": "categoryId",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100,
-              "default": 50
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "description": ""
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "chill",
+                  "freezer",
+                  "crisper",
+                  "door",
+                  "pantry_shelf"
+                ]
+              }
+            },
+            "description": ""
+          },
+          {
+            "name": "expiryState",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "fresh",
+                  "expiring",
+                  "expired"
+                ]
+              }
             },
             "description": ""
           }
@@ -6393,7 +6452,8 @@
           "503": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "description": "Tìm literal không dấu/case-insensitive; OR trong từng bộ lọc, AND giữa các bộ lọc. categoryId áp dụng food/lot; location/expiryState chỉ áp dụng lot thực tế; công thức bị loại khi có bộ lọc này. facets và filterFacets tính toàn tập đã lọc, trước cursor/limit. Sắp xếp name/type/id ASC. Xem ADR09 trong backend search plan."
       }
     },
     "/it4788/v1/spaces/{sid}/foods/suggest": {
@@ -13154,6 +13214,72 @@
           "facets"
         ]
       },
+      "SearchPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SearchFood"
+                },
+                {
+                  "$ref": "#/components/schemas/SearchRecipe"
+                },
+                {
+                  "$ref": "#/components/schemas/SearchLot"
+                }
+              ]
+            }
+          },
+          "facets": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "filterFacets": {
+            "type": "object",
+            "properties": {
+              "categoryId": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "location": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "expiryState": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "categoryId",
+              "location",
+              "expiryState"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "facets",
+          "filterFacets"
+        ]
+      },
       "CategoryInput": {
         "type": "object",
         "properties": {
@@ -15776,13 +15902,17 @@
             "const": 1000
           },
           "data": {
-            "$ref": "#/components/schemas/Search"
+            "$ref": "#/components/schemas/SearchPage"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
           }
         },
         "additionalProperties": false,
         "required": [
           "code",
-          "data"
+          "data",
+          "meta"
         ]
       },
       "Q02_getResponse": {
@@ -16763,7 +16893,7 @@
   },
   "x-implementation-notes": [
     "Thông báo trả data.items cùng meta.nextCursor và meta.serverTime; shopping dùng data.lists, pantry dùng data.lots và data.nextCursor.",
-    "GET danh mục có304 không body. Pantry/shopping/inbox/recipe/meal/admin collections có cursor default20/max100; search đang được rà riêng.",
+    "GET danh mục có304 không body. Pantry/shopping/inbox/recipe/meal/admin collections có cursor default20/max100; search có cursor và full-filter facets; autocomplete giữ tối đa10.",
     "Các API xác nhận dryRun miễn Idempotency-Key khi chỉ xem trước.",
     "Các mutation cần quyền đang kiểm lại membership/admin trong dịch vụ và transaction."
   ]

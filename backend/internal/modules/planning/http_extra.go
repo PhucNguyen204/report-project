@@ -5,6 +5,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func (s *Service) Register(mux *http.ServeMux) {
@@ -117,22 +118,60 @@ func (s *Service) RegisterSearch(mux *http.ServeMux) {
 		foods bool
 	}{{"search", false}, {"foods/suggest", true}} {
 		mux.HandleFunc("GET /it4788/v1/spaces/{sid}/"+spec.path, platform.Handle(func(w http.ResponseWriter, r *http.Request) error {
-			limit := 50
+			q := r.URL.Query()
+			if len(q["q"]) > 1 {
+				return platform.Invalid("Từ khóa bị lặp")
+			}
+			in := SearchInput{Query: q.Get("q"), FoodsOnly: spec.foods}
+			var page platform.Page
 			if spec.foods {
-				limit = 10
-			}
-			if v := r.URL.Query().Get("limit"); v != "" {
-				n, err := strconv.Atoi(v)
-				if err != nil {
-					return platform.Invalid("Giới hạn không hợp lệ")
+				if _, ok := q["cursor"]; ok {
+					return platform.Invalid("Gợi ý tên không có con trỏ")
 				}
-				limit = n
+				if len(q["limit"]) > 1 {
+					return platform.Invalid("Giới hạn bị lặp")
+				}
+				in.Limit = 10
+				if _, ok := q["limit"]; ok {
+					n, err := strconv.Atoi(q.Get("limit"))
+					if err != nil {
+						return platform.Invalid("Giới hạn không hợp lệ")
+					}
+					in.Limit = n
+				}
+			} else {
+				var err error
+				page, err = platform.ReadPage(r, platform.PageText, platform.PageText, platform.PageUUID)
+				if err != nil {
+					return err
+				}
+				in.Limit = page.Limit
+				in.After = platform.SearchKey{Name: page.After[0], Type: page.After[1], ID: page.After[2]}
 			}
-			out, err := s.Search(r.Context(), platform.Current(r).UserID, r.PathValue("sid"), r.URL.Query().Get("q"), limit, spec.foods)
+			for key, target := range map[string]*[]string{"categoryId": &in.CategoryIDs, "location": &in.Locations, "expiryState": &in.ExpiryStates} {
+				seen := map[string]bool{}
+				for _, values := range q[key] {
+					for _, value := range strings.Split(values, ",") {
+						if value != "" && !seen[value] {
+							*target = append(*target, value)
+							seen[value] = true
+						}
+					}
+				}
+			}
+			out, err := s.SearchPage(r.Context(), platform.Current(r).UserID, r.PathValue("sid"), in)
 			if err != nil {
 				return err
 			}
-			platform.Write(w, 200, out)
+			if spec.foods {
+				platform.Write(w, 200, out)
+			} else {
+				next := ""
+				if out.Next != nil {
+					next = page.Next(out.Next.Name, out.Next.Type, out.Next.ID)
+				}
+				platform.WritePage(w, out, next, s.db.Clock.Now())
+			}
 			return nil
 		}))
 	}
