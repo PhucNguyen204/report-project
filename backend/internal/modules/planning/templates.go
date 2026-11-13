@@ -64,13 +64,19 @@ func (s *Service) SaveTemplate(ctx context.Context, user, id string, version int
 	if in.Status != "draft" && in.Status != "published" && in.Status != "hidden" {
 		return out, platform.Invalid("Trạng thái công thức mẫu không hợp lệ")
 	}
+	creating := id == ""
+	if creating {
+		id = in.ID
+		if id == "" {
+			id = platform.ID()
+		}
+	}
 	err := s.db.Tx(ctx, func(tx pgx.Tx) error {
 		if err := requireAdmin(ctx, tx, user); err != nil {
 			return err
 		}
 		var old any
-		if id == "" {
-			id = platform.ID()
+		if creating {
 			_, err := tx.Exec(ctx, "INSERT INTO recipe.recipes(id,created_by,name,servings,kind,status) VALUES($1,$2,$3,$4,'template',$5)", id, user, in.Name, in.Servings, in.Status)
 			if err != nil {
 				return err

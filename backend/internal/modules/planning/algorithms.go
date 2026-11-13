@@ -174,6 +174,9 @@ func Score(needs []Demand, supply []Supply, today time.Time, reminderDays int, f
 }
 
 func validateRecipe(v RecipeInput) error {
+	if v.ID != "" && !platform.UUID7(v.ID) {
+		return platform.Invalid("id phải là UUIDv7")
+	}
 	if n := utf8.RuneCountInString(v.Name); n < 2 || n > 100 {
 		return platform.Invalid("Tên công thức dài 2–100 ký tự")
 	}

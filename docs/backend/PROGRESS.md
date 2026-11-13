@@ -589,3 +589,15 @@ Feature-ID: F09-F33-authority-locks. Trạng thái LOCAL_PASS.
 - [x] Root `make verify integration`:411 pass/0 fail/0 skip; media86.8%, planning87.7%. Module integration/race, template scope, revoke-after-S3-PUT, private image và stale-role tests đều pass. Govulncheck trước checkpoint cùng dependency graph No vulnerabilities found.
 - [x] Review actor/target/object lock order, không khóa household.spaces sớm; comment mới tối giản. TTL URL đã ký vẫn15phút, không hứa thu hồi URL cũ tức thời.
 - [ ] CI remote vẫn chưa được runner nhận; latest pipeline217/main và216/feature tại31ad147 pending, runner/started_at null. Chưa có quyền Maintainer để đổi runner.
+
+
+### F03/F18/F22/F24 — giữ ID client và bảo toàn create khi retry — 13/11/2026
+
+Feature-ID: F03-resource-client-ids. Trạng thái LOCAL_PASS.
+- [x] RED HTTP cho list/item/copy/recipe/meal/template: UUIDv4 hoặc variant sai vẫn201, malformed thành422; copy/template bỏ qua ID; duplicate item ID bị gộp thành quantity2/version2 thay vì409.
+- [x] Check UUIDv7 trước mutation, copy/template giữ ID đã cung cấp, thiếu/null/rỗng vẫn để server sinh theo DTO hiện hành. Item ID tồn tại bị409/4003 trước merge; ID mới cùng food vẫn dùng quy tắc merge và canonical ID như trước, retry command phải giữ Idempotency-Key.
+- [x] S06 notes bỏ qua/null giữ nguồn; có giá trị override, rỗng clear. Tên/notes copy dùng biến local mỗi transaction retry; duplicate/invalid IDs không thêm activity/resource hoặc đổi source.
+- [x] Root phát hiện create template sửa biến id trong closure khiến retry nhầm sang update. Test PostgreSQL trigger inject55P03 lần đầu RED no rows; stable creation flag/ID ngoài transaction rồi GREEN,2attempts nhưng đúng1recipe/ingredient/audit.
+- [x] OpenAPI ClientResourceID riêng cho input create/copy,203schemas/101operations; contract RED→GREEN cho7route. Không đổi foreign-key/path/device UUID; device UUIDv4 vẫn hợp lệ.
+- [x] `make verify integration security`:440 pass/0 fail/0 skip; race/vet/build/mod verify đạt, No vulnerabilities found. Không sửa migration cũ hoặc thêm bảng alias client ID.
+- [ ] CI remote và release gates còn mở theo runbook; số coverage từng package hiện đo bằng test binary riêng, cần tổng hợp coverage xuyên package để đánh giá các hàm platform dùng qua module.

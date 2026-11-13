@@ -85,6 +85,9 @@ func (s *Service) prepareMeal(ctx context.Context, tx pgx.Tx, sid string, in Mea
 }
 func (s *Service) CreateMeal(ctx context.Context, user, sid string, in MealInput) (Meal, error) {
 	var out Meal
+	if in.ID != "" && !platform.UUID7(in.ID) {
+		return out, platform.Invalid("id phải là UUIDv7")
+	}
 	id := in.ID
 	if id == "" {
 		id = platform.ID()

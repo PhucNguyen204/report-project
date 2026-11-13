@@ -3859,8 +3859,7 @@
                 "type": "object",
                 "properties": {
                   "id": {
-                    "type": "string",
-                    "format": "uuid"
+                    "$ref": "#/components/schemas/ClientResourceID"
                   },
                   "name": {
                     "type": "string",
@@ -3872,8 +3871,16 @@
                     "format": "date"
                   },
                   "notes": {
-                    "type": "string",
-                    "maxLength": 200
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 200,
+                        "description": "Bỏ qua hoặc null để giữ ghi chú nguồn; chuỗi rỗng để xóa."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -10509,9 +10516,7 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            "$ref": "#/components/schemas/ClientResourceID"
           },
           "foodId": {
             "type": "string",
@@ -10896,8 +10901,7 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid"
+            "$ref": "#/components/schemas/ClientResourceID"
           },
           "name": {
             "type": "string",
@@ -11091,8 +11095,7 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid"
+            "$ref": "#/components/schemas/ClientResourceID"
           },
           "foodId": {
             "type": "string",
@@ -11570,8 +11573,7 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid"
+            "$ref": "#/components/schemas/ClientResourceID"
           },
           "name": {
             "type": "string",
@@ -11811,8 +11813,7 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid"
+            "$ref": "#/components/schemas/ClientResourceID"
           },
           "name": {
             "type": "string",
@@ -11896,8 +11897,7 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid"
+            "$ref": "#/components/schemas/ClientResourceID"
           },
           "recipeId": {
             "type": "string",
@@ -16847,6 +16847,22 @@
           "nextCursor",
           "serverTime"
         ]
+      },
+      "ClientResourceID": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+          },
+          {
+            "const": ""
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "ID do client sinh phải là UUIDv7. Bỏ qua, null hoặc chuỗi rỗng để máy chủ sinh mới; ID đã tồn tại nhận409/4003."
       }
     },
     "responses": {

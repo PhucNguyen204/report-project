@@ -563,14 +563,25 @@ func (s *Service) deleteList(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 func (s *Service) copyList(w http.ResponseWriter, r *http.Request) error {
-	var c ListInput
+	var c struct {
+		ID          string  `json:"id"`
+		Name        string  `json:"name"`
+		PlannedDate string  `json:"plannedDate"`
+		Notes       *string `json:"notes"`
+	}
 	if r.ContentLength != 0 {
 		if err := platform.Decode(r, &c); err != nil {
 			return err
 		}
 	}
 	sid, uid, id := r.PathValue("sid"), platform.Current(r).UserID, r.PathValue("listId")
-	var newID string
+	if c.ID != "" && !platform.UUID7(c.ID) {
+		return platform.Invalid("id phải là UUIDv7")
+	}
+	newID := c.ID
+	if newID == "" {
+		newID = platform.ID()
+	}
 	err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
 		if _, err := s.db.LockMember(r.Context(), tx, sid, uid); err != nil {
 			return err
@@ -579,18 +590,25 @@ func (s *Service) copyList(w http.ResponseWriter, r *http.Request) error {
 		if err != nil {
 			return err
 		}
-		if c.Name == "" {
-			c.Name = source.Name
+		name := c.Name
+		if name == "" {
+			name = source.Name
 		}
-		if n := utf8.RuneCountInString(c.Name); n < 1 || n > 100 {
+		notes := source.Notes
+		if c.Notes != nil {
+			notes = *c.Notes
+		}
+		if utf8.RuneCountInString(notes) > 200 {
+			return platform.Invalid("Ghi chú quá dài")
+		}
+		if n := utf8.RuneCountInString(name); n < 1 || n > 100 {
 			return platform.Invalid("Tên không hợp lệ")
 		}
 		d, err := s.date(c.PlannedDate)
 		if err != nil || d.Before(s.db.Today()) {
 			return platform.Invalid("Ngày mua không hợp lệ")
 		}
-		newID = platform.ID()
-		if _, err = tx.Exec(r.Context(), `INSERT INTO shopping.shopping_lists(id,space_id,name,planned_date,notes) VALUES($1,$2,$3,$4,$5)`, newID, sid, c.Name, d, source.Notes); err != nil {
+		if _, err = tx.Exec(r.Context(), `INSERT INTO shopping.shopping_lists(id,space_id,name,planned_date,notes) VALUES($1,$2,$3,$4,$5)`, newID, sid, name, d, notes); err != nil {
 			return err
 		}
 		rows, err := tx.Query(r.Context(), `SELECT `+itemColumns+` FROM shopping.shopping_items i WHERE list_id=$1 AND space_id=$2 AND deleted_at IS NULL ORDER BY id`, id, sid)

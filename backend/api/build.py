@@ -258,7 +258,13 @@ S['A17_getResponse']['properties']['meta']=obj({'nextCursor':text,'serverTime':t
 put('PageMeta',obj({'nextCursor':text,'serverTime':timestamp}))
 for name in ['P01_getResponse','P03_getResponse','P07_getResponse','S01_getResponse','R01_getResponse','M01_getResponse','D01_getResponse','D03_getResponse','D05_getResponse','D06_getResponse','D07_getResponse','D10_getResponse','Q01_getResponse']:
  S[name]['properties']['meta']=ref('PageMeta');S[name]['required'].append('meta')
-S['LotInput']['properties']['id']=st(format='uuid',pattern=r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$')
+put('ClientResourceID',{'anyOf':[st(format='uuid',pattern=r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'),{'const':''},{'type':'null'}],'description':'ID do client sinh phải là UUIDv7. Bỏ qua, null hoặc chuỗi rỗng để máy chủ sinh mới; ID đã tồn tại nhận409/4003.'})
+for name in ['LotInput','ListInput','ItemInput','RecipeInput','TemplateInput','MealInput']:
+ S[name]['properties']['id']=ref('ClientResourceID')
+copy_input=P[base+'/shopping-lists/{listId}/copy']['post']['requestBody']['content']['application/json']['schema']
+copy_input['properties']['id']=ref('ClientResourceID')
+copy_input['properties']['notes']=nullable(st(maxLength=200,description='Bỏ qua hoặc null để giữ ghi chú nguồn; chuỗi rỗng để xóa.'))
+
 S['A17_getResponse']['required'].append('meta')
 # The static document is a plain OpenAPI object, not a success envelope.
 P['/openapi.json']={'get':{'operationId':'OPS_OPENAPI_get','summary':'Tải hợp đồng OpenAPI 3.1','tags':['Vận hành'],'x-api-code':'OPS-OPENAPI','x-use-case':[],'security':[],'responses':{'200':{'description':'Tài liệu OpenAPI JSON','content':{'application/json':{'schema':{'type':'object','required':['openapi','info','paths','components'],'properties':{'openapi':{'const':'3.1.2'},'info':{'type':'object'},'paths':{'type':'object'},'components':{'type':'object'}},'additionalProperties':True}}}}}}}

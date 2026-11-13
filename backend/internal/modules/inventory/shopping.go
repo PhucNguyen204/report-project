@@ -83,6 +83,9 @@ const listColumns = `id::text,name,to_char(planned_date,'YYYY-MM-DD'),status,not
 
 func (s *Service) CreateList(ctx context.Context, sid, uid string, c ListInput) (List, error) {
 	var out List
+	if c.ID != "" && !platform.UUID7(c.ID) {
+		return out, platform.Invalid("id phải là UUIDv7")
+	}
 	if n := utf8.RuneCountInString(strings.TrimSpace(c.Name)); n < 1 || n > 100 || utf8.RuneCountInString(c.Notes) > 200 {
 		return out, platform.Invalid("Tên hoặc ghi chú không hợp lệ")
 	}
@@ -142,6 +145,18 @@ func (s *Service) AddItem(ctx context.Context, sid, uid, listID string, c ItemIn
 }
 func (s *Service) addItem(ctx context.Context, tx pgx.Tx, sid, listID string, c ItemInput) (Item, error) {
 	var out Item
+	if c.ID != "" {
+		if !platform.UUID7(c.ID) {
+			return out, platform.Invalid("id phải là UUIDv7")
+		}
+		var exists bool
+		if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM shopping.shopping_items WHERE id=$1)", c.ID).Scan(&exists); err != nil {
+			return out, err
+		}
+		if exists {
+			return out, platform.Err(409, 4003, "Dữ liệu đã tồn tại")
+		}
+	}
 	if err := validQuantity(c.Quantity); err != nil {
 		return out, err
 	}
