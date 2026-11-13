@@ -48,9 +48,9 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F13 | UC06 mời/join | LOCAL_PASS | 5e30ea9; preview/rotate/join/race chỗ cuối |
 | F14 | UC07 rời/xóa/chuyển quyền | LOCAL_PASS | 5e30ea9/2ddf402; leave/remove/transfer cùng cleanup assignment |
 | F15 | UC11 nhập tay | LOCAL_PASS | 9644352/2ddf402; nhập tay, lot/movement atomic |
-| F16 | UC12 xem/lọc tủ | IN_PROGRESS | 2ddf402; filter/cursor/facet pass; audit default20 còn mở |
+| F16 | UC12 xem/lọc tủ | LOCAL_PASS | Default20/max100, opaque cursor/keyset và full-set facets đã có test345-case snapshot |
 | F17 | UC13 sửa/sử dụng/loại bỏ | LOCAL_PASS | d6f45e7/2ddf402; FEFO/stale remaining/metadata merge |
-| F18 | UC08 danh sách/mặt hàng/copy/lịch sử | IN_PROGRESS | 2ddf402; workflows pass; keyset list pagination còn mở |
+| F18 | UC08 danh sách/mặt hàng/copy/lịch sử | LOCAL_PASS | Workflows + keyset + monthly totals/rounding/overflow đã có test PostgreSQL |
 | F19 | UC09 mua/undo | LOCAL_PASS | 2ddf402; purchase/undo/batch rollback/concurrency |
 | F20 | UC11 nhập từ mua sắm | LOCAL_PASS | 2ddf402; stock source unique và total cost bảo toàn |
 | F21 | UC08 phân công/push | LOCAL_PASS | 2ddf402; role/race/digest5 giây; live FCM chưa smoke |
@@ -465,3 +465,15 @@ Feature-ID: F15-client-uuid. Trạng thái LOCAL_PASS.
 - [x] StockInput truyền id qua cổng AddLots; UUIDv7 hợp lệ được giữ, thiếu id vẫn sinh mới; sai version/variant trả400, trùng id409.
 - [x] Unit UUID và PostgreSQL HTTP regression PASS; full integration/race/coverage snapshot root PASS sau sửa. Stock từ shopping không đổi luồng tạo id.
 - [ ] Pagination đang làm ở working tree, chưa gộp vào commit sửa UUID này; được test/chốt riêng.
+
+### F16/F18 — keyset inventory và tổng lịch sử mua sắm — 13/11/2026
+
+Feature-ID: F16-inventory-pagination. Trạng thái LOCAL_PASS.
+- [x] Test RED21 bản ghi bị trả cả21/default50 và không có cursor; history thiếu months/itemCount/purchasedBy. GREEN sau triển khai.
+- [x] Common page default20/max100, cursor base64url có version/tuple/scope-user-filter fingerprint; malformed/type/date/version/duplicate params trả400. limit rỗng có RED→GREEN riêng.
+- [x] P01/P07 SQL keyset id, facets toàn tập lọc; S01 plannedDate DESC/id ASC, chèn trước cursor không làm lặp bản ghi đã đọc. Page size được đổi mà giữ cursor.
+- [x] S01 trả itemCount/totalCost/purchasedBy; groupBy=month tính toàn filter, không phụ thuộc page size; round half-up từng dòng và chặn overflow cả list/tháng. Test fixture overflow ban đầu mua xong rồi thêm hàng vi phạm BR08, đã sửa fixture thêm đủ hàng trước purchase batch; không nới quy tắc để qua test.
+- [x] Migration044 thêm index mới; không sửa migration đã commit. OpenAPI201 schemas/101 operations khớp HTTP mới; contract từng RED do thiếu meta rồi GREEN, không nới additionalProperties toàn cục.
+- [x] make verify integration PASS345 case/0 fail/0 skip, race/vet/build/mod verify đạt; không có provider giả được ghi là smoke thật.
+- [x] Fix UUID aa1bc51 đã push và fast-forward vào baocao sau kiểm lại333 case trong main worktree.
+- [ ] R01/M01/admin/search và các release gates khác tiếp tục theo plan pagination; chưa gọi toàn backend DONE.

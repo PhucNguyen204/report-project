@@ -120,7 +120,6 @@ func version(r *http.Request) (int64, error) {
 	}
 	return v, nil
 }
-func chosen(filter map[string]bool, value string) bool { return len(filter) == 0 || filter[value] }
 func filters(r *http.Request, key string) map[string]bool {
 	out := map[string]bool{}
 	for _, v := range r.URL.Query()[key] {
@@ -132,76 +131,7 @@ func filters(r *http.Request, key string) map[string]bool {
 	}
 	return out
 }
-func limit(r *http.Request) (int, error) {
-	if r.URL.Query().Get("limit") == "" {
-		return 50, nil
-	}
-	n, err := strconv.Atoi(r.URL.Query().Get("limit"))
-	if err != nil || n < 1 || n > 100 {
-		return 0, platform.Invalid("limit phải từ 1 đến 100")
-	}
-	return n, nil
-}
 
-func (s *Service) listLots(w http.ResponseWriter, r *http.Request) error {
-	if err := s.member(r); err != nil {
-		return err
-	}
-	nmax, err := limit(r)
-	if err != nil {
-		return err
-	}
-	sid := r.PathValue("sid")
-	uid := platform.Current(r).UserID
-	n := s.reminderDays(r.Context(), s.db.Pool, uid)
-	rows, err := s.db.Pool.Query(r.Context(), `SELECT `+lotColumns+`,COALESCE(f.category_id::text,'') FROM pantry.food_lots l JOIN catalog.foods f ON f.id=l.food_id WHERE l.space_id=$1 AND l.deleted_at IS NULL ORDER BY l.id`, sid)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	locations, states, categories := filters(r, "location"), filters(r, "expiryState"), filters(r, "categoryId")
-	for v := range filters(r, "storageLocation") {
-		locations[v] = true
-	}
-	cursor := r.URL.Query().Get("cursor")
-	q := strings.ToLower(r.URL.Query().Get("q"))
-	out := make([]Lot, 0)
-	facets := map[string]map[string]int{"location": {}, "expiryState": {}, "categoryId": {}}
-	for rows.Next() {
-		var lot Lot
-		var category string
-		if err := rows.Scan(&lot.ID, &lot.FoodID, &lot.Name, &lot.UnitID, &lot.Dimension, &lot.InitialQty, &lot.RemainingQty, &lot.StorageLocation, &lot.PurchasedOn, &lot.ExpiresOn, &lot.Lifecycle, &lot.Notes, &lot.Version, &lot.TotalCost, &category); err != nil {
-			return err
-		}
-		date, err := s.date(lot.ExpiresOn)
-		if err != nil {
-			return err
-		}
-		lot.ExpiryState = ExpiryState(date, s.db.Today(), n)
-		if lot.Lifecycle != "active" || !chosen(locations, lot.StorageLocation) || !chosen(states, lot.ExpiryState) || !chosen(categories, category) || !strings.Contains(strings.ToLower(lot.Name), q) {
-			continue
-		}
-		if strings.HasSuffix(r.URL.Path, "/expiring") && lot.ExpiryState == "fresh" {
-			continue
-		}
-		facets["location"][lot.StorageLocation]++
-		facets["expiryState"][lot.ExpiryState]++
-		facets["categoryId"][category]++
-		if lot.ID > cursor {
-			out = append(out, lot)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-	next := ""
-	if len(out) > nmax {
-		next = out[nmax-1].ID
-		out = out[:nmax]
-	}
-	platform.Write(w, 200, map[string]any{"lots": out, "facets": facets, "nextCursor": next})
-	return nil
-}
 func (s *Service) getLot(w http.ResponseWriter, r *http.Request) error {
 	if err := s.member(r); err != nil {
 		return err
@@ -482,41 +412,6 @@ func (s *Service) discardLot(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (s *Service) listLists(w http.ResponseWriter, r *http.Request) error {
-	if err := s.member(r); err != nil {
-		return err
-	}
-	nmax, err := limit(r)
-	if err != nil {
-		return err
-	}
-	rows, err := s.db.Pool.Query(r.Context(), `SELECT `+listColumns+` FROM shopping.shopping_lists WHERE space_id=$1 AND deleted_at IS NULL ORDER BY planned_date DESC,id`, r.PathValue("sid"))
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	out := make([]List, 0)
-	statuses := filters(r, "status")
-	from, to := r.URL.Query().Get("from"), r.URL.Query().Get("to")
-	for rows.Next() {
-		l, err := scanList(rows)
-		if err != nil {
-			return err
-		}
-		if !chosen(statuses, l.Status) || (from != "" && l.PlannedDate < from) || (to != "" && l.PlannedDate > to) {
-			continue
-		}
-		out = append(out, l)
-	}
-	if err = rows.Err(); err != nil {
-		return err
-	}
-	if len(out) > nmax {
-		out = out[:nmax]
-	}
-	platform.Write(w, 200, map[string]any{"lists": out})
-	return nil
-}
 func (s *Service) getList(w http.ResponseWriter, r *http.Request) error {
 	if err := s.member(r); err != nil {
 		return err

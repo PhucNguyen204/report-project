@@ -99,3 +99,5 @@ Năm kịch bản giá trị (bảng trong `chapters/c2/uc-tong-quan.tex`): K1 g
 - Comment code hạn chế, chỉ câu ngắn về vai trò function khi cần. Tham chiếu ADR trong plan khi đặc tả mâu thuẫn; không sửa âm thầm phạm vi báo cáo LaTeX.
 
 - Từ yêu cầu tiếp theo của người dùng: mỗi phần đã verify phải commit và push ngay lên GitLab nhánh `baocao-phucnn`; root thực hiện Git tuần tự. Không sửa migration đã commit, thêm migration số mới cho nâng cấp.
+
+- Từ yêu cầu13/11/2026: push checkpoint đã verify lên nhánh tính năng rồi merge và push nhánh chính. Xác minh origin/HEAD trước khi merge (hiện là `baocao`); không force push. Dùng worktree riêng nếu working tree còn tính năng đang làm. Clone SSH mới cần kế thừa `core.sshCommand` hiện có để đi qua Cloudflare ProxyCommand.
