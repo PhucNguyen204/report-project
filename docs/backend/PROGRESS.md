@@ -310,3 +310,11 @@ Feature-ID: F09-private-media. Trạng thái LOCAL_PASS.
 - [x] Giữ ảnh còn được gia đình/template tham chiếu khi copy/purge/anonymize; dọn staging/orphan bằng job bền vững.
 - [x] Root full integration/race PASS; media85.8%. Test dùng S3 thật SeaweedFS qua AWS SDK và URL ký, gồm upload/download/delete/deny và race thu hồi quyền.
 - [ ] Chưa smoke MinIO/AWS production; không gọi fixture S3 tương thích là MinIO thật.
+
+### F24/F28 — lịch bữa ăn và xác nhận đã nấu — 13/11/2026
+
+Feature-ID: F24-meals-cook. Trạng thái LOCAL_PASS core.
+- [x] Lịch theo ngày VN/horizon cấu hình; món tự do hoặc công thức, xóa công thức giữ tên món trong lịch.
+- [x] Nấu trừ kho FEFO cùng transaction, thiếu kho rollback cả meal/lots; hai request khác key chỉ tiêu thụ một lần.
+- [x] Cook dùng version, cooked replay không tiêu thụ thêm; không sửa/xóa món đã nấu.
+- [x] Root full integration/race PASS13/11. HTTP If-Match và contract thuộc checkpoint transport tiếp theo.
