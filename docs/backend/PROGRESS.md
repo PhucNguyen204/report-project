@@ -578,3 +578,14 @@ Feature-ID: F37-performance-harness. Trạng thái LOCAL_PASS local experiment.
 - [x] Lịch phát open-loop50RPS với128workers, boundedqueue/drop thành lỗi; độ trễ gồm dispatch lag/pool/đọc body. Mỗi user≤101 requests gồm warmup, không vượt quota120/min; ghi fallback Redis là lỗi.
 - [x] Artifact output/backend-qa/performance.json ghi source HEAD0a1463b + dirty test/runbook, môi trường/dataset/latency/error và cleanup: DB tạm dropped,32 Redis keys removed/0remaining, bucket S3 xóa đúng. RED setup artifact được giữ riêng.
 - [ ] Đây là GET read workload local HTTP loopback; không đo Q01, tải ghi/FCM/SMTP/TLS/4G/thiết bị hoặc chứng minh SLA production. Remote runner chưa chạy nên không gán LOCAL_PASS thành CI_PASS.
+
+
+### F09/F33 — giữ quyền template/ảnh và tránh đảo thứ tự khóa — 13/11/2026
+
+Feature-ID: F09-F33-authority-locks. Trạng thái LOCAL_PASS.
+- [x] Hai RED xác nhận template SaveTemplate và Upload template cho demotion hoàn tất khi mutation đang chờ target row. requireAdmin/actorRole giữ active actor FOR SHARE đến commit; GREEN, thao tác tiếp theo của actor đã demote bị từ chối.
+- [x] Sau thêm actor lock, regression object-before-actor RED55P03: Complete replay đang đợi profile user row giữ object khiến profile không lấy share lock được. owned đổi thành actor→authorize/target→object FOR UPDATE; profile Validate/attach ảnh ready và Complete cùng kết thúc GREEN.
+- [x] Đọc lại status/expiry sau khi lấy object lock; test concurrent ready transition dùng immutable S3 object thật, Complete không đọc staging đã cũ hoặc thay key đã finalize. S3 I/O vẫn ngoài DB transaction.
+- [x] Root `make verify integration`:411 pass/0 fail/0 skip; media86.8%, planning87.7%. Module integration/race, template scope, revoke-after-S3-PUT, private image và stale-role tests đều pass. Govulncheck trước checkpoint cùng dependency graph No vulnerabilities found.
+- [x] Review actor/target/object lock order, không khóa household.spaces sớm; comment mới tối giản. TTL URL đã ký vẫn15phút, không hứa thu hồi URL cũ tức thời.
+- [ ] CI remote vẫn chưa được runner nhận; latest pipeline217/main và216/feature tại31ad147 pending, runner/started_at null. Chưa có quyền Maintainer để đổi runner.

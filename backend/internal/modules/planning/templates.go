@@ -5,6 +5,7 @@ import (
 	"dicho/internal/kernel"
 	"dicho/internal/platform"
 	"encoding/json"
+	"errors"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -17,13 +18,11 @@ type TemplateInput struct {
 
 func requireAdmin(ctx context.Context, tx pgx.Tx, user string) error {
 	var allowed bool
-	if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM identity.users WHERE id=$1 AND system_role='admin' AND status='active' AND deleted_at IS NULL)", user).Scan(&allowed); err != nil {
-		return err
-	}
-	if !allowed {
+	err := tx.QueryRow(ctx, "SELECT true FROM identity.users WHERE id=$1 AND system_role='admin' AND status='active' AND deleted_at IS NULL FOR SHARE", user).Scan(&allowed)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return platform.Forbidden()
 	}
-	return nil
+	return err
 }
 func (s *Service) readTemplate(ctx context.Context, q platform.Querier, id string) (Recipe, error) {
 	var out Recipe

@@ -33,7 +33,7 @@ type Service struct {
 func New(db *platform.DB, store *S3Store) *Service { return &Service{db, store} }
 func (s *Service) actorRole(ctx context.Context, tx pgx.Tx, user string) (string, error) {
 	var role string
-	err := tx.QueryRow(ctx, "SELECT system_role FROM identity.users WHERE id=$1 AND status='active' AND deleted_at IS NULL", user).Scan(&role)
+	err := tx.QueryRow(ctx, "SELECT system_role FROM identity.users WHERE id=$1 AND status='active' AND deleted_at IS NULL FOR SHARE", user).Scan(&role)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", platform.NotFound()
 	}
@@ -140,14 +140,25 @@ type object struct {
 
 func (s *Service) owned(ctx context.Context, tx pgx.Tx, user, id string) (object, error) {
 	var o object
-	err := tx.QueryRow(ctx, "SELECT purpose,target_id::text,content_type,size,staging_key,status,expires_at FROM media.objects WHERE id=$1 AND uploaded_by=$2 FOR UPDATE", id, user).Scan(&o.purpose, &o.target, &o.contentType, &o.size, &o.stagingKey, &o.status, &o.expires)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return o, platform.NotFound()
-	}
-	if err != nil {
+	if _, err := s.actorRole(ctx, tx, user); err != nil {
 		return o, err
 	}
-	return o, s.authorize(ctx, tx, user, o.purpose, o.target)
+	query := "SELECT purpose,target_id::text,content_type,size,staging_key,status,expires_at FROM media.objects WHERE id=$1 AND uploaded_by=$2"
+	read := func(lock string) error {
+		err := tx.QueryRow(ctx, query+lock, id, user).Scan(&o.purpose, &o.target, &o.contentType, &o.size, &o.stagingKey, &o.status, &o.expires)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return platform.NotFound()
+		}
+		return err
+	}
+	if err := read(""); err != nil {
+		return o, err
+	}
+	if err := s.authorize(ctx, tx, user, o.purpose, o.target); err != nil {
+		return o, err
+	}
+	err := read(" FOR UPDATE")
+	return o, err
 }
 func (s *Service) Complete(ctx context.Context, user, id string) error {
 	var o object
