@@ -37,8 +37,20 @@ Có 128 worker HTTP và hàng chờ tối đa 128 request. Nếu hàng chờ đ�
 
 Mọi lỗi HTTP, 429, timeout, body không đúng dữ liệu fixture và request bị loại do hết dung lượng đều được đếm. Test thất bại nếu có lỗi, thiếu mẫu, vượt p95 hoặc quan sát thấy Redis fallback. Thông lượng thành công được tính trên thời gian thực gồm cả phần chờ request cuối hoàn tất; không chỉ lấy cấu hình 50 RPS làm kết quả thông lượng.
 
+## Kiểm tra khi bật observer
+
+Harness inject HTTP observer vào cùng router: SDK dùng parent-based sampling với10% root và không export trace qua network, giống runtime khi endpoint collector bỏ trống. Log JSON được ghi trực tiếp vào file0600 trong `output/backend-qa`; không dùng logger discard. Mọi warmup/measured response phải có `X-Trace-ID`32ký tự; thiếu header làm warmup hoặc sample fail.
+
+Sau thay đổi role/session guard trong production, chạy lại campaign để đo cả các truy vấn kiểm quyền mới. Giữ máy thức trên macOS bằng `caffeinate -disu make performance`, phối hợp dừng build/suite khác trong cửa sổ đo; lệnh không thay cấu hình sleep lâu dài. Giữ artifact trước đó bằng tên riêng trước khi `performance.json` bị ghi đè, và ghi source HEAD/dirtyfiles của lần mới.
+
+Sau khi drain và đóng HTTP server, harness scrape Prometheus registry thật và kiểm counter lẫn histogram đủ391response200 cho từng route:375measured+16warmup.16lượt `/me` và1JWT tampered401 được tách khỏi391mỗi route; số request đang chạy phải về0. Sampling trace không được làm giảm số request trong metrics hoặc log. Không dùng số dòng log làm số request measured.
+
 ## Artifact và giới hạn kết luận
 
 Kết quả được ghi vào [`output/backend-qa/performance.json`](../../../output/backend-qa/performance.json), nằm trong thư mục đã được Git ignore. Artifact gồm thông tin CPU/RAM/Docker/Go, HEAD và danh sách file đang thay đổi tại thời điểm bắt đầu, dữ liệu, giới hạn, số mẫu, lỗi, thông lượng, p50/p95/max từng route và trạng thái cleanup. Artifact được ghi cả khi test thất bại; kiểm tra `status` và `phase` trước khi sử dụng số liệu.
 
+`services.observer` ghi sampling/export mode và tên file `performance-http-<run_id>.jsonl`; `observer_http_success_counts` ghi số counter đọc lại. Log chỉ có method/route pattern/status/duration và request_id/trace_id, không ghi token/tenantID/raw URL/body. Nếu benchmark fail vì thiếu observer, giữ riêng artifact RED trước khi chạy lại để không mất bằng chứng.
+
 Đây là phép đo trên binary được build từ working tree tại thời điểm chạy, không mặc nhiên đại diện cho toàn bộ verified HEAD. Kết quả local qua loopback không chứng minh độ trễ trên 4G, giao diện thiết bị, TLS, tải ghi, FCM/SMTP, khả năng phục hồi hay SLA production. Các tác vụ cùng dùng CPU, RAM, Docker hoặc PostgreSQL có thể ảnh hưởng kết quả; khi so sánh hai lần chạy phải giữ môi trường và ghi nhận tải nền tương đương.
+
+Kết quả khi bật observer có chi phí ghi log JSON vào file local; không bao gồm OTLP export qua mạng, collector, Docker stdout hoặc vận chuyển log bằng Alloy/Loki. Không so chênh lệch giữa hai lần chạy rồi gọi đó là chi phí riêng của middleware khi tải nền chưa được kiểm soát như một thí nghiệm đối chứng.

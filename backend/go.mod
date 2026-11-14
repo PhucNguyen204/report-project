@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.9
 	github.com/jackc/pgx/v5 v5.12.0
 	github.com/prometheus/client_golang v1.25.0
+	github.com/prometheus/common v0.72.0
 	github.com/redis/go-redis/v9 v9.23.0
 	github.com/riverqueue/river v0.51.1
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.51.1
@@ -49,7 +50,6 @@ require (
 	github.com/phpdave11/gofpdi v1.0.14-0.20211212211723-1f10f9844311 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
-	github.com/prometheus/common v0.72.0 // indirect
 	github.com/prometheus/procfs v0.22.0 // indirect
 	github.com/riverqueue/river/riverdriver v0.51.1 // indirect
 	github.com/riverqueue/river/rivershared v0.51.1 // indirect

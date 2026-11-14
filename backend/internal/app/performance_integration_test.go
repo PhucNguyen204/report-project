@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"dicho/internal/modules/media"
+	"dicho/internal/observability"
 	"dicho/internal/platform"
 	"dicho/internal/testutil"
 	"dicho/migrations"
@@ -21,8 +22,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"github.com/redis/go-redis/v9"
 	"io"
+	"log/slog"
 	"math"
 	"math/big"
 	"net/http"
@@ -381,6 +385,8 @@ func performanceRequest(client *http.Client, base string, user performanceIdenti
 				sample.failure = "body_read"
 			} else if sample.status != 200 {
 				sample.failure = "http_status"
+			} else if len(response.Header.Get("X-Trace-ID")) != 32 {
+				sample.failure = "trace_context_missing"
 			} else {
 				var envelope struct {
 					Code int                        `json:"code"`
@@ -552,7 +558,34 @@ func TestPerformanceRealNetworkFiftyRPSForThirtySeconds(t *testing.T) {
 	if _, err = rand.Read(queueKey); err != nil {
 		t.Fatal(err)
 	}
-	system, err := NewSystem(ctx, db, Options{SigningKey: signingKey, QueueKey: queueKey, MediaStore: store, ExportStore: store, HTTP: Config{MinimumAppVersion: "1.0.0", Limiter: limiter}})
+	artifactDir := filepath.Clean(filepath.Join("..", "..", "..", "output", "backend-qa"))
+	if err := os.MkdirAll(artifactDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	logPath := filepath.Join(artifactDir, "performance-http-"+report.RunID+".jsonl")
+	logFile, err := os.OpenFile(logPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := logFile.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	provider, err := observability.NewTraceProvider(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		stop, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := provider.Shutdown(stop); err != nil {
+			t.Error(err)
+		}
+	})
+	observer := observability.New(observability.Options{Logger: slog.New(slog.NewJSONHandler(logFile, nil)), TracerProvider: provider})
+	report.Services["observer"] = map[string]any{"http_metrics": true, "json_log_file": filepath.Base(logPath), "root_trace_sample_ratio": .1, "trace_network_export": false}
+	system, err := NewSystem(ctx, db, Options{SigningKey: signingKey, QueueKey: queueKey, MediaStore: store, ExportStore: store, HTTP: Config{MinimumAppVersion: "1.0.0", Limiter: limiter, Observer: observer}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -686,5 +719,40 @@ func TestPerformanceRealNetworkFiftyRPSForThirtySeconds(t *testing.T) {
 	if err != nil || present != 16 || degraded != 0 || limiter.Degraded() {
 		t.Error("measurement did not stay on real Redis for all generated user quotas")
 	}
+	server.Close()
+	metricsResponse := httptest.NewRecorder()
+	observer.Metrics().ServeHTTP(metricsResponse, httptest.NewRequest("GET", "/metrics", nil))
+	parser := expfmt.NewTextParser(model.UTF8Validation)
+	families, err := parser.TextToMetricFamilies(strings.NewReader(metricsResponse.Body.String()))
+	if err != nil || metricsResponse.Code != 200 {
+		t.Fatalf("observer metrics scrape failed: %v", err)
+	}
+	counts := make(map[string]float64)
+	durations := make(map[string]uint64)
+	for _, name := range []string{"dicho_http_requests_total", "dicho_http_request_duration_seconds"} {
+		for _, metric := range families[name].GetMetric() {
+			labels := make(map[string]string)
+			for _, label := range metric.Label {
+				labels[label.GetName()] = label.GetValue()
+			}
+			if labels["method"] == "GET" && labels["status"] == "200" {
+				if name == "dicho_http_requests_total" {
+					counts[labels["route"]] = metric.GetCounter().GetValue()
+				} else {
+					durations[labels["route"]] = metric.GetHistogram().GetSampleCount()
+				}
+			}
+		}
+	}
+	for _, suffix := range []string{"lots", "recipes", "recipe-suggestions", "foods/suggest"} {
+		pattern := "/it4788/v1/spaces/{sid}/" + suffix
+		if counts[pattern] != 391 || durations[pattern] != 391 {
+			t.Errorf("observer lost requests: %s counter=%v durations=%v want391", pattern, counts[pattern], durations[pattern])
+		}
+	}
+	if len(families["dicho_http_requests_active"].GetMetric()) != 1 || families["dicho_http_requests_active"].GetMetric()[0].GetGauge().GetValue() != 0 {
+		t.Error("observer retained active requests after drain")
+	}
+	report.Services["observer_http_success_counts"] = counts
 	report.Phase = "complete"
 }
