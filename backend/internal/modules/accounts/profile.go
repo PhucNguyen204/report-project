@@ -254,19 +254,24 @@ func (s *Service) resetPassword(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 func (s *Service) passwordMatches(ctx context.Context, userID, password string) (bool, error) {
-	var hash string
-	err := s.db.Pool.QueryRow(ctx, "SELECT password_hash FROM identity.users WHERE id=$1 AND deleted_at IS NULL", userID).Scan(&hash)
-	if err != nil {
-		return false, err
-	}
-	if verifyPassword(hash, password) {
-		return true, nil
-	}
 	tx, err := s.db.Pool.Begin(ctx)
 	if err != nil {
 		return false, err
 	}
 	defer tx.Rollback(context.WithoutCancel(ctx))
+	if _, err := tx.Exec(ctx, "SET LOCAL lock_timeout = '3s'; SET LOCAL statement_timeout = '10s'"); err != nil {
+		return false, err
+	}
+	var hash string
+	if err := tx.QueryRow(ctx, "SELECT password_hash FROM identity.users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE", userID).Scan(&hash); err != nil {
+		return false, err
+	}
+	if _, err := s.db.LockActor(ctx, tx, userID); err != nil {
+		return false, err
+	}
+	if verifyPassword(hash, password) {
+		return true, tx.Commit(ctx)
+	}
 	_, err = tx.Exec(ctx, "UPDATE identity.users SET failed_login_count=LEAST(failed_login_count+1,5),locked_until=CASE WHEN failed_login_count>=4 THEN $2 ELSE locked_until END WHERE id=$1", userID, s.db.Clock.Now().Add(15*60*1e9))
 	if err != nil {
 		return false, err
