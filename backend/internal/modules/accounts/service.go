@@ -55,7 +55,7 @@ func (s *Service) Authenticate(ctx context.Context, token string) (platform.Prin
 	if status != "active" {
 		return platform.Principal{}, platform.Err(401, 3001, "Tài khoản chưa hoạt động")
 	}
-	return platform.Principal{UserID: c.Subject, SessionID: c.Session, SystemRole: role}, nil
+	return platform.Principal{UserID: c.Subject, SessionID: c.Session, SystemRole: role, TokenVersion: c.Version}, nil
 }
 func (s *Service) otpHash(email, purpose, code string) []byte {
 	m := hmac.New(sha256.New, s.pepper)
@@ -391,9 +391,26 @@ func (s *Service) refresh(w http.ResponseWriter, r *http.Request) error {
 	err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
 		outcome = nil
 		var id, user, family, device, os string
+		var owner string
+		err := tx.QueryRow(r.Context(), "SELECT user_id::text FROM identity.refresh_sessions WHERE token_hash=$1", secretHash(in.RefreshToken)).Scan(&owner)
+		if errors.Is(err, pgx.ErrNoRows) {
+			outcome = platform.Err(401, 3001, "Phiên không hợp lệ")
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		var lockedUser string
+		if err = tx.QueryRow(r.Context(), "SELECT id::text FROM identity.users WHERE id=$1 FOR UPDATE", owner).Scan(&lockedUser); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				outcome = platform.Err(401, 3001, "Phiên không hợp lệ")
+				return nil
+			}
+			return err
+		}
 		var expires time.Time
 		var rotated, revoked *time.Time
-		err := tx.QueryRow(r.Context(), "SELECT id::text,user_id::text,family_id::text,device_id::text,platform,expires_at,rotated_at,revoked_at FROM identity.refresh_sessions WHERE token_hash=$1 FOR UPDATE", secretHash(in.RefreshToken)).Scan(&id, &user, &family, &device, &os, &expires, &rotated, &revoked)
+		err = tx.QueryRow(r.Context(), "SELECT id::text,user_id::text,family_id::text,device_id::text,platform,expires_at,rotated_at,revoked_at FROM identity.refresh_sessions WHERE token_hash=$1 AND user_id=$2 FOR UPDATE", secretHash(in.RefreshToken), lockedUser).Scan(&id, &user, &family, &device, &os, &expires, &rotated, &revoked)
 		if errors.Is(err, pgx.ErrNoRows) {
 			outcome = platform.Err(401, 3001, "Phiên không hợp lệ")
 			return nil
@@ -467,6 +484,13 @@ func (s *Service) logout(w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 	err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
+		var user string
+		if err := tx.QueryRow(r.Context(), "SELECT id::text FROM identity.users WHERE id=$1 FOR UPDATE", p.UserID).Scan(&user); err != nil {
+			return err
+		}
+		if _, err := s.db.LockActor(platform.WithPrincipal(r.Context(), p), tx, p.UserID); err != nil {
+			return err
+		}
 		_, err := tx.Exec(r.Context(), "UPDATE identity.refresh_sessions SET revoked_at=$3,revoke_reason='logout' WHERE user_id=$1 AND family_id=$2", p.UserID, p.SessionID, s.db.Clock.Now())
 		return err
 	})
@@ -492,6 +516,9 @@ func (s *Service) registerDevice(w http.ResponseWriter, r *http.Request) error {
 		return platform.Invalid("Thiết bị không hợp lệ")
 	}
 	err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
+		if _, err := s.db.LockActor(r.Context(), tx, platform.Current(r).UserID); err != nil {
+			return err
+		}
 		var owner string
 		err := tx.QueryRow(r.Context(), "SELECT user_id::text FROM identity.devices WHERE id=$1 FOR UPDATE", in.DeviceID).Scan(&owner)
 		if err == nil && owner != platform.Current(r).UserID {
@@ -511,6 +538,9 @@ func (s *Service) registerDevice(w http.ResponseWriter, r *http.Request) error {
 }
 func (s *Service) deleteDevice(w http.ResponseWriter, r *http.Request) error {
 	err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
+		if _, err := s.db.LockActor(r.Context(), tx, platform.Current(r).UserID); err != nil {
+			return err
+		}
 		tag, err := tx.Exec(r.Context(), "DELETE FROM identity.devices WHERE id=$1 AND user_id=$2", r.PathValue("deviceId"), platform.Current(r).UserID)
 		if err == nil && tag.RowsAffected() == 0 {
 			return platform.NotFound()

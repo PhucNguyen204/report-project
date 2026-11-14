@@ -10,7 +10,10 @@ import (
 
 type Quantity = kernel.Quantity
 type Money = kernel.Money
-type Principal struct{ UserID, SessionID, SystemRole string }
+type Principal struct {
+	UserID, SessionID, SystemRole string
+	TokenVersion                  int64
+}
 type Clock interface{ Now() time.Time }
 type RealClock struct{}
 

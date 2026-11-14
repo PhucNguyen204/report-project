@@ -69,7 +69,7 @@ func TestCompletionWaitingForActorDoesNotLockObjectBeforeProfile(t *testing.T) {
 	go func() {
 		done <- s.Complete(ctx, actor, imageID)
 	}()
-	testutil.WaitForDatabaseLock(t, ctx, db, "SELECT system_role FROM identity.users", done)
+	testutil.WaitForDatabaseLock(t, ctx, db, "FROM identity.users", done)
 	if _, err := profile.Exec(ctx, "SELECT id FROM media.objects WHERE id=$1 FOR SHARE NOWAIT", imageID); err != nil {
 		t.Fatalf("completion held object while waiting for profile actor: %v", err)
 	}

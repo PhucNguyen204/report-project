@@ -52,6 +52,9 @@ func Idempotency(db *DB, next http.Handler) http.Handler {
 		}
 		var result *httptest.ResponseRecorder
 		err = db.Tx(r.Context(), func(tx pgx.Tx) error {
+			if _, err := db.CheckActor(r.Context(), tx, p.UserID); err != nil {
+				return err
+			}
 			segments := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 			if len(segments) >= 4 && segments[3] != "join" && segments[2] == "spaces" {
 				if p.SystemRole == "admin" {
@@ -139,6 +142,9 @@ func uuidKey(key string) bool {
 func externalCommand(db *DB, next http.Handler, w http.ResponseWriter, r *http.Request, key, hash string) {
 	replay := false
 	err := db.Tx(r.Context(), func(tx pgx.Tx) error {
+		if _, err := db.CheckActor(r.Context(), tx, Current(r).UserID); err != nil {
+			return err
+		}
 		if _, err := tx.Exec(r.Context(), "INSERT INTO platform.idempotency_keys(user_id,key,request_hash,status) VALUES($1,$2,$3,102) ON CONFLICT DO NOTHING", Current(r).UserID, key, hash); err != nil {
 			return err
 		}

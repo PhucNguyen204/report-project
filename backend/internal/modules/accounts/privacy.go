@@ -61,6 +61,9 @@ func (s *Service) deleteAccount(w http.ResponseWriter, r *http.Request) error {
 		if err := tx.QueryRow(r.Context(), "SELECT password_hash FROM identity.users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE", uid).Scan(&hash); err != nil {
 			return err
 		}
+		if _, err := s.db.LockActor(r.Context(), tx, uid); err != nil {
+			return err
+		}
 		if !verifyPassword(hash, in.Password) {
 			return platform.Conflict()
 		}

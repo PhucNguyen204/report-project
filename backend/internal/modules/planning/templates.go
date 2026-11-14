@@ -16,10 +16,9 @@ type TemplateInput struct {
 	Status string `json:"status"`
 }
 
-func requireAdmin(ctx context.Context, tx pgx.Tx, user string) error {
-	var allowed bool
-	err := tx.QueryRow(ctx, "SELECT true FROM identity.users WHERE id=$1 AND system_role='admin' AND status='active' AND deleted_at IS NULL FOR SHARE", user).Scan(&allowed)
-	if errors.Is(err, pgx.ErrNoRows) {
+func (s *Service) requireAdmin(ctx context.Context, tx pgx.Tx, user string) error {
+	role, err := s.db.LockActor(ctx, tx, user)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && role != "admin") {
 		return platform.Forbidden()
 	}
 	return err
@@ -72,7 +71,7 @@ func (s *Service) SaveTemplate(ctx context.Context, user, id string, version int
 		}
 	}
 	err := s.db.Tx(ctx, func(tx pgx.Tx) error {
-		if err := requireAdmin(ctx, tx, user); err != nil {
+		if err := s.requireAdmin(ctx, tx, user); err != nil {
 			return err
 		}
 		var old any
@@ -134,7 +133,7 @@ func (s *Service) SaveTemplate(ctx context.Context, user, id string, version int
 }
 func (s *Service) DeleteTemplate(ctx context.Context, user, id string) error {
 	return s.db.Tx(ctx, func(tx pgx.Tx) error {
-		if err := requireAdmin(ctx, tx, user); err != nil {
+		if err := s.requireAdmin(ctx, tx, user); err != nil {
 			return err
 		}
 		var current int64

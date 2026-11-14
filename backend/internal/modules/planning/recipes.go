@@ -241,18 +241,42 @@ func (s *Service) OnRecipeDelete(ctx context.Context, tx pgx.Tx, sid, rid string
 }
 func (s *Service) SetFavorite(ctx context.Context, user, rid string, on bool) error {
 	return s.db.Tx(ctx, func(tx pgx.Tx) error {
-		var visible bool
-		if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM recipe.recipes r WHERE r.id=$1 AND r.status='published' AND r.deleted_at IS NULL AND (r.kind='template' OR EXISTS(SELECT 1 FROM household.space_members m WHERE m.space_id=r.space_id AND m.user_id=$2)))", rid, user).Scan(&visible); err != nil {
+		role, err := s.db.LockActor(ctx, tx, user)
+		if err != nil {
 			return err
 		}
-		if !visible {
+		var kind string
+		var sid *string
+		err = tx.QueryRow(ctx, "SELECT kind,space_id::text FROM recipe.recipes WHERE id=$1 AND status='published' AND deleted_at IS NULL", rid).Scan(&kind, &sid)
+		if errors.Is(err, pgx.ErrNoRows) {
 			return platform.NotFound()
+		}
+		if err != nil {
+			return err
+		}
+		if kind == "space" {
+			if role != "user" || sid == nil {
+				return platform.NotFound()
+			}
+			if _, err := s.db.LockMember(ctx, tx, *sid, user); err != nil {
+				return err
+			}
+		} else if kind != "template" {
+			return platform.NotFound()
+		}
+		var visible bool
+		err = tx.QueryRow(ctx, "SELECT true FROM recipe.recipes WHERE id=$1 AND kind=$2 AND space_id IS NOT DISTINCT FROM $3::uuid AND status='published' AND deleted_at IS NULL FOR SHARE", rid, kind, sid).Scan(&visible)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return platform.NotFound()
+		}
+		if err != nil {
+			return err
 		}
 		if on {
 			_, err := tx.Exec(ctx, "INSERT INTO recipe.favorite_recipes(user_id,recipe_id) VALUES($1,$2) ON CONFLICT DO NOTHING", user, rid)
 			return err
 		}
-		_, err := tx.Exec(ctx, "DELETE FROM recipe.favorite_recipes WHERE user_id=$1 AND recipe_id=$2", user, rid)
+		_, err = tx.Exec(ctx, "DELETE FROM recipe.favorite_recipes WHERE user_id=$1 AND recipe_id=$2", user, rid)
 		return err
 	})
 }

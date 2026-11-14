@@ -77,16 +77,28 @@ func ID() string {
 	return fmt.Sprintf("%s-%s-%s-%s-%s", s[:8], s[8:12], s[12:16], s[16:20], s[20:])
 }
 func (db *DB) RequireMember(ctx context.Context, q Querier, spaceID, userID string) (string, error) {
-	var role string
-	err := q.QueryRow(ctx, "SELECT role FROM household.space_members WHERE space_id=$1 AND user_id=$2", spaceID, userID).Scan(&role)
+	role, err := db.CheckActor(ctx, q, userID)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && role != "user") {
+		return "", NotFound()
+	}
+	if err != nil {
+		return "", err
+	}
+	err = q.QueryRow(ctx, "SELECT role FROM household.space_members WHERE space_id=$1 AND user_id=$2", spaceID, userID).Scan(&role)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", NotFound()
 	}
 	return role, err
 }
 func (db *DB) LockMember(ctx context.Context, tx pgx.Tx, spaceID, userID string) (string, error) {
-	var role string
-	err := tx.QueryRow(ctx, "SELECT role FROM household.space_members WHERE space_id=$1 AND user_id=$2 FOR SHARE", spaceID, userID).Scan(&role)
+	role, err := db.LockActor(ctx, tx, userID)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && role != "user") {
+		return "", NotFound()
+	}
+	if err != nil {
+		return "", err
+	}
+	err = tx.QueryRow(ctx, "SELECT role FROM household.space_members WHERE space_id=$1 AND user_id=$2 FOR SHARE", spaceID, userID).Scan(&role)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", NotFound()
 	}

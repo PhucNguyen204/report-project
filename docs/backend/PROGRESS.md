@@ -70,6 +70,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F35 | Copy/PurgeSpace/xóa tài khoản | LOCAL_PASS | f97b6e8; copy/purge/anonymization; atomic dispatcher có test |
 | F36 | UC03 mật khẩu | LOCAL_PASS | 392b536/0b6cb74; reset/change/retention đúng thời hạn |
 | F37 | E2E/security/load/restore/release | IN_PROGRESS | Local K1–K5/84HTTP,50RPS,DBrestore,River retry,fuzz3.27m,coverage/lint/security đạt; CI runner,production provider/SLA và release review còn mở |
+| F38 | AI hỗ trợ UC18 + tích hợp provider thật | IN_PROGRESS | Yêu cầu14/11: OpenAI mặc định qua interface; SMTP/FCM cóadapter, livecredentials/device/recipient chưa được cấp; plan/code AI tiếp theo |
 
 ## Checklist chất lượng toàn dự án
 
@@ -656,6 +657,18 @@ Feature-ID: F37-lint-credentials. Trạng thái LOCAL_PASS.
 - [x] `make verify integration security`:520Go pass/0fail/0skip,7Python tests; staticcheck2buildsets/format/vet/mod verify/race/build PASS, global85.91%, app89.14/platform87.03/observability94.07; mọi gate đạt. Govulncheck No vulnerabilities found.
 - [ ] FCM live credential/device và CI remote runner còn thiếu; lỗi pipeline scheduling chưa được gọi là fixed bằng local gates.
 
+### F03/F06/F14/F34 — giữ quyền và phiên đến lúc commit — 14/11/2026
+
+Feature-ID: F03-F06-actor-session-revocation. Trạng thái LOCAL_PASS; release audit tổng thể còn mở.
+- [x] Review độc lập realrouter/JWT/PG tái hiện HIGH: request chờmember vẫn201/1list saupromotion/disable/logout; freshAuthenticate đãreject. Persistenttest thêm5stale-auth cases và3create/join paths RED với resource/activity/idempotency tăng tráiquyền.
+- [x] Principal mang TokenVersion nội bộ; shared LockActor giữactiveidentity FORSHARE, role/epoch/currentfamily guard, familyrow SHARE khi context của chínhactor. LockMember giữactor→session→member→target. RequireMember vàidempotencypreflight chỉcheckkhônglock trước groupadvisory, kểcảcache/replay/reservation. Targetrecipient không dùngnhầmfamily actor.
+- [x] Reuse trong admin/template/media/ownprofile/settings/password/device/privacy/notificationwrites; create/join guard sauexisting identityUPDATE. Refresh đọcimmutableowner→identityUPDATE→re-readsessionUPDATE, giữgrace/reuse/outcome; logout identityUPDATE trướcsessionguard tránhshare-upgrade cycle.
+- [x] Favorite2actualRED: admincònmembership sửaprivatefavorite200; logoutcommittrongkhiINSERTđợirecipe. Actor→scope discovery→member(space)→recipeSHARErecheck→GREEN; adminPUT/DELETEprivate404, publishedglobaltemplatepositivecontrol200.
+- [x]19leafcases/22testrecords:5staleauth,6groupvariants,authorization-first→logoutchờcommit,7own/adminroutes cófreshloginpositivecontrols. Refreshorder test isolatedONLYoldfunction RED55P03→currentGREEN; logoutorder REDhoànthànhtrướclock→identity-firstGREEN. Không claim matrix này bao trùm mọi GET hoặc provider.
+- [x] Fullfirst-run526pass/22fail gồmparentrecords; giữactor-regression-first-failure-20261114.jsonl. Wallclockwindow11:42–13:52 nhưngmaxpackage165.9s; timetests interrupted.3middlewarefixtures thiếuidentityrow, foreignrecipefixture dùngadmin, lockwait detector quákhớpcolumns được chỉnh đúng contract; khôngnớiTTL/timeout.
+- [x] `caffeinate -disu make verify integration security` freshstable13:58:09–13:59:55:548Go/0fail/0skip +7Python, global85.72%, app89.19/platform87.35/accounts85.90/planning88.14/media87.06/notification90.48/exports85.37/observer94.07/kernel95.95; lint2buildsets/vet/modverify/race/build đạt, No vulnerabilities found.
+- [ ] Sourcefailedpipeline234/da65035 đãLinuxCI-equivalentPASS522cases nhưnglàpre-fixsource; khônggánchofinalactorfix. Remotejob1002 vẫnrunnernull/started_atnull, cầnOwner/Maintainer. Finalindependentwholebranch re-review còn mở do quota reviewer, không tickreleaseDONE.
+
 ### F29/F37 — nhật ký hoạt động chỉ giữ90ngày — 13/11/2026
 
 Feature-ID: F37-activity-retention. Trạng thái LOCAL_PASS.
@@ -664,3 +677,15 @@ Feature-ID: F37-activity-retention. Trạng thái LOCAL_PASS.
 - [x] Trigger lỗi sau notification cleanup buộc rollback notification/logs/scheduler slot0; bỏ lỗi và retry cùngminute thành notices0/logs6/slot1. Không hard-delete business rows hoặc thay report retention.
 - [x] `make verify integration security`:522Go pass/0fail/0skip,7Python; lint2buildsets/format/vet/mod verify/race/build PASS; global85.92%, app89.19/platform87.03; No vulnerabilities found. Comment không thêm diễn giải dài.
 - [ ] Tombstone/delta sync ngoài phạm vi theo ADR; không tick offline cleanup hoặc production SLA. CI remote vẫn cần Owner/Maintainer gán runner như runbook.
+
+### F37 — đo tải khi bật HTTP observer — kiểm chứng14/11/2026
+
+Feature-ID: F37-instrumented-performance. Trạng thái IN_PROGRESS: campaign local PASS, chờ final regression sau authz fix/review và Root Git.
+- [x] Harness thiếu observer RED warmup status200/trace_context_missing; giữ performance-observer-missing-red.json. Inject SDK provider10%root/noexport, JSON logger file0600 và metrics thật, giữ auth/Redis/quota/dataset/TCP/open-loop của bài đo trước.
+- [x] Campaign13/11 21:43:22–21:43:55local:1500requests/30s,375 mỗi4route, errors0/drop0/Redisfallback0. P95 scheduled→body lots5.243ms/recipes13.178ms/suggestions36.377ms/autocomplete8.166ms; max56.535/46.970/100.961/26.520ms, mọi local target đạt.
+- [x] Sau drain, counter vàhistogram391response200/route=375measured+16warmup, active0. Review file log1581HTTP entries=1500measured+80warmup+1tamper401; mọi entry có trace hex32/request_id và chỉfields cho phép. Sampling trace không làm thiếu metrics/log samples.
+- [x] performance.json ghi source da65035 +dirtyharness/go.mod/plan, verified_head_only=false; DB tạm dropped,32Rediskeys removed/0remaining, S3bucket deleted. Không gán bài đo cho snapshot code sau đó. prometheus/common chỉ chuyển indirect→direct cùngversion.
+- [x] Lần full14/11 đầu: unit/lint/vet/build/7Python PASS, integration513pass/9fail/0skip.9fail gồm exports.TestCleanupRemovesExpiredExportsAndPreservesUnexpiredRequests; media.TestFinalizeRevocationQueuesUnusedBlobDeletion/TestCopiedRecipeImageSurvivesOriginalSpaceAndAccountPurge/TestSpacePurgeAtomicallySchedulesRealBlobDeletion/TestAccountAnonymizationQueuesMediaCleanup/TestCleanupRetainsBoundImagesAndDurablyDeletesExpiredUploads; platform.TestQueueStartsAndCompletesWithRoleWithoutDDLPrivileges; app.TestOpenAPIRealHTTPExchangesMatchTypedSchemas/TestSystemGatewayPersistsAndReplaysAuthenticatedCommands. Artifact Time01:30→05:24local có17gap75–1049s nhưng4packagefail elapsed21–63s (max toàn suite123.21s), phù hợp clock/suspend anomaly; chưa quy thành bug ngày cố định. Giữ instrumented-performance-integration-failed-20261114.jsonl và instrumented-performance-coverage-failed-20261114.out.
+- [x] Không sửaclock/TTL/fixtures: focused9case GREEN, rồi `caffeinate -i make verify integration security` snapshot trước authz fix PASS522Go/0fail/0skip +7Python; global85.90%, app89.19/platform87.03/observer94.07, staticcheck2buildsets/race/vet/modverify/build PASS, No vulnerabilities found. Stable artifacts instrumented-performance-{integration,coverage,coverage-summary}-stable-20261114.*.
+- [ ] HIGH actor-state race do reviewer khác phát hiện đang được root sửa; chưa dùng snapshot trước fix để tick final regression/independent review. Root giữ commit/push/merge sau gate mới; agent không thao tác Git.
+- [ ] Local JSON log ghi file không đo Docker stdout/Alloy/Loki hoặc OTLP network export; không suy ra overhead riêng từ hai lần đo khác tải nền, không chứng minh TLS/4G/write/FCM/SMTP hoặc SLA production. Pipeline remote do root đang kiểm riêng.

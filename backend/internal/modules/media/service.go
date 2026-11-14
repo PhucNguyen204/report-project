@@ -32,8 +32,7 @@ type Service struct {
 
 func New(db *platform.DB, store *S3Store) *Service { return &Service{db, store} }
 func (s *Service) actorRole(ctx context.Context, tx pgx.Tx, user string) (string, error) {
-	var role string
-	err := tx.QueryRow(ctx, "SELECT system_role FROM identity.users WHERE id=$1 AND status='active' AND deleted_at IS NULL FOR SHARE", user).Scan(&role)
+	role, err := s.db.LockActor(ctx, tx, user)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", platform.NotFound()
 	}

@@ -154,13 +154,14 @@ func TestRecipePaginationPreservesFavoriteSourceQueryAndTenantScope(t *testing.T
 		}
 	}
 	other := platform.ID()
-	if _, err := db.Pool.Exec(ctx, "INSERT INTO household.spaces(id,kind,name,created_by) VALUES($1,'personal','Foreign pantry',$2)", other, admin); err != nil {
+	foreignUser := addPlanningUser(t, db, sid, "")
+	if _, err := db.Pool.Exec(ctx, "INSERT INTO household.spaces(id,kind,name,created_by) VALUES($1,'personal','Foreign pantry',$2)", other, foreignUser); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.Pool.Exec(ctx, "INSERT INTO household.space_members(space_id,user_id,role,space_kind) VALUES($1,$2,'leader','personal')", other, admin); err != nil {
+	if _, err := db.Pool.Exec(ctx, "INSERT INTO household.space_members(space_id,user_id,role,space_kind) VALUES($1,$2,'leader','personal')", other, foreignUser); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.CreateRecipe(ctx, admin, other, RecipeInput{Name: "Canh cà rốt bí mật", Servings: 1, Ingredients: []IngredientInput{{FoodID: food, UnitID: unit, Quantity: qty("0.2")}}}); err != nil {
+	if _, err := s.CreateRecipe(ctx, foreignUser, other, RecipeInput{Name: "Canh cà rốt bí mật", Servings: 1, Ingredients: []IngredientInput{{FoodID: food, UnitID: unit, Quantity: qty("0.2")}}}); err != nil {
 		t.Fatal(err)
 	}
 	for _, id := range []string{own[0], templates[0]} {

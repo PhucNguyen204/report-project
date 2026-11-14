@@ -39,6 +39,7 @@ func TestMediaCompletionReauthorizesWithoutHoldingDBTransaction(t *testing.T) {
 		platform.Write(w, 200, map[string]any{"status": "ready"})
 	}))
 	user, key, object := platform.ID(), platform.ID(), platform.ID()
+	seedMiddlewareActor(t, db, user)
 	request := func(object string) *httptest.ResponseRecorder {
 		r := httptest.NewRequest("POST", "/it4788/v1/media/"+object+"/complete", strings.NewReader(`{}`))
 		r.Header.Set("Idempotency-Key", key)

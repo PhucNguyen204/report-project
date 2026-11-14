@@ -8,9 +8,8 @@ import (
 )
 
 func (s *Service) lockAdministrator(ctx context.Context, tx pgx.Tx, actor string) error {
-	var allowed bool
-	err := tx.QueryRow(ctx, "SELECT true FROM identity.users WHERE id=$1 AND system_role='admin' AND status='active' AND deleted_at IS NULL FOR SHARE", actor).Scan(&allowed)
-	if errors.Is(err, pgx.ErrNoRows) {
+	role, err := s.db.LockActor(ctx, tx, actor)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && role != "admin") {
 		return platform.Forbidden()
 	}
 	return err

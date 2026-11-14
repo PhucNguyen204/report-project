@@ -112,6 +112,9 @@ func (s *Service) MarkRead(ctx context.Context, user string, ids []string) error
 		}
 	}
 	return s.db.Tx(ctx, func(tx pgx.Tx) error {
+		if _, err := s.db.LockActor(ctx, tx, user); err != nil {
+			return err
+		}
 		_, err := tx.Exec(ctx, "UPDATE notification.notifications SET read_at=coalesce(read_at,$3) WHERE user_id=$1 AND id=ANY($2::uuid[])", user, ids, s.db.Clock.Now())
 		return err
 	})

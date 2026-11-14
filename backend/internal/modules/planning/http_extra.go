@@ -233,7 +233,7 @@ func (s *Service) RegisterTemplates(mux *http.ServeMux) {
 		out := []Recipe{}
 		next := ""
 		err = s.db.Tx(r.Context(), func(tx pgx.Tx) error {
-			if err := requireAdmin(r.Context(), tx, platform.Current(r).UserID); err != nil {
+			if err := s.requireAdmin(r.Context(), tx, platform.Current(r).UserID); err != nil {
 				return err
 			}
 			rows, err := tx.Query(r.Context(), `SELECT id::text,name FROM recipe.recipes WHERE kind='template' AND deleted_at IS NULL AND ($1='' OR (name,id)>($2,NULLIF($1,'')::uuid)) ORDER BY name,id LIMIT $3`, page.After[1], page.After[0], page.Limit+1)

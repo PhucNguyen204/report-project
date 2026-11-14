@@ -8,6 +8,14 @@ Project96, pipeline206 trên `baocao` tại651da36; job949 `backend-verify` có 
 
 Tài khoản đang đăng nhập `phucnn220041` có vai trò Developer (đã kiểm trang Members). Settings CI/CD và danh sách runner trả404 trong phiên này; chưa có quyền gán/đăng ký runner. Không kết luận runner nào đang offline hoặc tag nào đúng khi chưa xem được cấu hình.
 
+## Kiểm lại ngày14/11/2026
+
+Pipeline234/baocao-phucnn tại da65035: job1002 verify failed, runner=null/started_at=null/duration=null, queued4725.214888s, stuck_or_timeout_failure; integration1003 skipped. Pipeline233/main tại e3b7ecd tương tự (job1000 queued5013.758939s). Chưa có bằng chứng script từng được chạy. Phiên UI không có window khả dụng khi kiểm lại; quyền Developer nêu trên là lần xác minh13/11, không tự suy đoán đã được nâng quyền.
+
+Root clone sạch exact SHA da65035 và chạy pinnedGo1.26.11 trên Docker/Linux: đúng `make verify openapi security secrets fuzz` rồi `make integration` đều exit0,522Go/0fail/0skip +7Python, coverage85.90%; gitleaks82commits/no leaks, govulncheck no vulnerabilities;5fuzzcampaigns tổng2476128 executions. Cả5image CI là OCIindex hỗ trợ Linux/amd64. Lần kiểm thực thi Linux/arm64 với4servicecontainers QA khớp pinned digests; không giả là remote runner hoặc cold-start GitLab infrastructure. Artifact `output/backend-qa/linux-ci-pipeline234-result.json` và `linux-ci-pipeline234.log`.
+
+Bằng chứng này chỉ cho source da65035 trước bản sửa authz phát hiện sau đó. GitLab vẫn cần runner đủ điều kiện; localpass không đổi trạng tháifailed của pipeline234 và không chứng minh code mới hơn đã qua CI.
+
 ## Thao tác cần Owner/Maintainer
 
 1. Mở project → Settings → CI/CD → Runners. Kiểm tra runner đã được gán cho project, không paused và có manager online.

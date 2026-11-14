@@ -65,6 +65,9 @@ func (s *Service) updateProfile(w http.ResponseWriter, r *http.Request) error {
 		if err := tx.QueryRow(r.Context(), "SELECT full_name,locale,avatar_object_id::text,version FROM identity.users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE", uid).Scan(&name, &locale, &avatar, &revision); err != nil {
 			return err
 		}
+		if _, err := s.db.LockActor(r.Context(), tx, uid); err != nil {
+			return err
+		}
 		patch := map[string]any{}
 		if in.FullName != nil {
 			patch["fullName"] = *in.FullName
@@ -166,6 +169,9 @@ func (s *Service) setSettings(w http.ResponseWriter, r *http.Request) error {
 	}
 	uid := platform.Current(r).UserID
 	err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
+		if _, err := s.db.LockActor(r.Context(), tx, uid); err != nil {
+			return err
+		}
 		_, err := tx.Exec(r.Context(), "UPDATE identity.user_settings SET reminder_days=$2,expiry_notify_on=COALESCE($3,expiry_notify_on),assignment_notify_on=COALESCE($4,assignment_notify_on),activity_notify_on=COALESCE($5,activity_notify_on) WHERE user_id=$1", uid, in.Days, in.Expiry, in.Assignment, in.Activity)
 		if err != nil {
 			return err
@@ -297,6 +303,9 @@ func (s *Service) changePassword(w http.ResponseWriter, r *http.Request) error {
 	err = s.db.Tx(r.Context(), func(tx pgx.Tx) error {
 		var currentHash string
 		if err := tx.QueryRow(r.Context(), "SELECT password_hash FROM identity.users WHERE id=$1 FOR UPDATE", p.UserID).Scan(&currentHash); err != nil {
+			return err
+		}
+		if _, err := s.db.LockActor(r.Context(), tx, p.UserID); err != nil {
 			return err
 		}
 		if !verifyPassword(currentHash, in.Current) {

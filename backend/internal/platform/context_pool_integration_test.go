@@ -15,6 +15,7 @@ import (
 
 func TestIdempotentHandlerReadsItsUncommittedWrites(t *testing.T) {
 	db := testutil.NewDB(t)
+	seedMiddlewareActor(t, db, "00000000-0000-7000-8000-000000000099")
 	ctx := context.Background()
 	_, err := db.Pool.Exec(ctx, "CREATE TABLE visible(value int); INSERT INTO visible VALUES(0)")
 	if err != nil {

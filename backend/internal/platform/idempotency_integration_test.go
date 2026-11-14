@@ -15,8 +15,16 @@ import (
 	"time"
 )
 
+func seedMiddlewareActor(t *testing.T, db *platform.DB, id string) {
+	t.Helper()
+	if _, err := db.Pool.Exec(context.Background(), "INSERT INTO identity.users(id,email,full_name,password_hash,status) VALUES($1,$2,'Middleware Actor','unused','active')", id, id+"@example.test"); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestIdempotencyConcurrentRequestsAndRollback(t *testing.T) {
 	db := testutil.NewDB(t)
+	seedMiddlewareActor(t, db, "00000000-0000-7000-8000-000000000099")
 	ctx := context.Background()
 	_, err := db.Pool.Exec(ctx, "CREATE TABLE counter(value integer); INSERT INTO counter VALUES(0)")
 	if err != nil {

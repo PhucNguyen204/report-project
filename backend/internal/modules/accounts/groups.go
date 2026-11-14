@@ -43,6 +43,13 @@ func (s *Service) listSpaces(w http.ResponseWriter, r *http.Request) error {
 	if err := groupUser(r); err != nil {
 		return err
 	}
+	role, err := s.db.CheckActor(r.Context(), s.db.Pool, platform.Current(r).UserID)
+	if err != nil {
+		return err
+	}
+	if role != "user" {
+		return platform.NotFound()
+	}
 	items, err := queryMaps(r.Context(), s.db.Pool, `SELECT s.id::text,s.kind,s.name,m.role,s.change_seq AS "changeSeq",s.version,s.avatar_object_id::text AS "avatarObjectId" FROM household.spaces s JOIN household.space_members m ON m.space_id=s.id WHERE m.user_id=$1 AND s.dissolved_at IS NULL ORDER BY s.kind,s.id`, platform.Current(r).UserID)
 	if err != nil {
 		return err
@@ -74,6 +81,13 @@ func (s *Service) createSpace(w http.ResponseWriter, r *http.Request) error {
 		var user string
 		if err := tx.QueryRow(r.Context(), "SELECT id::text FROM identity.users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE", uid).Scan(&user); err != nil {
 			return err
+		}
+		role, err := s.db.LockActor(r.Context(), tx, uid)
+		if err != nil {
+			return err
+		}
+		if role != "user" {
+			return platform.NotFound()
 		}
 		var exists bool
 		if err := tx.QueryRow(r.Context(), "SELECT EXISTS(SELECT 1 FROM household.space_members WHERE user_id=$1 AND space_kind='family')", uid).Scan(&exists); err != nil {
@@ -342,6 +356,13 @@ func (s *Service) joinSpace(w http.ResponseWriter, r *http.Request) error {
 		var user string
 		if err = tx.QueryRow(r.Context(), "SELECT id::text FROM identity.users WHERE id=$1 AND status='active' AND deleted_at IS NULL FOR UPDATE", uid).Scan(&user); err != nil {
 			return err
+		}
+		role, err := s.db.LockActor(r.Context(), tx, uid)
+		if err != nil {
+			return err
+		}
+		if role != "user" {
+			return platform.NotFound()
 		}
 		var exists bool
 		if err = tx.QueryRow(r.Context(), "SELECT EXISTS(SELECT 1 FROM household.space_members WHERE user_id=$1 AND space_kind='family')", uid).Scan(&exists); err != nil {
