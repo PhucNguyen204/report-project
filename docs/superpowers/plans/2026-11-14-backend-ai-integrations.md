@@ -81,3 +81,5 @@ Model review 14/11: trang official đánh dấu GPT-5 mini và GPT-5.4 nano Depr
 - Enqueue từng truyền ScheduledAt kể cả tác vụ đã đến hạn, khiến notification chờ scheduler. Test state due=available/future=scheduled RED→GREEN; luồng ready+inbox hiện hoàn tất trong test deadline.
 - Config và adapter đã thống nhất ký tự model sau test RED với colon. Thiếu key vẫn503 sau kiểm quyền; CLI smoke mặc định hoặc thiếu cấu hình ghi NOT_RUN.
 - Full regression, secret scan và Git checkpoint: root cập nhật kết quả cuối trong PROGRESS.md. OpenAI/FCM/SMTP internet vẫn NOT_RUN đến khi có credential và đích staging; fixture không thay bằng chứng này.
+
+Checkpoint bd43002 đã push GitLab tính năng/main và GitHub backend-integrations-20261115/main. Full regression693Go/8Python, total86,13%/mealai91,62%, security và secret scans đạt; Docker image mới/K1–K5 39HTTP +runtime AI7HTTP PASS. Credential staging/CI runner vẫn là các mục mở, xem PROGRESS.md.

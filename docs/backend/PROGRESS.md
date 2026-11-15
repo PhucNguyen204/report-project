@@ -720,6 +720,17 @@ Feature-ID: F38-ai-integrations. Trạng thái LOCAL_PASS; dịch vụ internet 
 - [x] CLI cmd/integration-smoke opt-in --mail/--push/--ai, chỉ gửi synthetic payload khi đủ cấu hình; mặc định/missing→NOT_RUN, provider lỗi→FAIL/exit1 và lỗi đã chuẩn hóa.16 smoke test records/race PASS, coverage93,4%; local SMTP/HTTP/OAuth JWT fixtures không thay dịch vụ remote. Root chạy CLI default/missing có artifact JSON, mọi provider NOT_RUN/exit0.
 - [x] Fresh `caffeinate -disu make verify integration security` sau chỉnh cuối:693Go records/0fail/0skip +8Python PASS; staticcheck2buildsets/format/vet/modverify/unit+integration race/build PASS. Combined total86,13%, app89,24/platform88,00/accounts86,11/mealai91,62/notification90,48/observer94,07/kernel95,95%; mọi gate đạt. Govulncheck: No vulnerabilities found. Artifact ai-integrations-final-20261115.log, integration.jsonl, coverage.out, coverage-summary.json trong output/backend-qa.
 - [x] Review độc lập cuối không thấy Important mới; model regex low inconsistency đã có test RED và sửa trước full regression cuối. Staged diff~184KiB đã quét gitleaks không phát hiện secret; root kiểm lại sau cập nhật báo cáo trước commit.
-- [ ] Docker image/K1–K5 trên checkpoint mới chưa chạy ở entry này; chưa suy ra từ image observability cũ.
+- [x] Sau commit bd43002 đã build image dicho-backend:ai-integrations và chạy kiểm tra runtime bên dưới; không dùng image observability cũ làm bằng chứng.
 - [ ] OpenAI/SMTP internet/FCM live NOT_RUN: cần OPENAI_API_KEY_FILE + quyền model; SMTP cấu hình + SMOKE_EMAIL_TO; FCM service account/project + SMOKE_FCM_TOKEN. Xem runbooks/integrations.md; không dán key vào chat/Git.
 - [ ] CI remote chưa đạt: pipeline241/main tại acbd3a5 fail, job1020 runner=null/started_at=null, stuck_or_timeout_failure sau5482,99s chờ. Integration1021 skip vì verify chưa được chạy. Cần Owner/Maintainer gán runner đủ điều kiện; local PASS không thay remote CI hoặc SLA production.
+
+### F38 — image mới, runtime và đồng bộ Git — 15/11/2026
+
+Feature-ID: F38-runtime-verification. Trạng thái LOCAL_PASS trên source bd43002.
+- [x] bd43002 đã push GitLab baocao-phucnn và GitHub backend-integrations-20261115; xác minh origin/HEAD=baocao, merge fast-forward/push GitLab baocao và GitHub main. Không force push; nhánh GitHub baocao-phucnn có các commit slide riêng được giữ nguyên.
+- [x] `make openapi` PASS sau commit; history gitleaks91commits/~3,62MB không phát hiện secret mới, staged scan trước commit sạch. Không có thay đổi code sau full regression693Go/8Python ở entry F38 trước.
+- [x] Docker build PASS, image sha256:a7c24e25eecd251d0031dfda6bf7ab96b15cc701ab91656ade12c7923b898d3d,152186399bytes, defaultUID10001. QA dùng hostUID/GID override để đọc bind secret; chỉ publish127.0.0.1:58081, ops8081 không publish. App mới healthy, ops readiness ok.
+- [x] `python3 scripts/smoke.py --api http://127.0.0.1:58081 --mailpit http://127.0.0.1:58026 --report ../output/backend-qa/ai-docker-network-smoke-20261115.json`: K1–K5 PASS39HTTP checks, SMTP Mailpit/worker, S3 signed upload/download và CSV/PDF thật ở local.
+- [x] Probe runtime thêm7HTTP checks: tạo2tài khoản qua SMTP/OTP, AI thiếu key trả503 cho owner, outsider404 và job không tồn tại404. Checksum migration049 trong QA PostgreSQL khớp file đã commit. Artifact ai-docker-runtime-20261115.json, ai-docker-build-20261115.log; image thực chạy source bd43002.
+- [ ] OpenAI/SMTP internet/FCM staging vẫn NOT_RUN, cần credential và đích thử trong runbook integrations.md. Model access, mail đến inbox và push đến thiết bị chưa được xác nhận bằng local fixtures.
+- [ ] CI GitLab remote/runner và các gate production trong báo cáo vẫn mở; không đánh release tổng thể DONE hoặc suy ra SLA từ các phép kiểm local.
