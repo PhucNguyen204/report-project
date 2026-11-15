@@ -15,7 +15,7 @@ PACKAGE_MINIMUMS = {
     'dicho/internal/observability': 85,
     'dicho/internal/kernel': 90,
     **{'dicho/internal/modules/' + name: 85 for name in
-       ['accounts', 'exports', 'inventory', 'media', 'notification', 'planning']},
+       ['accounts', 'exports', 'inventory', 'media', 'notification', 'planning', 'mealai']},
 }
 CORE_FILES = {
     'Allocate': 'dicho/internal/modules/inventory/domain.go',

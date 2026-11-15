@@ -42,6 +42,8 @@ Hợp đồng tại `/openapi.json`, nguồn [api/build.py](api/build.py) và ar
 
 `FCM_CREDENTIALS_FILE` chỉ nhận file service_account private (0400/0600), tối đa64KiB, RSA PKCS8≥2048bits, Google public-cloud universe/token endpoint. Không dùng custom token proxy qua file này. Bỏ trống để dùng ADC của môi trường triển khai. Loader không gọi Google lúc đọc file; kiểm chứng FCM thật vẫn cần credential và thiết bị staging.
 
+AI hỗ trợ UC18 qua job chạy nền, dùng OpenAI Responses và key từ `OPENAI_API_KEY_FILE` (file0400/0600, tối đa4KiB); không có key thì trả503. `OPENAI_MODEL` mặc định `gpt-5.6-terra`. Xem [cấu hình mail/AI/push](../docs/backend/runbooks/integrations.md) về endpoints, quota, dữ liệu gửi provider và các credential/đích staging cần cung cấp.
+
 `S3_ENDPOINT` dùng cho I/O nội bộ. `S3_PUBLIC_ENDPOINT` dùng khi ký URL cho client, mặc định bằng endpoint nội bộ. Cả hai dùng cùng bucket/key/region/credentials; không sửa host của URL sau khi ký. Compose đặt internal=`http://s3:8333`, public=`http://127.0.0.1:59000`.
 
 Ảnh được kiểm quyền theo vai trò hiện tại trong DB. Admin quản lý ảnh template và ảnh đại diện của mình; membership cũ không cho admin truy cập ảnh gia đình/ảnh thực phẩm riêng.

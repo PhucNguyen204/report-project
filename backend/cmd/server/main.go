@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"dicho/internal/app"
+	"dicho/internal/modules/mealai"
 	"dicho/internal/modules/media"
 	"dicho/internal/modules/notification"
 	"dicho/internal/observability"
@@ -77,6 +78,17 @@ func run() error {
 		return errors.New("redis unavailable at startup")
 	}
 	httpClient := &http.Client{Timeout: 20 * time.Second}
+	apiKey, err := app.ReadOpenAIKey(cfg.OpenAIKeyFile)
+	if err != nil {
+		return err
+	}
+	var aiProvider mealai.Provider
+	if apiKey != "" {
+		aiProvider, err = mealai.NewOpenAI(apiKey, cfg.OpenAIModel, httpClient, "")
+		if err != nil {
+			return err
+		}
+	}
 	s3client := s3.NewFromConfig(aws.Config{Region: cfg.S3Region, Credentials: credentials.NewStaticCredentialsProvider(cfg.S3AccessKey, cfg.S3SecretKey, ""), HTTPClient: httpClient}, func(o *s3.Options) { o.BaseEndpoint = aws.String(cfg.S3Endpoint); o.UsePathStyle = true })
 	publicClient := s3.NewFromConfig(aws.Config{Region: cfg.S3Region, Credentials: credentials.NewStaticCredentialsProvider(cfg.S3AccessKey, cfg.S3SecretKey, ""), HTTPClient: httpClient}, func(o *s3.Options) { o.BaseEndpoint = aws.String(cfg.S3PublicEndpoint); o.UsePathStyle = true })
 	for _, bucket := range []string{cfg.MediaBucket, cfg.ExportBucket} {
@@ -122,7 +134,7 @@ func run() error {
 		return int64(stats.TotalConns()), int64(stats.AcquiredConns()), int64(stats.MaxConns())
 	}})
 	limiter := platform.NewRateLimiter(redisClient, db.Clock)
-	system, err := app.NewSystem(initCtx, db, app.Options{SigningKey: key, QueueKey: queueKey, MediaStore: media.NewS3(s3client, cfg.MediaBucket).WithPublicClient(publicClient), ExportStore: media.NewS3(s3client, cfg.ExportBucket).WithPublicClient(publicClient), Email: notification.SMTP{Addr: cfg.SMTPAddr, From: cfg.SMTPFrom, User: cfg.SMTPUser, Password: cfg.SMTPPassword, RequireTLS: !cfg.Development}, Push: push, HTTP: app.Config{MinimumAppVersion: cfg.MinimumAppVersion, Limiter: limiter, TrustedProxies: cfg.TrustedProxies, Observer: observer}})
+	system, err := app.NewSystem(initCtx, db, app.Options{SigningKey: key, QueueKey: queueKey, MediaStore: media.NewS3(s3client, cfg.MediaBucket).WithPublicClient(publicClient), ExportStore: media.NewS3(s3client, cfg.ExportBucket).WithPublicClient(publicClient), Email: notification.SMTP{Addr: cfg.SMTPAddr, From: cfg.SMTPFrom, User: cfg.SMTPUser, Password: cfg.SMTPPassword, RequireTLS: !cfg.Development}, Push: push, AIProvider: aiProvider, HTTP: app.Config{MinimumAppVersion: cfg.MinimumAppVersion, Limiter: limiter, TrustedProxies: cfg.TrustedProxies, Observer: observer}})
 	if err != nil {
 		return err
 	}

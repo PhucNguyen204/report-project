@@ -4,6 +4,15 @@ import coverage_report as report
 
 
 class CoverageReportTests(unittest.TestCase):
+    def test_ai_module_cannot_be_missing_or_below_coverage_gate(self):
+        packages = {name: {'percent': 100} for name in report.PACKAGE_MINIMUMS}
+        packages.pop('dicho/internal/modules/mealai', None)
+        summary = {'total': {'percent': 100}, 'packages': packages}
+        core = {'Allocate': 100, 'Missing': 100, 'Score': 100}
+        self.assertTrue(any('modules/mealai' in f for f in report.enforce(summary, core)))
+        packages['dicho/internal/modules/mealai'] = {'percent': 84.99}
+        self.assertTrue(any('modules/mealai' in f for f in report.enforce(summary, core)))
+
     def test_duplicate_blocks_preserve_denominator_and_shared_execution(self):
         profile = "mode: atomic\ndicho/internal/app/a.go:1.1,2.2 3 0\ndicho/internal/app/a.go:1.1,2.2 3 2\ndicho/cmd/server/main.go:1.1,2.2 1 0\n"
         result = report.summarize(report.parse_profile(profile))

@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"dicho/internal/modules/mealai"
 	"dicho/internal/modules/media"
 	"dicho/internal/platform"
 	"dicho/internal/testutil"
@@ -28,7 +29,7 @@ func (i *inbox) Send(_ context.Context, to, subject, body string) error {
 	i.mail <- capturedEmail{to, body}
 	return nil
 }
-func systemFixture(t *testing.T) (*System, *inbox) {
+func systemFixture(t *testing.T, providers ...mealai.Provider) (*System, *inbox) {
 	t.Helper()
 	db := testutil.NewDB(t)
 	_, key, err := ed25519.GenerateKey(rand.Reader)
@@ -37,7 +38,11 @@ func systemFixture(t *testing.T) (*System, *inbox) {
 	}
 	client := s3.NewFromConfig(aws.Config{Region: "us-east-1", Credentials: credentials.NewStaticCredentialsProvider("dicho-test", "dicho-local-storage-test", "")}, func(o *s3.Options) { o.BaseEndpoint = aws.String(testutil.S3Endpoint()); o.UsePathStyle = true })
 	mail := &inbox{mail: make(chan capturedEmail, 10)}
-	sys, err := NewSystem(context.Background(), db, Options{SigningKey: key, QueueKey: bytes.Repeat([]byte{7}, 32), MediaStore: media.NewS3(client, "media"), ExportStore: media.NewS3(client, "exports"), Email: mail, HTTP: Config{MinimumAppVersion: "1.0.0"}})
+	var provider mealai.Provider
+	if len(providers) > 0 {
+		provider = providers[0]
+	}
+	sys, err := NewSystem(context.Background(), db, Options{SigningKey: key, QueueKey: bytes.Repeat([]byte{7}, 32), MediaStore: media.NewS3(client, "media"), ExportStore: media.NewS3(client, "exports"), Email: mail, AIProvider: provider, HTTP: Config{MinimumAppVersion: "1.0.0"}})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -14,6 +14,7 @@ import (
 	"dicho/internal/modules/accounts"
 	"dicho/internal/modules/exports"
 	"dicho/internal/modules/inventory"
+	"dicho/internal/modules/mealai"
 	"dicho/internal/modules/media"
 	"dicho/internal/modules/notification"
 	"dicho/internal/modules/planning"
@@ -29,12 +30,15 @@ type Dispatcher struct {
 	Media         *media.Service
 	Exports       *exports.Service
 	Notifications *notification.Service
+	AI            *mealai.Service
 }
 
 func (d *Dispatcher) Handle(ctx context.Context, e platform.Event) error {
 	switch e.Event {
 	case "email", "notification":
 		return d.Notifications.Handle(ctx, e)
+	case "ai.suggest":
+		return d.AI.Handle(ctx, e)
 	case "assignment.digest":
 		return d.Inventory.HandleAssignmentDigest(ctx, e)
 	case "report.export", "export.delete":
@@ -65,6 +69,9 @@ func (d *Dispatcher) Handle(ctx context.Context, e platform.Event) error {
 		return d.DB.Tx(ctx, func(tx pgx.Tx) error {
 			joined := platform.WithTransaction(ctx, tx)
 			if err := d.Media.Handle(joined, e); err != nil {
+				return err
+			}
+			if err := d.AI.PurgeUser(joined, tx, in.UserID); err != nil {
 				return err
 			}
 			return d.Notifications.PurgeUser(joined, tx, in.UserID)
@@ -229,6 +236,9 @@ func (d *Dispatcher) purgeSpace(ctx context.Context, e platform.Event) error {
 		}
 		if !dissolved {
 			return platform.Rule("Chỉ xóa không gian đã giải tán")
+		}
+		if err = d.AI.PurgeSpace(ctx, tx, in.Space); err != nil {
+			return err
 		}
 		if err = d.Media.PurgeSpace(ctx, tx, in.Space); err != nil {
 			return err

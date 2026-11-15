@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -26,6 +27,7 @@ type RuntimeConfig struct {
 	S3PublicEndpoint                                                          string
 	SMTPAddr, SMTPFrom, SMTPUser, SMTPPassword                                string
 	FCMProject, FCMCredentialFile, MinimumAppVersion                          string
+	OpenAIKeyFile, OpenAIModel                                                string
 	TrustedProxies                                                            []net.IPNet
 }
 
@@ -125,6 +127,11 @@ func LoadRuntimeConfig(get func(string) string) (RuntimeConfig, error) {
 	c.SMTPPassword = get("SMTP_PASSWORD")
 	c.FCMProject = get("FCM_PROJECT_ID")
 	c.FCMCredentialFile = get("FCM_CREDENTIALS_FILE")
+	c.OpenAIKeyFile = get("OPENAI_API_KEY_FILE")
+	c.OpenAIModel = value("OPENAI_MODEL", "gpt-5.6-terra")
+	if !regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`).MatchString(c.OpenAIModel) {
+		return c, errors.New("invalid OPENAI_MODEL")
+	}
 	c.MinimumAppVersion = value("MIN_APP_VERSION", "1.0.0")
 	if _, err := compareVersion(c.MinimumAppVersion, c.MinimumAppVersion); err != nil {
 		return c, errors.New("invalid MIN_APP_VERSION")

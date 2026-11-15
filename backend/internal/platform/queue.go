@@ -16,6 +16,8 @@ import (
 )
 
 type Event struct {
+	Attempt     int             `json:"-"`
+	MaxAttempts int             `json:"-"`
 	Event       string          `json:"event"`
 	Key         string          `json:"key" river:"unique"`
 	Payload     json.RawMessage `json:"payload"`
@@ -45,6 +47,7 @@ func (w *eventWorker) Work(ctx context.Context, job *river.Job[Event]) error {
 				return err
 			}
 		}
+		event.Attempt, event.MaxAttempts = job.Attempt, job.MaxAttempts
 		return w.handler(ctx, event)
 	}
 	if w.observer != nil {
@@ -127,7 +130,14 @@ func OpenQueue(ctx context.Context, db *DB, handler EventHandler, keys ...[]byte
 				return err
 			}
 		}
-		_, err = client.InsertTx(ctx, tx, event, &river.InsertOpts{MaxAttempts: 4, ScheduledAt: runAt, UniqueOpts: unique})
+		maxAttempts := 4
+		if kind == "ai.suggest" {
+			maxAttempts = 2
+		}
+		if !runAt.After(db.Clock.Now()) {
+			runAt = time.Time{}
+		}
+		_, err = client.InsertTx(ctx, tx, event, &river.InsertOpts{MaxAttempts: maxAttempts, ScheduledAt: runAt, UniqueOpts: unique})
 		return err
 	}
 	return client, nil

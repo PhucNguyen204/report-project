@@ -17,6 +17,7 @@ import (
 	"dicho/internal/modules/accounts"
 	"dicho/internal/modules/exports"
 	"dicho/internal/modules/inventory"
+	"dicho/internal/modules/mealai"
 	"dicho/internal/modules/media"
 	"dicho/internal/modules/notification"
 	"dicho/internal/modules/planning"
@@ -46,7 +47,7 @@ func lifecycleSetup(t *testing.T) lifecycleFixture {
 	a := accounts.New(db, key)
 	inv := inventory.New(db, a)
 	p := planning.New(db, inv, inv, a)
-	f := lifecycleFixture{d: &Dispatcher{DB: db, Accounts: a, Inventory: inv, Planning: p, Media: media.New(db, nil), Exports: exports.New(db, p, nil), Notifications: notification.New(db, nil, nil)}, user: platform.ID(), source: platform.ID(), target: platform.ID()}
+	f := lifecycleFixture{d: &Dispatcher{DB: db, Accounts: a, Inventory: inv, Planning: p, Media: media.New(db, nil), Exports: exports.New(db, p, nil), Notifications: notification.New(db, nil, nil), AI: mealai.New(db, p, nil)}, user: platform.ID(), source: platform.ID(), target: platform.ID()}
 	if _, err = db.Pool.Exec(ctx, `INSERT INTO identity.users(id,email,full_name,password_hash,status) VALUES($1,$2,'Dispatcher User','unused','active')`, f.user, f.user+"@example.com"); err != nil {
 		t.Fatal(err)
 	}

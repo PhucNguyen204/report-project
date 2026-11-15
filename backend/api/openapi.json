@@ -58,6 +58,10 @@
       "description": "Quản trị"
     },
     {
+      "name": "AI",
+      "description": "Gợi ý AI hỗ trợ UC18"
+    },
+    {
       "name": "Vận hành",
       "description": "Sức khỏe và trợ giúp"
     }
@@ -7205,6 +7209,216 @@
         }
       }
     },
+    "/it4788/v1/spaces/{sid}/ai-recommendations": {
+      "post": {
+        "operationId": "AI01_post",
+        "summary": "Yêu cầu AI xếp hạng công thức hợp lệ",
+        "tags": [
+          "AI"
+        ],
+        "x-api-code": "AI01",
+        "x-use-case": [
+          "UC18"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AppVersion"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AI01_postResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "423": {
+            "$ref": "#/components/responses/Error"
+          },
+          "426": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Opt-in gửi tên món và nguyên liệu tối thiểu tới OpenAI. Tối đa10 job/người/ngày UTC; replay không tăng quota. Job hết hạn24 giờ, provider chưa cấu hình trả503 sau kiểm quyền.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AIRecommendationInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/it4788/v1/spaces/{sid}/ai-recommendations/{jobId}": {
+      "get": {
+        "operationId": "AI02_get",
+        "summary": "Đọc gợi ý AI thuộc người gọi",
+        "tags": [
+          "AI"
+        ],
+        "x-api-code": "AI02",
+        "x-use-case": [
+          "UC18"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AppVersion"
+          },
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AI02_getResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "423": {
+            "$ref": "#/components/responses/Error"
+          },
+          "426": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Chỉ chủ job đang là thành viên được đọc. Công thức không còn hiển thị được loại khỏi items. Không thay đổi tồn kho hoặc lịch bữa ăn."
+      }
+    },
     "/it4788/v1/spaces/{sid}/meals/{mealId}/cook": {
       "post": {
         "operationId": "M06_post",
@@ -14062,6 +14276,105 @@
           "meta"
         ]
       },
+      "AIRecommendationInput": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "mealSlot": {
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner"
+            ]
+          },
+          "servings": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "expiringOnly": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "servings",
+          "limit"
+        ]
+      },
+      "AIRecommendationItem": {
+        "type": "object",
+        "properties": {
+          "recipe": {
+            "$ref": "#/components/schemas/Recipe"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "recipe",
+          "reason"
+        ]
+      },
+      "AIRecommendationJob": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "ready",
+              "failed"
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AIRecommendationItem"
+            },
+            "maxItems": 10
+          },
+          "errorCode": {
+            "type": "string",
+            "enum": [
+              "provider_unavailable",
+              "provider_rejected",
+              "invalid_response",
+              "access_revoked",
+              "expired",
+              "invalid_request"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "jobId",
+          "status",
+          "expiresAt",
+          "items"
+        ]
+      },
       "ReportSummary": {
         "type": "object",
         "properties": {
@@ -17427,6 +17740,40 @@
           "data"
         ]
       },
+      "AI01_postResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 1001
+          },
+          "data": {
+            "$ref": "#/components/schemas/AIRecommendationJob"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "data"
+        ]
+      },
+      "AI02_getResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 1000
+          },
+          "data": {
+            "$ref": "#/components/schemas/AIRecommendationJob"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "data"
+        ]
+      },
       "M06_postResponse": {
         "type": "object",
         "properties": {
@@ -18461,6 +18808,10 @@
     ],
     "removedCodes": [
       "P08"
+    ],
+    "extensionCodes": [
+      "AI01",
+      "AI02"
     ],
     "source": "chapters/c3/api.tex; backmatter/pl/f-dac-ta-api.tex; current Go registrations"
   },

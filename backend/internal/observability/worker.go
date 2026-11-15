@@ -11,7 +11,7 @@ import (
 
 func (o *Observer) Work(ctx context.Context, kind string, attempt int, run func(context.Context) error) (err error) {
 	switch kind {
-	case "email", "notification", "settings.changed", "space.copy", "space.purge", "account.purge", "account.anonymized", "food.merged", "config.changed", "report.export", "media.delete", "export.delete", "assignment.digest":
+	case "email", "notification", "settings.changed", "space.copy", "space.purge", "account.purge", "account.anonymized", "food.merged", "config.changed", "report.export", "media.delete", "export.delete", "assignment.digest", "ai.suggest":
 	default:
 		kind = "other"
 	}

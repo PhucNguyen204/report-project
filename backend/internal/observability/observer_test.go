@@ -196,6 +196,16 @@ func TestWorkerRecordsAttemptsWithoutPayloadOrRawError(t *testing.T) {
 	}
 }
 
+func TestAIWorkerMetricsKeepBoundedProviderKind(t *testing.T) {
+	o, logs, _ := observerFixture(t)
+	if err := o.Work(context.Background(), "ai.suggest", 1, func(context.Context) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if sample(t, o, "dicho_worker_attempts_total", map[string]string{"kind": "ai.suggest", "result": "ok"}, false) != 1 || !strings.Contains(logs.String(), `"kind":"ai.suggest"`) {
+		t.Fatal("AI worker was hidden in unknown event metrics")
+	}
+}
+
 func TestConcurrentRequestsAndScrapesReleaseActiveCounts(t *testing.T) {
 	o := New(Options{Logger: slog.New(slog.NewJSONHandler(io.Discard, nil)), PoolStats: func() (int64, int64, int64) { return 4, 2, 10 }})
 	mux := http.NewServeMux()

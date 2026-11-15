@@ -6,6 +6,7 @@ import (
 	"dicho/internal/modules/accounts"
 	"dicho/internal/modules/exports"
 	"dicho/internal/modules/inventory"
+	"dicho/internal/modules/mealai"
 	"dicho/internal/modules/media"
 	"dicho/internal/modules/notification"
 	"dicho/internal/modules/planning"
@@ -24,6 +25,7 @@ type Options struct {
 	ExportStore exports.Store
 	Email       notification.EmailSender
 	Push        notification.PushSender
+	AIProvider  mealai.Provider
 	HTTP        Config
 }
 type System struct {
@@ -36,6 +38,7 @@ type System struct {
 	Media         *media.Service
 	Exports       *exports.Service
 	Notifications *notification.Service
+	AI            *mealai.Service
 }
 
 func NewSystem(ctx context.Context, db *platform.DB, opts Options) (*System, error) {
@@ -48,19 +51,20 @@ func NewSystem(ctx context.Context, db *platform.DB, opts Options) (*System, err
 	m := media.New(db, opts.MediaStore)
 	e := exports.New(db, p, opts.ExportStore)
 	n := notification.New(db, opts.Email, opts.Push)
+	ai := mealai.New(db, p, opts.AIProvider)
 	db.MemberLeave = i.OnMemberLeave
 	db.RecipeDelete = p.OnRecipeDelete
 	a.ValidateMedia = m.Validate
 	p.ValidateMedia = m.Validate
-	dispatch := &Dispatcher{DB: db, Accounts: a, Inventory: i, Planning: p, Media: m, Exports: e, Notifications: n}
+	dispatch := &Dispatcher{DB: db, Accounts: a, Inventory: i, Planning: p, Media: m, Exports: e, Notifications: n, AI: ai}
 	db.Observer = opts.HTTP.Observer
 	queue, err := platform.OpenQueue(ctx, db, dispatch.Handle, opts.QueueKey)
 	if err != nil {
 		return nil, err
 	}
-	s := &System{DB: db, Accounts: a, Worker: queue, Dispatcher: dispatch, Media: m, Exports: e, Notifications: n, Mux: http.NewServeMux()}
+	s := &System{DB: db, Accounts: a, Worker: queue, Dispatcher: dispatch, Media: m, Exports: e, Notifications: n, AI: ai, Mux: http.NewServeMux()}
 	opts.HTTP.Mux = s.Mux
-	s.Handler = NewHandler(db, a.Authenticate, opts.HTTP, a.Register, a.RegisterCatalog, a.RegisterAdmin, a.RegisterProfile, a.RegisterGroups, a.RegisterPrivacy, i.Register, p.Register, m.Register, e.Register, n.Register)
+	s.Handler = NewHandler(db, a.Authenticate, opts.HTTP, a.Register, a.RegisterCatalog, a.RegisterAdmin, a.RegisterProfile, a.RegisterGroups, a.RegisterPrivacy, i.Register, p.Register, m.Register, e.Register, n.Register, ai.Register)
 	return s, nil
 }
 func (s *System) Tick(ctx context.Context) error {
@@ -71,7 +75,7 @@ func (s *System) Tick(ctx context.Context) error {
 			return err
 		}
 		joined := platform.WithTransaction(ctx, tx)
-		for _, cleanup := range []func(context.Context) error{s.Notifications.DispatchReminders, s.Accounts.Cleanup, s.Notifications.Cleanup, s.Media.Cleanup, s.Exports.Cleanup} {
+		for _, cleanup := range []func(context.Context) error{s.Notifications.DispatchReminders, s.Accounts.Cleanup, s.Notifications.Cleanup, s.Media.Cleanup, s.Exports.Cleanup, s.AI.Cleanup} {
 			if err = cleanup(joined); err != nil {
 				return err
 			}
