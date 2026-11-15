@@ -790,3 +790,14 @@ Feature-ID: F37-queue-backlog. Trạng thái LOCAL_PASS.
 - [x] Root privateops integration sourceDB→count/up1 và closedDB→up0/no stale PASS2,008s. Review độc lập unit/source/privateops PASS, không thấy Important; full workingtree735Go/8Python +lint/security/secret gates đạt như entryF13, fullobserver96,32/platform87,77%.
 - [x] UC06 commit736ec6b và merge d6aa9f4 đã push feature/main hai remote. MainGitLab có84075ce mới về frontend/taskflow; root đã đọc, merge giữ nguyên và push bình thường, không force hoặc ghi đè công việc khác.
 - [ ] Docker scrape trên image mới kiểm ở entry runtime tiếp theo. Chưa benchmark query trên backlog production, deploy alert/Prometheus/Loki/Tempo hoặc xác nhận SLA99%; node filesystem và credential external/CI runner vẫn là mục riêng.
+
+### F31 — biểu đồ trong PDF xuất báo cáo UC22 — 15/11/2026
+
+Feature-ID: F31-pdf-charts. Trạng thái LOCAL_PASS.
+- [x] Đóng gap UC22 bước2: PDF có biểu đồ xu hướng trước các bảng. Chi tiêu dùng VND; tiêu thụ/lãng phí tách g/ml/cái, không cộng khác đại lượng lên cùng trục. Giữ NotoSans tiếng Việt, bảng đầy đủ, kỳ trước/chênh lệch và CSV hiện có.
+- [x] Series dài chia tối đa8bucket liên tiếp cân bằng, cộng số nguyên/fixedpoint có checkedoverflow, không bỏ ngày cuối. Float chỉ tính tọa độ đồ họa sau khi số liệu chính xác đã hoàn tất. Empty/zero có thông báo, maxint64/microquantity không chia0 hoặc NaN.
+- [x] TDD model RED thiếu bucket/đơn vị/overflow→GREEN; PDF RED thiếu biểu đồ→GREEN. Raster test bắt lỗi thực tế các cột sau chuyển xám do gopdf text đổi fillstate; sửa đặt fillcolor từng bar→mọi bar đúng màu. Test dùng Poppler raster+GoPNG kiểm vùng biểu đồ có cột thật, không chỉ nhãn.
+- [x] Root dùng skillPDF cho read-only visualQA: đã xem spending/consumption chart, trang bảng consumption, chart-year trang đầu và trang cuối18. Chữ/đơn vị/ngày đọc được, không đè header/footer hoặc bảng; dòng31/12 và giá trị987654321 còn nguyên. PDFs/PNGs trong output/backend-qa/export-charts, không commit dữ liệu mẫu.
+- [x] Full snapshot735Go/0fail/0skip +8Python, staticcheck/vet/modverify/race/build/security PASS; exports86,32%, total86,30%, No vulnerabilities found. Nguồn cuối và chứng cứ cùng backend-followup-final-20261115.log; không có codechart mới sau lần chạy này. Root review code/model/layout; review độc lập toàn release vẫn là gate riêng.
+- [x] Queue checkpoint01bd2e7 đã push hai feature/main; không thêm dependency/migration hoặc đổi API export/CSV để vẽ chart.
+- [ ] Docker image mới/K1–K5/exportPDF network sẽ kiểm ở entry runtime sau; externalprovider và CI runner vẫn chưa được suy ra từ localPDF tests.

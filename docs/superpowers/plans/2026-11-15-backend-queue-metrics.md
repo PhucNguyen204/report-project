@@ -43,6 +43,6 @@ Files: cmd/server/main.go; app/ops integration test; docs/backend/runbooks/obser
 
 - [ ] Wire Options.QueueStats=db.QueueStats trong runtime. Test privateops với DB source (realPG) và không có callback giữ metric hiện tại, không expose public API.
 - [x] Full make verify integration security +secret scan/review. Docker image scrape kiểm up=1/count/age, giữ không publish8081.
-- [ ] Commit Feature-ID F37-queue-backlog; push GitLab/GitHub feature rồi merge main không force.
+- [x] Commit Feature-ID F37-queue-backlog; push GitLab/GitHub feature rồi merge main không force.
 
 Self-review: collector chỉ phản ánh queue retained state tại scrape; không chứng minh mail đến inbox, push tới thiết bị hoặc SLA99%. Monitoring/alert deployment và node filesystem vẫn là hạng mục khác.

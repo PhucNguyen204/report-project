@@ -205,6 +205,10 @@ func wrap(pdf *gopdf.GoPdf, text string, width float64) ([]string, error) {
 	return lines, nil
 }
 func encodePDF(r planning.ReportResult) ([]byte, error) {
+	charts, err := buildCharts(r)
+	if err != nil {
+		return nil, err
+	}
 	pdf := &gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 	if err := pdf.AddTTFFontData("NotoSans", reportFont); err != nil {
@@ -250,6 +254,17 @@ func encodePDF(r planning.ReportResult) ([]byte, error) {
 	}
 	if err := newPage(); err != nil {
 		return nil, err
+	}
+	for _, chart := range charts {
+		if y+chartHeight > 780 {
+			if err := newPage(); err != nil {
+				return nil, err
+			}
+		}
+		if err := drawChart(pdf, chart, y); err != nil {
+			return nil, err
+		}
+		y += chartHeight
 	}
 	widths := [4]float64{200, 125, 115, 80}
 	drawRow := func(row [4]string, header bool) error {
