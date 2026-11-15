@@ -1,0 +1,42 @@
+@startuml c2-24-tf-k5-nhin-lai-lang-phi
+' Task flow K5 – Nhìn lại lãng phí (luồng chính, không vẽ nhánh lỗi)
+!include _style.iuml
+skinparam wrapWidth 380
+
+start
+:[Bộ lập lịch] Đến 08:00, kích hoạt
+tác vụ kiểm tra hạn dùng
+<size:10><color:#5A6B7B>UC14 · bước 1</color></size>;
+:[Hệ thống] Lọc lô theo ngưỡng N của từng thành viên,
+gửi một thông báo tổng hợp
+<size:10><color:#5A6B7B>UC14 · bước 2–7 (BR12, BR13)</color></size>;
+:[Người dùng] Chạm vào thông báo
+<size:10><color:#5A6B7B>UC14 · bước 8</color></size>;
+:[Hệ thống] Mở "Sắp hết hạn",
+hiển thị lô sắp hết hạn và đã hết hạn
+<size:10><color:#5A6B7B>UC12 · bước B2</color></size>;
+:[Người dùng] Chọn "Bỏ đi" trên lô hỏng
+hoặc đã hết hạn
+<size:10><color:#5A6B7B>UC13 · bước C1</color></size>;
+:[Người dùng] Chỉnh lượng, chọn lý do, xác nhận
+<size:10><color:#5A6B7B>UC13 · bước C2–C3</color></size>;
+:[Hệ thống] Trừ lượng, ghi nhật ký loại bỏ
+kèm giá trị ước tính
+<size:10><color:#5A6B7B>UC13 · bước C4 (BR14, BR21)</color></size>;
+-[dashed]-> Cuối kỳ;
+:[Người dùng] Mở Thống kê, chọn thẻ "Lãng phí"
+<size:10><color:#5A6B7B>UC21 · bước B1–B2</color></size>;
+:[Người dùng] Chọn khoảng thời gian
+<size:10><color:#5A6B7B>UC21 · bước B3</color></size>;
+:[Hệ thống] Hiển thị số lô bỏ, giá trị, tỷ lệ lãng phí,
+xu hướng và thực phẩm bị bỏ nhiều nhất
+<size:10><color:#5A6B7B>UC21 · bước B4–B6 (BR21)</color></size>;
+:[Người dùng] Chọn "Xuất báo cáo", chọn PDF hoặc CSV
+<size:10><color:#5A6B7B>UC22 · bước 1</color></size>;
+:[Hệ thống] Kết xuất tệp, mở bảng chia sẻ
+của hệ điều hành
+<size:10><color:#5A6B7B>UC22 · bước 2–3</color></size>;
+:[Người dùng] Lưu hoặc gửi tệp báo cáo
+<size:10><color:#5A6B7B>UC22 · bước 3</color></size>;
+stop
+@enduml

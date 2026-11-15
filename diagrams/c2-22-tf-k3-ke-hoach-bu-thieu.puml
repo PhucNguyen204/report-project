@@ -1,0 +1,54 @@
+@startuml c2-22-tf-k3-ke-hoach-bu-thieu
+' Task flow K3 – Lập kế hoạch, bù phần thiếu (luồng chính, không vẽ nhánh lỗi)
+!include _style.iuml
+skinparam wrapWidth 380
+
+start
+:[Người dùng] Tạo công thức: tên món, khẩu phần chuẩn,
+nguyên liệu có định lượng
+<size:10><color:#5A6B7B>UC15 · tạo công thức</color></size>;
+:[Hệ thống] Lưu công thức vào bộ sưu tập
+<size:10><color:#5A6B7B>UC15 · tạo công thức (BR17)</color></size>;
+:[Người dùng] Tại Kế hoạch, chọn ngày,
+nhấn "+" ở bữa cần lên lịch
+<size:10><color:#5A6B7B>UC17 · bước 1–2</color></size>;
+:[Người dùng] Chọn món, nhập số khẩu phần,
+nhấn "Thêm"
+<size:10><color:#5A6B7B>UC17 · bước 3</color></size>;
+:[Hệ thống] Thêm món Dự kiến,
+hiển thị đủ hoặc thiếu nguyên liệu
+<size:10><color:#5A6B7B>UC17 · bước 4–5 (BR18)</color></size>;
+switch (Bù phần thiếu từ đâu?)
+case (A · Từ lịch bữa ăn)
+  :[Người dùng] Chọn khoảng ngày,
+  nhấn "Tạo danh sách mua sắm"
+  <size:10><color:#5A6B7B>UC10 · bước 1</color></size>;
+  :[Hệ thống] Tính nhu cầu, trừ tồn kho còn hạn
+  và hàng chờ mua, hiển thị danh sách đề xuất
+  <size:10><color:#5A6B7B>UC10 · bước 2–5 (BR16, BR20)</color></size>;
+  :[Người dùng] Bỏ chọn, chỉnh số lượng,
+  nhấn "Tạo danh sách"
+  <size:10><color:#5A6B7B>UC10 · bước 6</color></size>;
+  :[Hệ thống] Tạo danh sách Đang lập,
+  hiển thị MSG10
+  <size:10><color:#5A6B7B>UC10 · bước 7</color></size>;
+case (B · Từ một công thức)
+  :[Người dùng] Mở công thức, chọn số khẩu phần
+  <size:10><color:#5A6B7B>UC16 · đối chiếu nguyên liệu</color></size>;
+  :[Hệ thống] Đối chiếu tủ lạnh: Đủ, Thiếu, Không có
+  <size:10><color:#5A6B7B>UC16 · đối chiếu nguyên liệu (BR15, BR16)</color></size>;
+  :[Người dùng] Chọn "Thêm phần thiếu
+  vào danh sách mua sắm"
+  <size:10><color:#5A6B7B>UC10 · bước B1</color></size>;
+  :[Hệ thống] Hiển thị nguyên liệu thiếu,
+  đề xuất danh sách đích
+  <size:10><color:#5A6B7B>UC10 · bước B2</color></size>;
+  :[Người dùng] Bỏ chọn nguyên liệu không cần,
+  chọn danh sách đích, xác nhận
+  <size:10><color:#5A6B7B>UC10 · bước B3</color></size>;
+  :[Hệ thống] Thêm mặt hàng, gộp trùng,
+  hiển thị MSG10
+  <size:10><color:#5A6B7B>UC10 · bước B4 (BR09)</color></size>;
+endswitch
+stop
+@enduml

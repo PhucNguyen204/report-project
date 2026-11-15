@@ -1,0 +1,45 @@
+@startuml c2-25-tf-k6-tien-ich-nguoi-dung
+' Task flow K6 – Tiện ích người dùng: UC03, UC20 (luồng chính, không vẽ nhánh lỗi)
+!include _style.iuml
+skinparam wrapWidth 380
+
+start
+switch (Tác vụ?)
+case (UC03-A · Quên mật khẩu)
+  :[Khách] Chọn "Quên mật khẩu", nhập email
+  <size:10><color:#5A6B7B>UC03 · bước 1</color></size>;
+  :[Hệ thống] Gửi mã OTP, hiển thị cùng một thông điệp
+  dù email có tồn tại hay không
+  <size:10><color:#5A6B7B>UC03 · bước 2</color></size>;
+  :[Khách] Nhập mã OTP
+  <size:10><color:#5A6B7B>UC03 · bước 3 (UC01 · xác thực OTP)</color></size>;
+  :[Khách] Nhập mật khẩu mới và xác nhận
+  <size:10><color:#5A6B7B>UC03 · bước 4</color></size>;
+  :[Hệ thống] Cập nhật mật khẩu, thu hồi mọi phiên,
+  về màn hình đăng nhập, hiển thị MSG10
+  <size:10><color:#5A6B7B>UC03 · bước 5–6 (BR01, BR03)</color></size>;
+case (UC03-B · Đổi mật khẩu)
+  :[Người dùng] Chọn "Đổi mật khẩu", nhập mật khẩu
+  hiện tại, mật khẩu mới, xác nhận
+  <size:10><color:#5A6B7B>UC03 · bước B1</color></size>;
+  :[Hệ thống] Kiểm tra, cập nhật mật khẩu,
+  thu hồi phiên trên thiết bị khác, hiển thị MSG10
+  <size:10><color:#5A6B7B>UC03 · bước B2–B3 (BR01)</color></size>;
+case (UC20 · Tìm và lọc)
+  :[Người dùng] Nhập từ khóa có hoặc không dấu
+  <size:10><color:#5A6B7B>UC20 · tìm kiếm</color></size>;
+  :[Hệ thống] Hiển thị kết quả theo nhóm: trong tủ,
+  công thức, danh mục
+  <size:10><color:#5A6B7B>UC20 · tìm kiếm (BR23)</color></size>;
+  :[Người dùng] Chạm biểu tượng bộ lọc, chọn loại,
+  vị trí, trạng thái hạn dùng, nhấn "Áp dụng"
+  <size:10><color:#5A6B7B>UC20 · bước 1–3</color></size>;
+  :[Hệ thống] Cập nhật danh sách,
+  hiển thị thẻ bộ lọc đang áp dụng
+  <size:10><color:#5A6B7B>UC20 · bước 4 (BR12)</color></size>;
+  :[Người dùng] Chọn một kết quả để mở
+  thực phẩm, công thức hoặc biểu mẫu nhập tủ
+  <size:10><color:#5A6B7B>UC20 → UC12, UC16, UC11</color></size>;
+endswitch
+stop
+@enduml

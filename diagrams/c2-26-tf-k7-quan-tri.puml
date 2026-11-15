@@ -1,0 +1,58 @@
+@startuml c2-26-tf-k7-quan-tri
+' Task flow K7 – Quản trị hệ thống: UC23, UC24, UC25 (luồng chính, không vẽ nhánh lỗi)
+!include _style.iuml
+skinparam wrapWidth 380
+
+start
+:[Quản trị viên] Đăng nhập bằng email, mật khẩu
+<size:10><color:#5A6B7B>UC02 · đăng nhập</color></size>;
+switch (Công việc quản trị?)
+case (UC23-A · Loại mặt hàng)
+  :[Quản trị viên] Mở "Loại mặt hàng"
+  <size:10><color:#5A6B7B>UC23 · bước 1–2</color></size>;
+  :[Quản trị viên] Thêm hoặc sửa loại: tên, biểu tượng,
+  vị trí mặc định, nhấn "Lưu"
+  <size:10><color:#5A6B7B>UC23 · bước 3</color></size>;
+  :[Hệ thống] Kiểm tra tên duy nhất, lưu,
+  hiển thị MSG10
+  <size:10><color:#5A6B7B>UC23 · bước 4 (BR22)</color></size>;
+case (UC23-B · Đơn vị đo)
+  :[Quản trị viên] Mở "Đơn vị đo lường"
+  <size:10><color:#5A6B7B>UC23 · bước B1–B2</color></size>;
+  :[Quản trị viên] Thêm hoặc sửa đơn vị: nhóm đại lượng,
+  hệ số quy đổi, nhấn "Lưu"
+  <size:10><color:#5A6B7B>UC23 · bước B3</color></size>;
+  :[Hệ thống] Kiểm tra ký hiệu, hệ số, lưu,
+  hiển thị MSG10
+  <size:10><color:#5A6B7B>UC23 · bước B4 (BR16)</color></size>;
+case (UC23-C · Công thức mẫu)
+  :[Quản trị viên] Mở "Công thức mẫu"
+  <size:10><color:#5A6B7B>UC23 · bước C1–C2</color></size>;
+  :[Quản trị viên] Thêm hoặc sửa công thức,
+  chọn Công bố hoặc Nháp, nhấn "Lưu"
+  <size:10><color:#5A6B7B>UC23 · bước C3</color></size>;
+  :[Hệ thống] Kiểm tra công thức, lưu,
+  hiển thị MSG10
+  <size:10><color:#5A6B7B>UC23 · bước C4 (BR17)</color></size>;
+case (UC24 · Khóa tài khoản)
+  :[Quản trị viên] Mở "Tài khoản người dùng",
+  tìm tài khoản
+  <size:10><color:#5A6B7B>UC24 · bước 1–2 (BR23)</color></size>;
+  :[Quản trị viên] Chọn "Khóa tài khoản", nhập lý do,
+  xác nhận (MSG19)
+  <size:10><color:#5A6B7B>UC24 · bước 3–4</color></size>;
+  :[Hệ thống] Khóa tài khoản, thu hồi mọi phiên,
+  ghi nhật ký, gửi thư thông báo
+  <size:10><color:#5A6B7B>UC24 · bước 4</color></size>;
+case (UC25 · Cấu hình)
+  :[Quản trị viên] Mở cấu hình hệ thống,
+  chỉnh tham số
+  <size:10><color:#5A6B7B>UC25 · cấu hình vận hành</color></size>;
+  :[Quản trị viên] Xem giá trị cũ và mới, xác nhận
+  <size:10><color:#5A6B7B>UC25 · cấu hình vận hành</color></size>;
+  :[Hệ thống] Kiểm tra miền giá trị, tổng trọng số
+  bằng 1, lưu và ghi lịch sử
+  <size:10><color:#5A6B7B>UC25 · cấu hình vận hành</color></size>;
+endswitch
+stop
+@enduml

@@ -1,0 +1,39 @@
+@startuml c2-23-tf-k4-nau-tu-do-san-co
+' Task flow K4 – Nấu từ đồ sẵn có (luồng chính, không vẽ nhánh lỗi)
+!include _style.iuml
+skinparam wrapWidth 380
+
+start
+:[Người dùng] Mở "Sắp hết hạn"
+<size:10><color:#5A6B7B>UC12 · bước B1</color></size>;
+:[Hệ thống] Hiển thị lô Sắp hết hạn, Đã hết hạn
+và 3 món gợi ý hàng đầu
+<size:10><color:#5A6B7B>UC12 · bước B2–B3 (BR12)</color></size>;
+:[Người dùng] Mở "Gợi ý món ăn",
+chọn bữa và số khẩu phần
+<size:10><color:#5A6B7B>UC18 · bước 1</color></size>;
+:[Hệ thống] Chấm điểm S = 0,6R + 0,3E + 0,1F,
+hiển thị tối đa 10 món
+<size:10><color:#5A6B7B>UC18 · bước 2–6 (BR19)</color></size>;
+:[Người dùng] Chọn một món, chọn "Xem công thức"
+<size:10><color:#5A6B7B>UC18 · bước 7 (7b)</color></size>;
+:[Hệ thống] Hiển thị công thức,
+đối chiếu nguyên liệu với tủ lạnh
+<size:10><color:#5A6B7B>UC16 · đối chiếu nguyên liệu</color></size>;
+:[Người dùng] Thêm món vào bữa trong lịch,
+nhập số khẩu phần
+<size:10><color:#5A6B7B>UC17 · bước 3–5 (UC18 · 7a)</color></size>;
+-[dashed]-> Sau khi nấu;
+:[Người dùng] Chọn món trên lịch, nhấn "Đã nấu"
+<size:10><color:#5A6B7B>UC19 · bước 1</color></size>;
+:[Hệ thống] Tính lượng cần dùng, phân bổ theo FEFO,
+hiển thị bảng xem trước trừ kho
+<size:10><color:#5A6B7B>UC19 · bước 2–4 (BR15)</color></size>;
+:[Người dùng] Điều chỉnh lượng thực dùng,
+nhấn "Xác nhận"
+<size:10><color:#5A6B7B>UC19 · bước 5</color></size>;
+:[Hệ thống] Trừ kho trong một giao dịch, ghi tiêu thụ,
+món Đã nấu, hiển thị MSG10
+<size:10><color:#5A6B7B>UC19 · bước 6–7 (BR14, BR18)</color></size>;
+stop
+@enduml
