@@ -25,7 +25,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | Plan và ma trận kiểm thử | PASS | spec_audit chấp nhận sau sửa dependency/auth, activity log, contracts, River, precision, release gate |
 | Toolchain Go | PASS | `go version`: go1.26.11 darwin/arm64; nâng sau scanner RED |
 | PostgreSQL integration environment | PASS local | PostgreSQL16, SeaweedFS S3, Mailpit đang chạy; Redis7 bổ sung ngày12/11 |
-| Test backend/coverage/race/build | LOCAL_PASS13/11 | Go1.26.11; 522Go/0fail/0skip +7Python, staticcheck2buildsets/vet/build/race đạt. Combined toànsource85.92%, app89.19/platform87.03/observer94.07/kernel95.95;6modules85.37–90.70%, core≥90% |
+| Test backend/coverage/race/build | LOCAL_PASS15/11 | Snapshot ghép735Go/0fail/0skip +8Python; total86,30%, accounts86,29/exports86,32/platform87,77/observer96,32; mọi gate đạt. Chi tiết checkpoint15/11 bên dưới |
 | Email/FCM/S3 thật | PARTIAL | SMTP Mailpit + S3 SeaweedFS qua network thật PASS; FCM và production credentials NOT_RUN |
 | K1–K5 / load / restore | PARTIAL | K1–K5 network PASS; 50RPS×30s/1500 GET/0errors PASS; DB snapshot restore39 relations + River retry PASS; PITR/S3/production RPO/RTO chưa xác nhận |
 
@@ -70,7 +70,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F35 | Copy/PurgeSpace/xóa tài khoản | LOCAL_PASS | f97b6e8; copy/purge/anonymization; atomic dispatcher có test |
 | F36 | UC03 mật khẩu | LOCAL_PASS | 392b536/0b6cb74; reset/change/retention đúng thời hạn |
 | F37 | E2E/security/load/restore/release | IN_PROGRESS | Local K1–K5/84HTTP,50RPS,DBrestore,River retry,fuzz3.27m,coverage/lint/security đạt; CI runner,production provider/SLA và release review còn mở |
-| F38 | AI hỗ trợ UC18 + tích hợp provider thật | IN_PROGRESS | Yêu cầu14/11: OpenAI mặc định qua interface; SMTP/FCM cóadapter, livecredentials/device/recipient chưa được cấp; plan/code AI tiếp theo |
+| F38 | AI hỗ trợ UC18 + tích hợp provider thật | LOCAL_PASS | bd43002/320d8bf: AI job/quota/provider +CLI smoke +Docker đạt local; OpenAI/SMTP internet/FCM chưa có credential staging |
 
 ## Checklist chất lượng toàn dự án
 
@@ -82,7 +82,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 - [ ] Hoàn tất audit mọi case quan trọng ở release review; coverage không thay thế kiểm tra này.
 - [x] Worker transactional, dedupe/retry/per-device; không gọi provider trong transaction.
 - [ ] Migration/seed/fresh checkout/OpenAPI khớp implementation.
-- [ ] Format/vet/lint/build và dependency/secret scan đạt.
+- [x] Format/vet/lint/build và dependency/secret scan local đạt; CI remote được theo dõi riêng.
 - [ ] K1–K5 E2E, external smoke, load và backup restore có kết quả thực.
 - [ ] Comment chỉ ngắn gọn vai trò function; không placeholder endpoint thành công.
 - [ ] Mỗi tính năng có commit và entry báo cáo.
@@ -734,3 +734,48 @@ Feature-ID: F38-runtime-verification. Trạng thái LOCAL_PASS trên source bd43
 - [x] Probe runtime thêm7HTTP checks: tạo2tài khoản qua SMTP/OTP, AI thiếu key trả503 cho owner, outsider404 và job không tồn tại404. Checksum migration049 trong QA PostgreSQL khớp file đã commit. Artifact ai-docker-runtime-20261115.json, ai-docker-build-20261115.log; image thực chạy source bd43002.
 - [ ] OpenAI/SMTP internet/FCM staging vẫn NOT_RUN, cần credential và đích thử trong runbook integrations.md. Model access, mail đến inbox và push đến thiết bị chưa được xác nhận bằng local fixtures.
 - [ ] CI GitLab remote/runner và các gate production trong báo cáo vẫn mở; không đánh release tổng thể DONE hoặc suy ra SLA từ các phép kiểm local.
+
+### F13 — hoàn thiện vòng đời mã mời UC06 — 15/11/2026
+
+Feature-ID: F13-invite-lifecycle. Trạng thái LOCAL_PASS.
+- [x] Audit25UC trên320d8bf tái hiện3 lỗi bằng HTTP/PostgreSQL thật: nhóm đầy vẫn POSTinvite201 và rotate mã; preview thiếu leaderName/maxMembers; mã có khoảng trắng bên trong bị422. Không dùng coverage để bỏ qua các lỗi này.
+- [x] GET invites/current trả none/active/expired và nullablecode/expiresAt/link, không tạo/rotate/kéo dài TTL. Leader hiện tại mới được xem; member403, outsider/admin404, personalspace bị từ chối. GET/POST nhóm đầy422 theo UC06A2b; DELETE vẫn thu hồi được, POST lỗi không làm mất mã cũ.
+- [x] Join chuẩn hóa Unicodewhitespace/uppercase, đúng8 ký tự alphabet; malformed400 vẫn tính quota. Counter có transaction độc lập+actor/session guard, không ghi từ phiên đã thu hồi; lỗi nghiệp vụ không rollback bộ đếm hợp lệ. Preview thêm trưởng nhóm/sức chứa; confirm có role/joinedAt. Thành viên đúng nhóm gọi lại với key mới nhận membership hiện có, không thêm member/activity/notification; nhóm khác vẫn422. ADR11 trong plan ghi rõ bổ sung DTO tương thích.
+- [x] TDD RED→GREEN, focused17records/race PASS17,470s; accounts toàn module98pass/0fail/0skip,82,626s. Hai fixture cũ được sửa đúng mục tiêu: INVALID thành mã8ký tự không tồn tại cho test422/counter; leader nhập mã chính nhóm nhận200/roleleader và không tăng hiệu ứng. Không nới assertion về quyền hoặc khác nhóm.
+- [x] Root contract exchange GETnone/active/expired/revoked, groupedcode preview và repeatedconfirm RED operation chưa mô tả→GREEN. OpenAPI210schemas/104operations/76paths; operation GET dùng mã G05 bổ sung. Review độc lập UC06 không thấy Important mới, có realadvisorywait cho full/logout/transfer.
+- [x] Full workingtree ghép UC06+queue metrics+PDF charts: `EXPORT_QA_DIR=... caffeinate -disu make verify integration security` PASS735Go/0fail/0skip +8Python, total86,30%; accounts86,29/exports86,32/platform87,77/observer96,32/mealai91,62/kernel95,95, mọi gate đạt. Staticcheck2buildsets/vet/modverify/race/build PASS, No vulnerabilities found. Staged3featurediff~99,5KiB gitleaks sạch. Các feature độc lập được root commit/push tuần tự; full evidence nằm backend-followup-final-20261115.log/integration.jsonl/coverage-summary.json.
+- [ ] Không đánh release tổng thể DONE: còn M06 contract cần đồng bộ, credential staging và runner CI remote.
+
+### Truy vết25UC sau audit — 15/11/2026
+
+Bảng dưới liên kết một test đại diện cho mỗi UC với kết quả PASS trong lần full735records.71 test đại diện trong artifact uc-traceability-20261115.json đã được đối chiếu lại với log này. Đây là bằng chứng luồng backend chính, không phải xác nhận mọi biến thể/client flow hoặc mọi trường trong phụ lục. UC06 được bổ sung ở checkpoint trên; UC22 PDF chart và queue metrics có entry riêng ở các commit kế tiếp.
+
+| UC | Tầng | API liên quan | Test đại diện đã chạy PASS |
+|---|---|---|---|
+| UC01 | 2 | A01,A02,A03 | [TestRegistrationCreatesPersonalSpaceOnlyAfterOTP](../../backend/internal/modules/accounts/auth_integration_test.go#L93) |
+| UC02 | 2 | A04,A06,A15 | [TestLoginLockoutPersistsAndLogoutRevokesOnlyCurrentFamily](../../backend/internal/modules/accounts/auth_integration_test.go#L151) |
+| UC03 | 3 | A02,A07,A08,A11 | [TestPasswordResetSingleUseAndChangeRevokesOtherDevices](../../backend/internal/modules/accounts/profile_integration_test.go#L53) |
+| UC04 | 1 | A09,A10,A12,A13,Y03,Y04,HELPER-MEDIA-READ | [TestProfileAndReminderSettings](../../backend/internal/modules/accounts/profile_integration_test.go#L11) |
+| UC05 | 2 | G02,G03,G04 | [TestGroupInviteJoinAndLeaderLifecycle](../../backend/internal/modules/accounts/groups_integration_test.go#L12) |
+| UC06 | 1 | G05,G06,G07 | [TestGroupInviteJoinAndLeaderLifecycle](../../backend/internal/modules/accounts/groups_integration_test.go#L12) |
+| UC07 | 2 | G08,G09,G10 | [TestGroupInviteJoinAndLeaderLifecycle](../../backend/internal/modules/accounts/groups_integration_test.go#L12) |
+| UC08 | 2 | S01,S02,S03,S04,S05,S06,S07,S08,S09,S10,S11 | [TestShoppingHTTPListItemCopyAndDeleteWorkflow](../../backend/internal/modules/inventory/http_workflows_integration_test.go#L82) |
+| UC09 | 2 | S12,S13 | [TestConcurrentPurchaseHasOneWinner](../../backend/internal/modules/inventory/shopping_integration_test.go#L57) |
+| UC10 | 1 | S01,S15,R08 | [TestGenerateMissingUsesDatedSupplyAndKeepsConfirmationEdits](../../backend/internal/modules/planning/missing_integration_test.go#L13) |
+| UC11 | 1 | P02,S14,Q02,Q03,Y03,Y04,HELPER-MEDIA-READ | [TestPurchaseStockIsAtomicAndIdempotentAcrossKeys](../../backend/internal/modules/inventory/shopping_integration_test.go#L13) |
+| UC12 | 2 | P01,P03,P07,M05 | [TestPantryHTTPConsumptionAndFilterWorkflow](../../backend/internal/modules/inventory/http_workflows_integration_test.go#L25) |
+| UC13 | 2 | P04,P05,P06 | [TestConsumeFEPORollsBackAcrossFoods](../../backend/internal/modules/inventory/pantry_integration_test.go#L37) |
+| UC14 | 2 | A14,A17,A18 | [TestReminderWindowAggregatesSpacesAndDedupes](../../backend/internal/modules/notification/reminder_integration_test.go#L16) |
+| UC15 | 2 | R02,R04,R05,R06,R07,R09,Y03,Y04,HELPER-MEDIA-READ | [TestRecipeCRUDScopesOwnershipAndOptimisticVersion](../../backend/internal/modules/planning/recipes_integration_test.go#L37) |
+| UC16 | 2 | R01,R03 | [TestCompareRejectsUnavailableStockAndQuantityOverflow](../../backend/internal/modules/planning/precision_integration_test.go#L57) |
+| UC17 | 2 | R01,M01,M02,M03,M04 | [TestMealsRespectDateAndRecipeDeletionKeepsPlannedName](../../backend/internal/modules/planning/meals_integration_test.go#L14) |
+| UC18 | 1 | M05,AI01,AI02 | [TestSuggestLiveResultsRespectSettingsAndStockChanges](../../backend/internal/modules/planning/suggestions_integration_test.go#L13) |
+| UC19 | 1 | M06 | [TestConcurrentCookConsumesOnlyOnceAndRejectsCookedEdits](../../backend/internal/modules/planning/meals_integration_test.go#L42) |
+| UC20 | 3 | P01,Q01,Q02,Q03 | [TestSearchPagesCountAllSourcesBeyondOneHundredAndKeepGlobalTuple](../../backend/internal/modules/planning/search_page_integration_test.go#L30) |
+| UC21 | 1 | B01,B02,B03 | [TestReportWasteUsesBaseQuantityAndSeparatesUnpricedLots](../../backend/internal/modules/planning/reports_integration_test.go#L13) |
+| UC22 | 1 | B04,B05 | [TestExportUploadsRealCSVAndReplaysWithoutDuplicateNotice](../../backend/internal/modules/exports/service_integration_test.go#L116) |
+| UC23 | 3 | R09,D03,D04,D05,D06,D07,D11 | [TestAdminCatalogCRUDReviewAndAuditMaintainScope](../../backend/internal/modules/accounts/complete_workflows_integration_test.go#L143) |
+| UC24 | 3 | D01,D02,D10 | [TestAdminUserEditsValidateRolesProtectLastAdminAndRevokePromotedUser](../../backend/internal/modules/accounts/admin_boundaries_integration_test.go#L10) |
+| UC25 | 3 | D08,D09,D10 | [TestCatalogAdminRestrictionsAndConfigAtomicity](../../backend/internal/modules/accounts/catalog_integration_test.go#L60) |
+
+Các điểm chưa đóng: M06 cần hỗ trợ quantity0/lấy ngoài tủ, danh sáchlotIds và metadata replay/deductions/cookedBy theo đặc tả; UC18 chưa dùng cache10phút (tối ưu, hiện truy vấn live và giữ dữ liệu mới). Chưa tự sửa LaTeX hoặc âm thầm miễn các yêu cầu này.

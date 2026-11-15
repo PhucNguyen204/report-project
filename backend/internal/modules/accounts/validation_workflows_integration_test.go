@@ -139,7 +139,7 @@ func TestProfileMediaValidationAndGroupConstraintsDoNotPartiallyUpdate(t *testin
 		t.Fatal(status)
 	}
 	for i := 0; i < 11; i++ {
-		status, _ = f.call(t, "POST", "/it4788/v1/spaces/join", map[string]any{"code": "INVALID"}, token)
+		status, _ = f.call(t, "POST", "/it4788/v1/spaces/join", map[string]any{"code": "ZZZZZZZZ"}, token)
 		want := 422
 		if i == 10 {
 			want = 429
@@ -154,7 +154,7 @@ func TestProfileMediaValidationAndGroupConstraintsDoNotPartiallyUpdate(t *testin
 		t.Fatal(body)
 	}
 	token = body["data"].(map[string]any)["accessToken"].(string)
-	status, _ = f.call(t, "POST", "/it4788/v1/spaces/join", map[string]any{"code": "INVALID"}, token)
+	status, _ = f.call(t, "POST", "/it4788/v1/spaces/join", map[string]any{"code": "ZZZZZZZZ"}, token)
 	if status != 422 {
 		t.Fatal(status)
 	}

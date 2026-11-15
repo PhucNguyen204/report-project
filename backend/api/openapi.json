@@ -2326,6 +2326,98 @@
       }
     },
     "/it4788/v1/spaces/{sid}/invites/current": {
+      "get": {
+        "operationId": "G05_get",
+        "summary": "Xem mã mời hiện tại và trạng thái hết hạn",
+        "tags": [
+          "G"
+        ],
+        "x-api-code": "G05",
+        "x-use-case": [
+          "UC06"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AppVersion"
+          },
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/G05_getResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "X-Trace-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$",
+                  "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "423": {
+            "$ref": "#/components/responses/Error"
+          },
+          "426": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Chỉ trưởng nhóm. Không tạo hoặc rotate khi đọc; code/expiresAt/link null khi không có mã chưa thu hồi. Nhóm đầy trả422 trước hiển thị mã; thu hồi vẫn có thể thực hiện."
+      },
       "delete": {
         "operationId": "G06_delete",
         "summary": "Thu hồi mã mời hiện tại",
@@ -12143,6 +12235,70 @@
           "code"
         ]
       },
+      "InviteState": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "none",
+              "active",
+              "expired"
+            ]
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-HJ-NP-Z2-9]{8}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "memberCount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "maxMembers": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 30
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "code",
+          "expiresAt",
+          "link",
+          "memberCount",
+          "maxMembers"
+        ]
+      },
       "JoinResult": {
         "type": "object",
         "properties": {
@@ -12155,10 +12311,37 @@
           },
           "memberCount": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 1
           },
           "dryRun": {
             "type": "boolean"
+          },
+          "leaderName": {
+            "type": "string"
+          },
+          "maxMembers": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 30
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "",
+              "leader",
+              "member"
+            ]
+          },
+          "joinedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -12166,7 +12349,11 @@
           "id",
           "name",
           "memberCount",
-          "dryRun"
+          "dryRun",
+          "leaderName",
+          "maxMembers",
+          "role",
+          "joinedAt"
         ]
       },
       "Category": {
@@ -16660,6 +16847,23 @@
               "expiresAt",
               "link"
             ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "data"
+        ]
+      },
+      "G05_getResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 1000
+          },
+          "data": {
+            "$ref": "#/components/schemas/InviteState"
           }
         },
         "additionalProperties": false,

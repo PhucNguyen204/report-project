@@ -50,9 +50,17 @@ func TestGroupMutationGuardsAndFailedMemberCleanupRollBackMembership(t *testing.
 		t.Fatal(body)
 	}
 	code := body["data"].(map[string]any)["code"]
-	status, _ = f.call(t, "POST", "/it4788/v1/spaces/join", map[string]any{"code": code}, at)
-	if status != 422 {
-		t.Fatal(status)
+	var beforeMembers, beforeActivities, beforeJobs int
+	if err := f.db.Pool.QueryRow(ctx, "SELECT (SELECT count(*) FROM household.space_members WHERE space_id=$1),(SELECT count(*) FROM platform.activities WHERE space_id=$1),(SELECT count(*) FROM river_job)", sid).Scan(&beforeMembers, &beforeActivities, &beforeJobs); err != nil {
+		t.Fatal(err)
+	}
+	status, body = f.call(t, "POST", "/it4788/v1/spaces/join", map[string]any{"code": code}, at)
+	if status != 200 || body["data"].(map[string]any)["role"] != "leader" {
+		t.Fatalf("existing leader membership HTTP%d %v", status, body)
+	}
+	var afterMembers, afterActivities, afterJobs int
+	if err := f.db.Pool.QueryRow(ctx, "SELECT (SELECT count(*) FROM household.space_members WHERE space_id=$1),(SELECT count(*) FROM platform.activities WHERE space_id=$1),(SELECT count(*) FROM river_job)", sid).Scan(&afterMembers, &afterActivities, &afterJobs); err != nil || beforeMembers != afterMembers || beforeActivities != afterActivities || beforeJobs != afterJobs {
+		t.Fatalf("existing leader duplicated state members%d activities%d jobs%d %v", afterMembers, afterActivities, afterJobs, err)
 	}
 	status, body = f.call(t, "POST", "/it4788/v1/spaces/join", map[string]any{"code": code}, bt)
 	if status != 200 {

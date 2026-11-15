@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"dicho/internal/platform"
@@ -19,7 +20,8 @@ func (s *Service) RegisterGroups(mux *http.ServeMux) {
 	for pattern, handler := range map[string]platform.Handler{
 		"GET /it4788/v1/spaces": s.listSpaces, "POST /it4788/v1/spaces": s.createSpace,
 		"GET /it4788/v1/spaces/{sid}": s.getSpace, "PATCH /it4788/v1/spaces/{sid}": s.updateSpace,
-		"POST /it4788/v1/spaces/{sid}/invites": s.createInvite, "DELETE /it4788/v1/spaces/{sid}/invites/current": s.revokeInvite,
+		"GET /it4788/v1/spaces/{sid}/invites/current": s.currentInvite,
+		"POST /it4788/v1/spaces/{sid}/invites":        s.createInvite, "DELETE /it4788/v1/spaces/{sid}/invites/current": s.revokeInvite,
 		"POST /it4788/v1/spaces/join": s.joinSpace, "POST /it4788/v1/spaces/{sid}/leave": s.leaveSpace,
 		"DELETE /it4788/v1/spaces/{sid}/members/{userId}": s.removeMember, "POST /it4788/v1/spaces/{sid}/leader-transfer": s.transferLeader,
 	} {
@@ -251,6 +253,57 @@ func randomInvite() (string, error) {
 	}
 	return string(b), nil
 }
+func (s *Service) inviteCapacity(ctx context.Context, tx pgx.Tx, sid string) (int, int, error) {
+	var count int
+	if err := tx.QueryRow(ctx, "SELECT count(*) FROM household.space_members WHERE space_id=$1", sid).Scan(&count); err != nil {
+		return 0, 0, err
+	}
+	maximum := s.configInt(ctx, tx, "group.maxMembers", 10)
+	if count >= maximum {
+		return count, maximum, platform.Rule("Nhóm đã đủ thành viên")
+	}
+	return count, maximum, nil
+}
+func (s *Service) currentInvite(w http.ResponseWriter, r *http.Request) error {
+	if err := groupUser(r); err != nil {
+		return err
+	}
+	sid, uid := r.PathValue("sid"), platform.Current(r).UserID
+	out := map[string]any{"status": "none", "code": nil, "expiresAt": nil, "link": nil}
+	err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
+		role, err := s.lockFamily(r.Context(), tx, sid, uid)
+		if err != nil {
+			return err
+		}
+		if role != "leader" {
+			return platform.Forbidden()
+		}
+		count, maximum, err := s.inviteCapacity(r.Context(), tx, sid)
+		if err != nil {
+			return err
+		}
+		out["memberCount"], out["maxMembers"] = count, maximum
+		var code string
+		var expires time.Time
+		err = tx.QueryRow(r.Context(), "SELECT code,expires_at FROM household.invite_codes WHERE space_id=$1 AND revoked_at IS NULL", sid).Scan(&code, &expires)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		out["status"], out["code"], out["expiresAt"], out["link"] = "active", code, expires, "https://dicho.example/join/"+code
+		if !s.db.Clock.Now().Before(expires) {
+			out["status"] = "expired"
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	platform.Write(w, 200, out)
+	return nil
+}
 func (s *Service) createInvite(w http.ResponseWriter, r *http.Request) error {
 	if err := groupUser(r); err != nil {
 		return err
@@ -268,6 +321,9 @@ func (s *Service) createInvite(w http.ResponseWriter, r *http.Request) error {
 		}
 		if role != "leader" {
 			return platform.Forbidden()
+		}
+		if _, _, err = s.inviteCapacity(r.Context(), tx, sid); err != nil {
+			return err
 		}
 		expires = s.db.Clock.Now().Add(time.Duration(s.configInt(r.Context(), tx, "invite.ttlHours", 48)) * time.Hour)
 		if _, err = tx.Exec(r.Context(), "UPDATE household.invite_codes SET revoked_at=$2 WHERE space_id=$1 AND revoked_at IS NULL", sid, s.db.Clock.Now()); err != nil {
@@ -305,15 +361,50 @@ func (s *Service) revokeInvite(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 func (s *Service) joinAttempt(ctx context.Context, user string) error {
-	var n int
-	err := s.db.Pool.QueryRow(ctx, `INSERT INTO household.join_attempts(user_id,window_start,hits) VALUES($1,$2,1) ON CONFLICT(user_id) DO UPDATE SET hits=CASE WHEN household.join_attempts.window_start<=$2-interval '1 hour' THEN 1 ELSE household.join_attempts.hits+1 END,window_start=CASE WHEN household.join_attempts.window_start<=$2-interval '1 hour' THEN $2 ELSE household.join_attempts.window_start END RETURNING hits`, user, s.db.Clock.Now()).Scan(&n)
+	tx, err := s.db.Pool.Begin(ctx)
 	if err != nil {
+		return err
+	}
+	defer tx.Rollback(context.WithoutCancel(ctx))
+	if _, err := tx.Exec(ctx, "SET LOCAL lock_timeout = '3s'; SET LOCAL statement_timeout = '10s'"); err != nil {
+		return err
+	}
+	role, err := s.db.LockActor(ctx, tx, user)
+	if err != nil {
+		return err
+	}
+	if role != "user" {
+		return platform.NotFound()
+	}
+	var n int
+	err = tx.QueryRow(ctx, `INSERT INTO household.join_attempts(user_id,window_start,hits) VALUES($1,$2,1) ON CONFLICT(user_id) DO UPDATE SET hits=CASE WHEN household.join_attempts.window_start<=$2-interval '1 hour' THEN 1 ELSE household.join_attempts.hits+1 END,window_start=CASE WHEN household.join_attempts.window_start<=$2-interval '1 hour' THEN $2 ELSE household.join_attempts.window_start END RETURNING hits`, user, s.db.Clock.Now()).Scan(&n)
+	if err != nil {
+		return err
+	}
+	if err = tx.Commit(ctx); err != nil {
 		return err
 	}
 	if n > 10 {
 		return platform.Err(429, 4290, "Chỉ được nhập mã mời tối đa 10 lần mỗi giờ")
 	}
 	return nil
+}
+func normalizeInvite(code string) (string, error) {
+	code = strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return unicode.ToUpper(r)
+	}, code)
+	if len(code) != 8 {
+		return "", platform.Invalid("Mã mời phải có 8 ký tự hợp lệ")
+	}
+	for _, c := range code {
+		if !strings.ContainsRune("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", c) {
+			return "", platform.Invalid("Mã mời phải có 8 ký tự hợp lệ")
+		}
+	}
+	return code, nil
 }
 func (s *Service) joinSpace(w http.ResponseWriter, r *http.Request) error {
 	if err := groupUser(r); err != nil {
@@ -330,9 +421,13 @@ func (s *Service) joinSpace(w http.ResponseWriter, r *http.Request) error {
 	if err := s.joinAttempt(r.Context(), uid); err != nil {
 		return err
 	}
-	in.Code = strings.ToUpper(strings.TrimSpace(in.Code))
+	var err error
+	in.Code, err = normalizeInvite(in.Code)
+	if err != nil {
+		return err
+	}
 	var result map[string]any
-	err := s.db.Tx(r.Context(), func(tx pgx.Tx) error {
+	err = s.db.Tx(r.Context(), func(tx pgx.Tx) error {
 		var sid string
 		err := tx.QueryRow(r.Context(), "SELECT space_id::text FROM household.invite_codes WHERE code=$1", in.Code).Scan(&sid)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -364,27 +459,35 @@ func (s *Service) joinSpace(w http.ResponseWriter, r *http.Request) error {
 		if role != "user" {
 			return platform.NotFound()
 		}
-		var exists bool
-		if err = tx.QueryRow(r.Context(), "SELECT EXISTS(SELECT 1 FROM household.space_members WHERE user_id=$1 AND space_kind='family')", uid).Scan(&exists); err != nil {
+		var currentSpace, memberRole string
+		var joined time.Time
+		err = tx.QueryRow(r.Context(), "SELECT space_id::text,role,joined_at FROM household.space_members WHERE user_id=$1 AND space_kind='family'", uid).Scan(&currentSpace, &memberRole, &joined)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
-		if exists {
+		if currentSpace != "" && currentSpace != sid {
 			return platform.Rule("Bạn đã tham gia một nhóm gia đình")
 		}
-		if count >= s.configInt(r.Context(), tx, "group.maxMembers", 10) {
+		maximum := s.configInt(r.Context(), tx, "group.maxMembers", 10)
+		if currentSpace == "" && count >= maximum {
 			return platform.Rule("Nhóm đã đủ thành viên")
 		}
-		result = map[string]any{"id": sid, "name": name, "memberCount": count, "dryRun": in.DryRun}
+		var leader, leaderName string
+		if err = tx.QueryRow(r.Context(), "SELECT m.user_id::text,u.full_name FROM household.space_members m JOIN identity.users u ON u.id=m.user_id WHERE m.space_id=$1 AND m.role='leader'", sid).Scan(&leader, &leaderName); err != nil {
+			return err
+		}
+		result = map[string]any{"id": sid, "name": name, "leaderName": leaderName, "memberCount": count, "maxMembers": maximum, "dryRun": in.DryRun, "role": "", "joinedAt": nil}
+		if currentSpace == sid {
+			result["role"], result["joinedAt"] = memberRole, joined
+			return nil
+		}
 		if in.DryRun {
 			return nil
 		}
-		if _, err = tx.Exec(r.Context(), "INSERT INTO household.space_members(space_id,user_id,role,space_kind) VALUES($1,$2,'member','family')", sid, uid); err != nil {
+		if err = tx.QueryRow(r.Context(), "INSERT INTO household.space_members(space_id,user_id,role,space_kind,joined_at) VALUES($1,$2,'member','family',$3) RETURNING joined_at", sid, uid, s.db.Clock.Now()).Scan(&joined); err != nil {
 			return err
 		}
-		var leader string
-		if err = tx.QueryRow(r.Context(), "SELECT user_id::text FROM household.space_members WHERE space_id=$1 AND role='leader'", sid).Scan(&leader); err != nil {
-			return err
-		}
+		result["role"], result["joinedAt"], result["memberCount"] = "member", joined, count+1
 		if err = s.db.Enqueue(r.Context(), tx, "notification", "join:"+sid+":"+uid, map[string]any{"userId": leader, "spaceId": sid, "title": "Thành viên mới", "body": "Một thành viên đã tham gia nhóm " + name, "type": "activity"}, s.db.Clock.Now()); err != nil {
 			return err
 		}
