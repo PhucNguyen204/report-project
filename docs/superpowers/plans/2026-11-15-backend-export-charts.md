@@ -28,6 +28,6 @@
 
 - [x] Root đọc PNG trang có chart và trang bảng, kiểm clipping/overlap/đơn vị. Root dùng PDF skill cho read-only visual QA.
 - [x] Full make verify integration security +secret scan; cập nhật PROGRESS bằng lệnh/kết quả/giới hạn.
-- [ ] Commit Feature-ID F31-pdf-charts, push feature GitLab/GitHub rồi merge main. CSV không thay đổi, endpoint/schema không cần đổi.
+- [x] Commit Feature-ID F31-pdf-charts, push feature GitLab/GitHub rồi merge main. CSV không thay đổi, endpoint/schema không cần đổi.
 
 Self-review: biểu đồ là hình hiển thị từ số liệu đã tính, không dùng float cho tiền/lượng business. Không cần frontend, externalcredentials hoặc thay kiến trúc export async để đóng gap này.

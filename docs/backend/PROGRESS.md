@@ -45,7 +45,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F10 | UC04 hồ sơ/nhắc | LOCAL_PASS | 392b536/5e30ea9; profile/reminders/version/media ownership |
 | F11 | Inbox/delivery | LOCAL_PASS | 153d0e8; notification90.7%; FCM thật NOT_RUN |
 | F12 | UC05 nhóm | LOCAL_PASS | 5e30ea9; nhóm/member và versioned metadata |
-| F13 | UC06 mời/join | LOCAL_PASS | 5e30ea9; preview/rotate/join/race chỗ cuối |
+| F13 | UC06 mời/join | LOCAL_PASS | 736ec6b: vòng đời mã hiện tại/expired/revoke, capacity trước rotate, normalization/preview metadata/counter guard và existing-member replay đã kiểm |
 | F14 | UC07 rời/xóa/chuyển quyền | LOCAL_PASS | 5e30ea9/2ddf402; leave/remove/transfer cùng cleanup assignment |
 | F15 | UC11 nhập tay | LOCAL_PASS | 9644352/2ddf402; nhập tay, lot/movement atomic |
 | F16 | UC12 xem/lọc tủ | LOCAL_PASS | Default20/max100, opaque cursor/keyset và full-set facets đã có test345-case snapshot |
@@ -63,7 +63,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F28 | UC19 đã nấu/trừ kho | LOCAL_PASS | d39c0d5/d5dac6a; atomic cook/If-Match/replay |
 | F29 | UC14 reminder | LOCAL_PASS | 153d0e8; Tick/reminder/retention pass; SLA vận hành chưa đo |
 | F30 | UC21 báo cáo | LOCAL_PASS | df7a33b; report views/previous period/inclusive range |
-| F31 | UC22 export | LOCAL_PASS | 96ef09c; exports85.1%, S3 và PDF/CSV thật |
+| F31 | UC22 export | LOCAL_PASS | 95879bf: PDF có chart tách đơn vị, Unicode/pagination, CSV giữ nguyên; source exports86,32%, network S3/PDF đạt |
 | F32 | UC20 search/suggest | LOCAL_PASS | Keyset mixed types, literal unaccent search, typed filters và full-filter facets có test; load Q01 chưa đo riêng |
 | F33 | UC23 templates/duyệt/gộp | LOCAL_PASS | Review/template/remap và admin collection keysets có test quyền/scope |
 | F34 | UC24 quản trị tài khoản | LOCAL_PASS | Status/role/revoke và user/audit keysets đã kiểm thử |
@@ -801,3 +801,15 @@ Feature-ID: F31-pdf-charts. Trạng thái LOCAL_PASS.
 - [x] Full snapshot735Go/0fail/0skip +8Python, staticcheck/vet/modverify/race/build/security PASS; exports86,32%, total86,30%, No vulnerabilities found. Nguồn cuối và chứng cứ cùng backend-followup-final-20261115.log; không có codechart mới sau lần chạy này. Root review code/model/layout; review độc lập toàn release vẫn là gate riêng.
 - [x] Queue checkpoint01bd2e7 đã push hai feature/main; không thêm dependency/migration hoặc đổi API export/CSV để vẽ chart.
 - [ ] Docker image mới/K1–K5/exportPDF network sẽ kiểm ở entry runtime sau; externalprovider và CI runner vẫn chưa được suy ra từ localPDF tests.
+
+### F13/F31/F37 — kiểm chứng image và đồng bộ checkpoint — 15/11/2026
+
+Feature-ID: F37-followup-runtime. Trạng thái LOCAL_PASS trên code95879bf.
+- [x] Từng feature đã có commit riêng và push hai feature/main: UC06 736ec6b, queue01bd2e7, PDF95879bf. Merge d6aa9f4 giữ frontend/taskflow84075ce của người khác sau khi main GitLab thay đổi; không force push hoặc bỏ commit remote.
+- [x] Docker build PASS image sha256:b05519a413fd32fac38d7d3911a83f4c18bd82ae1810df4faede84125d7bb5d2,152265281bytes/defaultUID10001. QA app healthy, chỉ publish127.0.0.1:58081; ops8081 vẫn nội bộ.
+- [x] Runtime K1–K5 PASS41HTTP checks (gồm polling), Mailpit SMTP/worker, S3 signed media và CSV/PDF.15HTTP checks bổ sung UC06: GETnone/active/reload, groupedcode preview cóleaderName/maxMembers, confirm lặp không đổirole, member403, revoke→none. Không dùng mock network ở bước này.
+- [x] /metrics trong container dùng nguồn PostgreSQL thực: up1,90kind/state count samples và15due-age samples. Không publish ops ra host; fixture kiểm DB lỗi/timeout đã chạy trong suite, runtime chỉ kiểm nguồn đang hoạt động.
+- [x] PDF lấy qua signedS3 của worker thực có Xu hướng tiêu thụ và Đơn vị:g; root render/xem PNG thấy cột600g, bảng12000VND, kỳ trước và footer đúng, không clipping. Artifact backend-followup-runtime-20261115.json, backend-followup-live-export.pdf/png và backend-followup-docker-20261115.log trong output/backend-qa (ignored).
+- [x] `make openapi` sau commit PASS; historygitleaks96commits/~3,76MB không phát hiện secret, fullstagedscan ba feature sạch. Không có code đổi sau full735Go/0fail/0skip +8Python/total86,30% đã ghi; source backend của merge frontend không thay đổi các kiểm thử này.
+- [ ] CI remote pipeline266/main tại95879bf pending, job1108 runner=null/started_at=null; không gọi LOCAL_PASS là CI_PASS. Chưa có externalcredential staging; OpenAI/SMTPinternet/FCM NOT_RUN.
+- [ ] M06/UC19 contract còn cần đồng bộ quantity0/lấy ngoài tủ, lotIds và metadata replay/cookedBy/deductions. Audit25UC có test đại diện nhưng chưa đủ mọi biến thể; không đánh toàn bộ backend DONE.

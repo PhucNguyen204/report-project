@@ -41,7 +41,7 @@ Files: internal/observability/queue.go +queue_test.go; observer.go/worker.go (sh
 
 Files: cmd/server/main.go; app/ops integration test; docs/backend/runbooks/observability.md; PROGRESS.md.
 
-- [ ] Wire Options.QueueStats=db.QueueStats trong runtime. Test privateops với DB source (realPG) và không có callback giữ metric hiện tại, không expose public API.
+- [x] Wire Options.QueueStats=db.QueueStats trong runtime. Test privateops với DB source (realPG) và không có callback giữ metric hiện tại, không expose public API.
 - [x] Full make verify integration security +secret scan/review. Docker image scrape kiểm up=1/count/age, giữ không publish8081.
 - [x] Commit Feature-ID F37-queue-backlog; push GitLab/GitHub feature rồi merge main không force.
 
