@@ -1,0 +1,58 @@
+@startuml c2-21-tf-k2-di-cho-cat-tu
+' Task flow K2 – Đi chợ về, cất vào tủ (luồng chính, không vẽ nhánh lỗi)
+!include _style.iuml
+skinparam wrapWidth 380
+
+start
+:[Trưởng nhóm] Mở Mua sắm, tạo danh sách
+(tên, ngày dự kiến mua)
+<size:10><color:#5A6B7B>UC08 · lập danh sách (BR08)</color></size>;
+:[Trưởng nhóm] Thêm mặt hàng: thực phẩm,
+số lượng, đơn vị
+<size:10><color:#5A6B7B>UC08 · cập nhật mặt hàng (BR09)</color></size>;
+:[Trưởng nhóm] Chọn mặt hàng, nhấn "Phân công",
+chọn thành viên, nhấn "Giao việc"
+<size:10><color:#5A6B7B>UC08 · bước B1–B3</color></size>;
+:[Hệ thống] Chuyển mặt hàng sang Đã phân công,
+gửi thông báo đẩy cho người được giao
+<size:10><color:#5A6B7B>UC08 · bước B4–B7 (BR10)</color></size>;
+:[Người mua] Tại chợ, chạm ô đánh dấu cạnh mặt hàng
+<size:10><color:#5A6B7B>UC09 · bước 1</color></size>;
+:[Hệ thống] Chuyển mặt hàng sang Đã mua,
+mở thanh nhập nhanh
+<size:10><color:#5A6B7B>UC09 · bước 2–4</color></size>;
+:[Người mua] Nhập số lượng thực tế, đơn giá
+<size:10><color:#5A6B7B>UC09 · bước 5–6 (BR08)</color></size>;
+switch (Cất vào tủ bằng cách nào?)
+case (A · Từ mặt hàng đã mua)
+  :[Người mua] Chọn "Cho vào tủ lạnh"
+  hoặc "Cất tất cả vào tủ"
+  <size:10><color:#5A6B7B>UC11 · bước 1</color></size>;
+  :[Hệ thống] Điền sẵn tên, số lượng, ngày mua,
+  vị trí mặc định, hạn đề xuất
+  <size:10><color:#5A6B7B>UC11 · bước 2 (BR11)</color></size>;
+  :[Người mua] Rà soát vị trí, hạn dùng,
+  nhấn "Xác nhận"
+  <size:10><color:#5A6B7B>UC11 · bước 3</color></size>;
+  :[Hệ thống] Tạo lô liên kết nguồn mua,
+  mặt hàng Đã nhập tủ lạnh, hiển thị MSG10
+  <size:10><color:#5A6B7B>UC11 · bước 4–6 (BR12)</color></size>;
+case (B · Nhập tay)
+  :[Người dùng] Tại Tủ lạnh, nhấn "Thêm thực phẩm"
+  <size:10><color:#5A6B7B>UC11 · bước B1–B2</color></size>;
+  :[Người dùng] Gõ tên, chọn thực phẩm từ gợi ý
+  <size:10><color:#5A6B7B>UC11 · bước B3</color></size>;
+  :[Hệ thống] Điền sẵn đơn vị, vị trí,
+  ngày mua, hạn đề xuất
+  <size:10><color:#5A6B7B>UC11 · bước B4 (BR11)</color></size>;
+  :[Người dùng] Nhập số lượng, nhấn "Lưu"
+  <size:10><color:#5A6B7B>UC11 · bước B5</color></size>;
+  :[Hệ thống] Tạo lô, tính trạng thái hạn dùng,
+  hiển thị MSG10
+  <size:10><color:#5A6B7B>UC11 · bước B6–B7 (BR12, BR14)</color></size>;
+endswitch
+:[Người dùng] Mở Tủ lạnh, xem lô mới
+theo vị trí và trạng thái hạn dùng
+<size:10><color:#5A6B7B>UC12 · bước 1–3 (NFR04)</color></size>;
+stop
+@enduml
