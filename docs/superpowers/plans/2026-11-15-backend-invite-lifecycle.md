@@ -42,6 +42,6 @@ Files: backend/api/build.py + openapi.json; app/openapi_integration_test.go; doc
 
 - [x] Contract exchange GET/POST/preview/confirm test RED trước schema; thêm InviteState và JoinResult fields với nullable joinedAt.
 - [x] Full make verify integration security, secret scan; review diff, ghi hạn chế live provider/CI.
-- [ ] Commit Feature-ID F13-invite-lifecycle; push feature GitLab/GitHub rồi merge main không force.
+- [x] Commit Feature-ID F13-invite-lifecycle; push feature GitLab/GitHub rồi merge main không force.
 
 Self-review: phần chia sẻ/QR/camera là client; backend chỉ cung cấp mã và link. Không đổi idempotency POST thành GET tạo ngầm. Không thêm quyền admin trên nhóm.

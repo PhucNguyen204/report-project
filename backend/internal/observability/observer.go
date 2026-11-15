@@ -16,6 +16,7 @@ type Options struct {
 	Logger         *slog.Logger
 	TracerProvider trace.TracerProvider
 	PoolStats      func() (total, acquired, maximum int64)
+	QueueStats     func(context.Context) (QueueSnapshot, error)
 }
 
 type Observer struct {
@@ -48,6 +49,9 @@ func New(opts Options) *Observer {
 		activeAttempts:  prometheus.NewGauge(prometheus.GaugeOpts{Name: "dicho_worker_attempts_active", Help: "River job attempts currently executing."}),
 	}
 	o.registry.MustRegister(o.requests, o.requestDuration, o.activeRequests, o.attempts, o.attemptDuration, o.activeAttempts, collectors.NewGoCollector(), collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	if opts.QueueStats != nil {
+		o.registry.MustRegister(newQueueCollector(opts.QueueStats))
+	}
 	if opts.PoolStats != nil {
 		for name, read := range map[string]func() float64{
 			"dicho_db_connections":          func() float64 { n, _, _ := opts.PoolStats(); return float64(n) },

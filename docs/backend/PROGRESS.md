@@ -779,3 +779,14 @@ Bảng dưới liên kết một test đại diện cho mỗi UC với kết qu�
 | UC25 | 3 | D08,D09,D10 | [TestCatalogAdminRestrictionsAndConfigAtomicity](../../backend/internal/modules/accounts/catalog_integration_test.go#L60) |
 
 Các điểm chưa đóng: M06 cần hỗ trợ quantity0/lấy ngoài tủ, danh sáchlotIds và metadata replay/deductions/cookedBy theo đặc tả; UC18 chưa dùng cache10phút (tối ưu, hiện truy vấn live và giữ dữ liệu mới). Chưa tự sửa LaTeX hoặc âm thầm miễn các yêu cầu này.
+
+### F37 — số liệu backlog và thời gian chờ River — 15/11/2026
+
+Feature-ID: F37-queue-backlog. Trạng thái LOCAL_PASS.
+- [x] Observer nhận QueueStats callback; runtime api/worker/all nối db.QueueStats. Private metrics có dicho_queue_jobs theo kind/state, dicho_queue_oldest_due_seconds và dicho_queue_stats_up. Central whitelist15kinds gồm other,6states; không labels tenant/job/queue tùy ý hoặc payload/providererror.
+- [x] Source đọc1aggregatequery trên River metadata qua pool không tham gia transaction API; context250ms. Due age chỉ available/retryable/scheduled đã đến hạn, không tính pending/running/future; completed/cancelled bỏ qua, discarded là số retained chứ không phải tổng lỗi lịch sử.
+- [x] Snapshot lỗi/timeout/invalid/overflow: up0 và bỏ count/age samples; không giữ snapshot thành công cũ hoặc xuất0 giả khỏe. Snapshot rỗng hợp lệ có zeros. /metrics vẫn200 cho Prometheus đọc up0; liveness không đổi.
+- [x] TDD RED thiếu metrics/aggregate/cancel/locktimeout→GREEN; observer unit/race96,3%, fullplatform integration/race PASS9,391s và full defaultGo race PASS. RealPG encryptedjobs nhiều states/unknownkind/future/empty/closedDB/blockedtable và concurrent scrape có assertions thật; không decrypt secret.
+- [x] Root privateops integration sourceDB→count/up1 và closedDB→up0/no stale PASS2,008s. Review độc lập unit/source/privateops PASS, không thấy Important; full workingtree735Go/8Python +lint/security/secret gates đạt như entryF13, fullobserver96,32/platform87,77%.
+- [x] UC06 commit736ec6b và merge d6aa9f4 đã push feature/main hai remote. MainGitLab có84075ce mới về frontend/taskflow; root đã đọc, merge giữ nguyên và push bình thường, không force hoặc ghi đè công việc khác.
+- [ ] Docker scrape trên image mới kiểm ở entry runtime tiếp theo. Chưa benchmark query trên backlog production, deploy alert/Prometheus/Loki/Tempo hoặc xác nhận SLA99%; node filesystem và credential external/CI runner vẫn là mục riêng.

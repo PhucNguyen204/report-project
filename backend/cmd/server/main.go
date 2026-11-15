@@ -129,7 +129,7 @@ func run() error {
 			slog.Warn("telemetry shutdown failed")
 		}
 	}()
-	observer := observability.New(observability.Options{Logger: slog.Default(), TracerProvider: provider, PoolStats: func() (int64, int64, int64) {
+	observer := observability.New(observability.Options{Logger: slog.Default(), TracerProvider: provider, QueueStats: db.QueueStats, PoolStats: func() (int64, int64, int64) {
 		stats := pool.Stat()
 		return int64(stats.TotalConns()), int64(stats.AcquiredConns()), int64(stats.MaxConns())
 	}})

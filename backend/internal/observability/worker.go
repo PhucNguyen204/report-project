@@ -10,11 +10,7 @@ import (
 )
 
 func (o *Observer) Work(ctx context.Context, kind string, attempt int, run func(context.Context) error) (err error) {
-	switch kind {
-	case "email", "notification", "settings.changed", "space.copy", "space.purge", "account.purge", "account.anonymized", "food.merged", "config.changed", "report.export", "media.delete", "export.delete", "assignment.digest", "ai.suggest":
-	default:
-		kind = "other"
-	}
+	kind = JobKind(kind)
 	ctx, span := o.tracer.Start(ctx, "river "+kind, trace.WithSpanKind(trace.SpanKindConsumer), trace.WithAttributes(attribute.String("job.kind", kind), attribute.Int("job.attempt", attempt)))
 	started := time.Now()
 	o.activeAttempts.Inc()
