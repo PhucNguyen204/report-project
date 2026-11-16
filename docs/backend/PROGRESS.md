@@ -25,7 +25,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | Plan và ma trận kiểm thử | PASS | spec_audit chấp nhận sau sửa dependency/auth, activity log, contracts, River, precision, release gate |
 | Toolchain Go | PASS | `go version`: go1.26.11 darwin/arm64; nâng sau scanner RED |
 | PostgreSQL integration environment | PASS local | PostgreSQL16, SeaweedFS S3, Mailpit đang chạy; Redis7 bổ sung ngày12/11 |
-| Test backend/coverage/race/build | LOCAL_PASS15/11 | Snapshot ghép735Go/0fail/0skip +8Python; total86,30%, accounts86,29/exports86,32/platform87,77/observer96,32; mọi gate đạt. Chi tiết checkpoint15/11 bên dưới |
+| Test backend/coverage/race/build | LOCAL_PASS16/11 |830Go/0fail/0skip +8Python; total86,40%, inventory87,61/planning88,19/platform87,93/observer96,32; mọi gate đạt. Xem F28 và artifact cooking-contract-final-20261116.log |
 | Email/FCM/S3 thật | PARTIAL | SMTP Mailpit + S3 SeaweedFS qua network thật PASS; FCM và production credentials NOT_RUN |
 | K1–K5 / load / restore | PARTIAL | K1–K5 network PASS; 50RPS×30s/1500 GET/0errors PASS; DB snapshot restore39 relations + River retry PASS; PITR/S3/production RPO/RTO chưa xác nhận |
 
@@ -60,7 +60,7 @@ Mỗi tính năng phải có entry chi tiết theo mẫu cuối file. Tick chỉ
 | F25 | UC10 từ công thức | LOCAL_PASS | 18a04e0; missing recipe preview/confirm |
 | F26 | UC10 từ lịch | LOCAL_PASS | 18a04e0; dated allocation và regression0,3kg |
 | F27 | UC18 gợi ý | LOCAL_PASS | e8e97be/31ad147; score/live settings/fallback, local50RPS30s read workload đạt; không gán thành SLA production |
-| F28 | UC19 đã nấu/trừ kho | LOCAL_PASS | d39c0d5/d5dac6a; atomic cook/If-Match/replay |
+| F28 | UC19 đã nấu/trừ kho | LOCAL_PASS | Feature-ID F28-cooking-contract: quantity0, nhiều lô, stored actor/time/history, replay và409/current; dimension snapshot được giữ xuyên allocation; migration050 |
 | F29 | UC14 reminder | LOCAL_PASS | 153d0e8; Tick/reminder/retention pass; SLA vận hành chưa đo |
 | F30 | UC21 báo cáo | LOCAL_PASS | df7a33b; report views/previous period/inclusive range |
 | F31 | UC22 export | LOCAL_PASS | 95879bf: PDF có chart tách đơn vị, Unicode/pagination, CSV giữ nguyên; source exports86,32%, network S3/PDF đạt |
@@ -778,7 +778,7 @@ Bảng dưới liên kết một test đại diện cho mỗi UC với kết qu�
 | UC24 | 3 | D01,D02,D10 | [TestAdminUserEditsValidateRolesProtectLastAdminAndRevokePromotedUser](../../backend/internal/modules/accounts/admin_boundaries_integration_test.go#L10) |
 | UC25 | 3 | D08,D09,D10 | [TestCatalogAdminRestrictionsAndConfigAtomicity](../../backend/internal/modules/accounts/catalog_integration_test.go#L60) |
 
-Các điểm chưa đóng: M06 cần hỗ trợ quantity0/lấy ngoài tủ, danh sáchlotIds và metadata replay/deductions/cookedBy theo đặc tả; UC18 chưa dùng cache10phút (tối ưu, hiện truy vấn live và giữ dữ liệu mới). Chưa tự sửa LaTeX hoặc âm thầm miễn các yêu cầu này.
+Các điểm ghi nhận ở audit15/11 (M06 đã đóng trong F28/16/11 bên dưới): quantity0/lấy ngoài tủ, lotIds và metadata replay/deductions/cookedBy; UC18 chưa dùng cache10phút (tối ưu, hiện truy vấn live và giữ dữ liệu mới). Chưa tự sửa LaTeX hoặc âm thầm miễn các yêu cầu này.
 
 ### F37 — số liệu backlog và thời gian chờ River — 15/11/2026
 
@@ -813,3 +813,17 @@ Feature-ID: F37-followup-runtime. Trạng thái LOCAL_PASS trên code95879bf.
 - [x] `make openapi` sau commit PASS; historygitleaks96commits/~3,76MB không phát hiện secret, fullstagedscan ba feature sạch. Không có code đổi sau full735Go/0fail/0skip +8Python/total86,30% đã ghi; source backend của merge frontend không thay đổi các kiểm thử này.
 - [ ] CI remote pipeline266/main tại95879bf pending, job1108 runner=null/started_at=null; không gọi LOCAL_PASS là CI_PASS. Chưa có externalcredential staging; OpenAI/SMTPinternet/FCM NOT_RUN.
 - [ ] M06/UC19 contract còn cần đồng bộ quantity0/lấy ngoài tủ, lotIds và metadata replay/cookedBy/deductions. Audit25UC có test đại diện nhưng chưa đủ mọi biến thể; không đánh toàn bộ backend DONE.
+
+### F28 — hoàn thiện hợp đồng xác nhận nấu M06 — 16/11/2026
+
+Feature-ID: F28-cooking-contract. Trạng thái LOCAL_PASS; không đánh release production DONE.
+- [x] Quantity0 hợp lệ cho nguyên liệu lấy ngoài tủ, không ghi movement; vẫn kiểm food/unit UUID, recipe membership, dimension, duplicate và precision/maxquantity. Dòng0 kèm lựa chọn kho nonempty400. LotIDs hỗ trợ tối đa100lô unique/canonical trong đúng tenant/food/dimension; chọn tường minh mới dùng lô quá hạn. LegacyLotID/AllowExpired và omittedlines FEFO giữ tương thích được ghi ADR12, không âm thầm sửa LaTeX.
+- [x] CookResult giữ flatMeal fields và thêm meal/deductions/alreadyCooked; cookedAt/cookedBy/skippedStock lấy lại từDB sau ghi. Replay key mới dùng actor/time/history cũ, xét trước so sánh staleversion; không trừ lại. HTTP vẫn yêu cầu JSON/If-Match đúng cú pháp. SkipStock không đụng stock. History đi qua StockHistoryPort, quantity theo baseunitg/ml/cái và sortfood/lotID bất biến.
+- [x] Migration050 mới thêm cooked_by nullable/FK. Root test fromempty RED thiếu cột→GREEN; upgradefixture049 RED thiếu backfill→GREEN: chỉ activity meal.cooked đúng space/meal/user mới gán actor, legacy không đủ bằng chứng đểnull, migrate lại an toàn. Không sửa migration đã commit.
+- [x] M06 thiếu tồn dùng nestedTx/savepoint quanh Consume, rollback trước khi đọc current scoped baseQuantity; trả409/4002, P05 vẫn422/2003. Root Errorbody RED thiếucurrent vànullarray→GREEN, giữ traceId và không thay lỗi pantry thông thường. Current không chứa stock khác food/dimension/space.
+- [x] Review độc lập tái hiện lỗi thật admin g→ml: explicit0/100 và omittedlines có thể coi100ml=100g. Planning kiểm unit với ingredient snapshot và truyền Dimension cho cả2đường; pantry SQL lọc desired dimension. Legacy caller không nêu dimension gặp mixedlots trả400; P05 truyền dimension của lô và lọc expiredOnly cùng dimension. Repro strict xác nhận masslot giảm100g, volume100ml nguyên vẹn.
+- [x] Review baseunitdemotion từng làm INNERJOIN che mất lịch sử→LEFTJOIN+503 khi thiếu mapping, không trả[] giả và newcook rollback. History dùng foodId/lotId ổn định sau sửa expiry. UUID legacy viết hoa/extra hyphen có regression; không để PG22P02 thay validation400.
+- [x] Root/reviewer HTTP P05 dùng hết lô→M06 chọn lại RED404→GREEN409/current. Pantry khóa/kiểm đầy đủ selectedpresence trước expiry/allocate: knownnondeleted consumed/discarded/zeroavailability→shortage2003; missing/foreign/wrongfood/wrongdim/deleted404. CảlotId/lotIds đều có regression, không tự lấy lô khác khi selectedpreview đã đổi.
+- [x] Moduleplanning192pass/0fail/0skip,race50,748s; inventory sau fix cuối141pass/0fail/0skip,race35,784s. Root full fresh `caffeinate -disu make verify integration security` sau toàn bộ fix cuối:830Go/0fail/0skip +8Python PASS; format/staticcheck2buildsets/vet/modverify/race/build PASS; No vulnerabilities found. Combined total86,40%, app89,24/platform87,93/planning88,19/inventory87,61/exports86,32/observer96,32/kernel95,95%; mọi gate đạt. OpenAPI213schemas/104operations/76paths; request/response0/multilot/replay/409 và migration tests thực đều qua.
+- [x] Independent finalreview không còn Important được xác nhận; originalrealadmin/P05/drift/expiry/historyprobes racePASS5,574s, selected/dimension/history/rollback/P05 PASS12,680s, nhómCook PASS21,162s. Root thêmHTTPstale-selector regression RED→GREEN3,106s. Stageddiff~114,7KiB gitleaks sạch. Artifact review-f28-original-repros.go.txt, cooking-contract-final-20261116.log/integration.jsonl/coverage-summary.json; giữ riêng snapshot806pass trước fix terminal selection, không dùng làm gate cuối.
+- [ ] Docker upgrade050 và networkM06 probes trên checkpoint mới sẽ ghi ở entry tiếp theo. Externalcredentials và remoteCI runner vẫn riêng; không dùng localpass để suy ra OpenAI/FCM/internetmail hoặc SLA.

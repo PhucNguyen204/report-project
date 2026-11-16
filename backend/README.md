@@ -44,6 +44,8 @@ Hợp đồng tại `/openapi.json`, nguồn [api/build.py](api/build.py) và ar
 
 AI hỗ trợ UC18 qua job chạy nền, dùng OpenAI Responses và key từ `OPENAI_API_KEY_FILE` (file0400/0600, tối đa4KiB); không có key thì trả503. `OPENAI_MODEL` mặc định `gpt-5.6-terra`. Xem [cấu hình mail/AI/push](../docs/backend/runbooks/integrations.md) về endpoints, quota, dữ liệu gửi provider và các credential/đích staging cần cung cấp.
 
+M06 hỗ trợ nguyên liệu lấy ngoài tủ (lượng0), chọn nhiều lô, actor/thời điểm đã nấu và replay không trừ kho lần nữa. Xem [hợp đồng xác nhận nấu](../docs/backend/runbooks/cooking.md) về lượng cơ sở trong deductions, lỗi409/current và tương thích client cũ.
+
 `S3_ENDPOINT` dùng cho I/O nội bộ. `S3_PUBLIC_ENDPOINT` dùng khi ký URL cho client, mặc định bằng endpoint nội bộ. Cả hai dùng cùng bucket/key/region/credentials; không sửa host của URL sau khi ký. Compose đặt internal=`http://s3:8333`, public=`http://127.0.0.1:59000`.
 
 Ảnh được kiểm quyền theo vai trò hiện tại trong DB. Admin quản lý ảnh template và ảnh đại diện của mình; membership cũ không cho admin truy cập ảnh gia đình/ảnh thực phẩm riêng.

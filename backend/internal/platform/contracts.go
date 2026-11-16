@@ -32,8 +32,26 @@ type Stock struct {
 }
 type Consumption struct {
 	FoodID, LotID string
+	Dimension     string
+	LotIDs        []string
 	Quantity      Quantity
 	AllowExpired  bool
+}
+type StockDeduction struct {
+	FoodID    string   `json:"foodId"`
+	LotID     string   `json:"lotId"`
+	UnitID    string   `json:"unitId"`
+	Dimension string   `json:"dimension"`
+	Quantity  Quantity `json:"quantity"`
+}
+type StockHistoryPort interface {
+	MealDeductions(context.Context, pgx.Tx, string, string) ([]StockDeduction, error)
+}
+type StockLevel struct {
+	FoodID       string   `json:"foodId"`
+	LotID        string   `json:"lotId"`
+	Dimension    string   `json:"dimension"`
+	BaseQuantity Quantity `json:"baseQuantity"`
 }
 type StockInput struct {
 	ID                               string

@@ -7617,6 +7617,7 @@
             "$ref": "#/components/responses/Error"
           }
         },
+        "description": "CookLine0 lấy ngoài tủ; lotIds chọn tối đa100 lô tường minh (kể cả quá hạn), chỉ dùng các lô đã chọn. Omitted lines giữ FEFO tương thích ADR12. Thiếu tồn trả409/current sau rollback; P05 vẫn422. If-Match vẫn cần đúng cú pháp; cooked replay xét trước so sánh phiên bản cũ, không trừ lại hoặc đổi actor/time.",
         "requestBody": {
           "required": true,
           "content": {
@@ -11458,6 +11459,38 @@
         ],
         "description": "Hệ số dương với tối đa bốn chữ số thập phân."
       },
+      "StockLevel": {
+        "type": "object",
+        "properties": {
+          "foodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lotId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dimension": {
+            "type": "string",
+            "enum": [
+              "mass",
+              "volume",
+              "count"
+            ]
+          },
+          "baseQuantity": {
+            "$ref": "#/components/schemas/QuantityOutput"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Lượng tồn khả dụng hiện tại theo đơn vị cơ sở g/ml/cái, trong không gian của người gọi.",
+        "required": [
+          "foodId",
+          "lotId",
+          "dimension",
+          "baseQuantity"
+        ]
+      },
       "Error": {
         "type": "object",
         "properties": {
@@ -11472,10 +11505,16 @@
             "type": "string",
             "pattern": "^[0-9a-f]{32}$",
             "description": "Mã trace OpenTelemetry để đối chiếu log; runtime trả trong X-Trace-ID."
+          },
+          "current": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockLevel"
+            }
           }
         },
         "additionalProperties": false,
-        "description": "Lỗi thật của backend; không có data. Mã được dùng để quyết định thử lại.",
+        "description": "Lỗi thật của backend; không có data. M06 thiếu tồn trả409/4002 kèm current sau rollback trừ kho.",
         "examples": [
           {
             "code": 4001,
@@ -14013,6 +14052,31 @@
           "version": {
             "type": "integer",
             "minimum": 1
+          },
+          "cookedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cookedBy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "skippedStock": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false,
@@ -14024,7 +14088,10 @@
           "mealSlot",
           "servings",
           "status",
-          "version"
+          "version",
+          "cookedAt",
+          "cookedBy",
+          "skippedStock"
         ]
       },
       "CookLine": {
@@ -14039,11 +14106,32 @@
             "format": "uuid"
           },
           "quantity": {
-            "$ref": "#/components/schemas/QuantityInput"
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 9999999999.99,
+                "multipleOf": 0.01
+              },
+              {
+                "type": "string",
+                "pattern": "^(?:0|[1-9][0-9]{0,9})(?:\\.[0-9]{1,2})?$"
+              }
+            ],
+            "description": "0 là nguyên liệu lấy ngoài tủ, không tạo biến động; lượng dương có tối đa2 chữ số thập phân."
           },
           "lotId": {
             "type": "string",
             "format": "uuid"
+          },
+          "lotIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "maxItems": 100,
+            "uniqueItems": true
           },
           "allowExpired": {
             "type": "boolean"
@@ -14054,6 +14142,215 @@
           "foodId",
           "unitId",
           "quantity"
+        ],
+        "allOf": [
+          {
+            "not": {
+              "allOf": [
+                {
+                  "required": [
+                    "lotId"
+                  ]
+                },
+                {
+                  "required": [
+                    "lotIds"
+                  ],
+                  "properties": {
+                    "lotIds": {
+                      "minItems": 1
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "quantity": {
+                  "anyOf": [
+                    {
+                      "const": 0
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^0(?:\\.0{1,2})?$"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "quantity"
+              ]
+            },
+            "then": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "lotId"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "lotIds"
+                    ],
+                    "properties": {
+                      "lotIds": {
+                        "minItems": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "StockDeduction": {
+        "type": "object",
+        "properties": {
+          "foodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lotId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "unitId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dimension": {
+            "type": "string",
+            "enum": [
+              "mass",
+              "volume",
+              "count"
+            ]
+          },
+          "quantity": {
+            "$ref": "#/components/schemas/QuantityOutput"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Lượng đã trừ theo đơn vị cơ sở g/ml/cái; unitId là đơn vị cơ sở của dimension.",
+        "required": [
+          "foodId",
+          "lotId",
+          "unitId",
+          "dimension",
+          "quantity"
+        ]
+      },
+      "CookResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recipeId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "mealSlot": {
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner"
+            ]
+          },
+          "servings": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "cooked"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "cookedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cookedBy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "skippedStock": {
+            "type": "boolean"
+          },
+          "meal": {
+            "$ref": "#/components/schemas/Meal"
+          },
+          "deductions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockDeduction"
+            }
+          },
+          "alreadyCooked": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Giữ trường Meal dạng phẳng để tương thích; meal/deductions/actor/time luôn lấy dữ liệu đã lưu khi replay.",
+        "required": [
+          "id",
+          "recipeId",
+          "name",
+          "date",
+          "mealSlot",
+          "servings",
+          "status",
+          "version",
+          "cookedAt",
+          "cookedBy",
+          "skippedStock",
+          "meal",
+          "deductions",
+          "alreadyCooked"
         ]
       },
       "CookInput": {
@@ -14073,7 +14370,8 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/CookLine"
-                }
+                },
+                "maxItems": 100
               },
               {
                 "type": "null"
@@ -17986,7 +18284,7 @@
             "const": 1000
           },
           "data": {
-            "$ref": "#/components/schemas/Meal"
+            "$ref": "#/components/schemas/CookResult"
           }
         },
         "additionalProperties": false,

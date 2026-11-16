@@ -6,7 +6,9 @@ import (
 	"dicho/internal/platform"
 	"errors"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"strconv"
+	"strings"
 	"time"
 	"unicode/utf8"
 )
@@ -20,20 +22,30 @@ type MealInput struct {
 	Servings int    `json:"servings"`
 }
 type Meal struct {
-	ID       string  `json:"id"`
-	RecipeID *string `json:"recipeId"`
-	Name     string  `json:"name"`
-	Date     string  `json:"date"`
-	MealSlot string  `json:"mealSlot"`
-	Servings int     `json:"servings"`
-	Status   string  `json:"status"`
-	Version  int64   `json:"version"`
+	ID           string     `json:"id"`
+	RecipeID     *string    `json:"recipeId"`
+	Name         string     `json:"name"`
+	Date         string     `json:"date"`
+	MealSlot     string     `json:"mealSlot"`
+	Servings     int        `json:"servings"`
+	Status       string     `json:"status"`
+	Version      int64      `json:"version"`
+	CookedAt     *time.Time `json:"cookedAt"`
+	CookedBy     *string    `json:"cookedBy"`
+	SkippedStock bool       `json:"skippedStock"`
+}
+type CookResult struct {
+	Meal
+	Details       Meal                      `json:"meal"`
+	Deductions    []platform.StockDeduction `json:"deductions"`
+	AlreadyCooked bool                      `json:"alreadyCooked"`
 }
 type CookLine struct {
 	FoodID       string          `json:"foodId"`
 	UnitID       string          `json:"unitId"`
 	Quantity     kernel.Quantity `json:"quantity"`
 	LotID        string          `json:"lotId,omitempty"`
+	LotIDs       []string        `json:"lotIds,omitempty"`
 	AllowExpired bool            `json:"allowExpired,omitempty"`
 }
 type CookInput struct {
@@ -113,11 +125,11 @@ func (s *Service) CreateMeal(ctx context.Context, user, sid string, in MealInput
 }
 func readMeal(ctx context.Context, q platform.Querier, sid, id string, lock bool) (Meal, error) {
 	var m Meal
-	sql := "SELECT id::text,recipe_id::text,name,meal_date::text,meal_slot,servings,status,version FROM mealplan.meal_entries WHERE id=$1 AND space_id=$2 AND deleted_at IS NULL"
+	sql := "SELECT id::text,recipe_id::text,name,meal_date::text,meal_slot,servings,status,version,cooked_at,cooked_by::text,skipped_stock FROM mealplan.meal_entries WHERE id=$1 AND space_id=$2 AND deleted_at IS NULL"
 	if lock {
 		sql += " FOR UPDATE"
 	}
-	err := q.QueryRow(ctx, sql, id, sid).Scan(&m.ID, &m.RecipeID, &m.Name, &m.Date, &m.MealSlot, &m.Servings, &m.Status, &m.Version)
+	err := q.QueryRow(ctx, sql, id, sid).Scan(&m.ID, &m.RecipeID, &m.Name, &m.Date, &m.MealSlot, &m.Servings, &m.Status, &m.Version, &m.CookedAt, &m.CookedBy, &m.SkippedStock)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return m, platform.NotFound()
 	}
@@ -174,8 +186,8 @@ func (s *Service) DeleteMeal(ctx context.Context, user, sid, id string) error {
 }
 
 // Cook commits meal state and all stock movements in one transaction.
-func (s *Service) Cook(ctx context.Context, user, sid, id string, in CookInput) (Meal, error) {
-	var out Meal
+func (s *Service) Cook(ctx context.Context, user, sid, id string, in CookInput) (CookResult, error) {
+	var out CookResult
 	err := s.db.Tx(ctx, func(tx pgx.Tx) error {
 		if _, err := s.db.LockMember(ctx, tx, sid, user); err != nil {
 			return err
@@ -184,9 +196,9 @@ func (s *Service) Cook(ctx context.Context, user, sid, id string, in CookInput) 
 		if err != nil {
 			return err
 		}
-		out = m
 		if m.Status == "cooked" {
-			return nil
+			out, err = s.cookResult(ctx, tx, sid, m, true)
+			return err
 		}
 		if in.Version != 0 && in.Version != m.Version {
 			return platform.Conflict()
@@ -214,47 +226,131 @@ func (s *Service) Cook(ctx context.Context, user, sid, id string, in CookInput) 
 				return err
 			}
 			lines := []platform.Consumption{}
-			allowed := map[string]bool{}
+			allowed := map[string]string{}
 			for _, ingredient := range ingredients {
-				allowed[ingredient.FoodID] = true
+				allowed[ingredient.FoodID] = ingredient.Dimension
 				if !ingredient.Optional {
-					lines = append(lines, platform.Consumption{FoodID: ingredient.FoodID, Quantity: ingredient.Quantity})
+					lines = append(lines, platform.Consumption{FoodID: ingredient.FoodID, Dimension: ingredient.Dimension, Quantity: ingredient.Quantity})
 				}
 			}
 			if in.Lines != nil {
 				lines = []platform.Consumption{}
 				seen := map[string]bool{}
 				for _, line := range in.Lines {
+					if !validCookUUID(line.FoodID) {
+						return platform.Invalid("Thực phẩm nguyên liệu không hợp lệ")
+					}
+					if !validCookUUID(line.UnitID) {
+						return platform.Invalid("Đơn vị nguyên liệu không hợp lệ")
+					}
 					u, err := s.catalog.ValidateFood(ctx, tx, sid, line.FoodID, line.UnitID)
 					if err != nil {
 						return err
 					}
-					if !allowed[u.FoodID] || seen[u.FoodID] || line.Quantity <= 0 || !line.Quantity.TwoDecimals() {
+					if allowed[u.FoodID] != u.Dimension || seen[u.FoodID] || line.Quantity < 0 || line.Quantity > kernel.Quantity(9_999_999_999_990_000) || !line.Quantity.TwoDecimals() {
 						return platform.Invalid("Dòng trừ kho không hợp lệ")
 					}
 					seen[u.FoodID] = true
+					if line.Quantity == 0 && (line.LotID != "" || len(line.LotIDs) > 0) {
+						return platform.Invalid("Nguyên liệu lấy ngoài tủ không chọn lô")
+					}
+					if len(line.LotIDs) > 100 || (line.LotID != "" && len(line.LotIDs) > 0) {
+						return platform.Invalid("Lựa chọn lô không hợp lệ")
+					}
+					selected := make([]string, 0, len(line.LotIDs))
+					selectedSet := map[string]bool{}
+					for _, id := range line.LotIDs {
+						canonical := strings.ToLower(id)
+						if !validCookUUID(id) || selectedSet[canonical] {
+							return platform.Invalid("Lựa chọn lô không hợp lệ")
+						}
+						selectedSet[canonical] = true
+						selected = append(selected, canonical)
+					}
+					if line.Quantity == 0 {
+						continue
+					}
 					quantity, err := line.Quantity.Mul(u.Factor)
 					if err != nil {
 						return err
 					}
-					lines = append(lines, platform.Consumption{FoodID: u.FoodID, LotID: line.LotID, Quantity: quantity, AllowExpired: line.AllowExpired})
+					lines = append(lines, platform.Consumption{FoodID: u.FoodID, Dimension: u.Dimension, LotID: line.LotID, LotIDs: selected, Quantity: quantity, AllowExpired: line.AllowExpired})
 				}
 			}
 			if s.stock == nil {
 				return platform.Err(503, 5003, "Dịch vụ tồn kho chưa sẵn sàng")
 			}
-			if err = s.stock.Consume(ctx, tx, sid, id, lines); err != nil {
+			if _, ok := s.stock.(platform.StockHistoryPort); !ok {
+				return platform.Err(503, 5003, "Dịch vụ lịch sử tồn kho chưa sẵn sàng")
+			}
+			consumeTx, err := tx.Begin(ctx)
+			if err != nil {
+				return err
+			}
+			defer consumeTx.Rollback(context.WithoutCancel(ctx))
+			if err = s.stock.Consume(platform.WithTransaction(ctx, consumeTx), consumeTx, sid, id, lines); err != nil {
+				if rollbackErr := consumeTx.Rollback(context.WithoutCancel(ctx)); rollbackErr != nil {
+					return rollbackErr
+				}
+				var failure *platform.Error
+				if errors.As(err, &failure) && failure.Status == 422 && failure.Code == 2003 {
+					stocks, snapshotErr := s.stock.Available(platform.WithTransaction(ctx, tx), tx, sid, s.db.Today())
+					if snapshotErr != nil {
+						return snapshotErr
+					}
+					current := []platform.StockLevel{}
+					for _, stock := range stocks {
+						if allowed[stock.FoodID] == stock.Dimension {
+							current = append(current, platform.StockLevel{FoodID: stock.FoodID, LotID: stock.LotID, Dimension: stock.Dimension, BaseQuantity: stock.Quantity})
+						}
+					}
+					return &platform.StockConflictError{Current: current}
+				}
+				return err
+			}
+			if err = consumeTx.Commit(ctx); err != nil {
 				return err
 			}
 		}
-		if _, err = tx.Exec(ctx, "UPDATE mealplan.meal_entries SET status='cooked',cooked_at=$3,actual_servings=$4,skipped_stock=$5,version=version+1 WHERE id=$1 AND space_id=$2", id, sid, s.db.Clock.Now(), servings, in.SkipStock); err != nil {
+		if _, err = tx.Exec(ctx, "UPDATE mealplan.meal_entries SET status='cooked',cooked_at=$3,cooked_by=$6,actual_servings=$4,skipped_stock=$5,version=version+1 WHERE id=$1 AND space_id=$2", id, sid, s.db.Clock.Now(), servings, in.SkipStock, user); err != nil {
 			return err
 		}
-		out.Status = "cooked"
-		out.Version++
-		return s.db.Activity(ctx, tx, sid, user, "meal.cooked", id, map[string]any{"servings": servings, "skipStock": in.SkipStock})
+		if err = s.db.Activity(ctx, tx, sid, user, "meal.cooked", id, map[string]any{"servings": servings, "skipStock": in.SkipStock}); err != nil {
+			return err
+		}
+		m, err = readMeal(ctx, tx, sid, id, false)
+		if err != nil {
+			return err
+		}
+		out, err = s.cookResult(ctx, tx, sid, m, false)
+		return err
 	})
 	return out, err
+}
+func validCookUUID(id string) bool {
+	if len(id) != 36 || id[8] != '-' || id[13] != '-' || id[18] != '-' || id[23] != '-' {
+		return false
+	}
+	var parsed pgtype.UUID
+	return parsed.Scan(id) == nil
+}
+func (s *Service) cookResult(ctx context.Context, tx pgx.Tx, sid string, meal Meal, replay bool) (CookResult, error) {
+	out := CookResult{Meal: meal, Details: meal, Deductions: []platform.StockDeduction{}, AlreadyCooked: replay}
+	if meal.SkippedStock {
+		return out, nil
+	}
+	history, ok := s.stock.(platform.StockHistoryPort)
+	if !ok {
+		return CookResult{}, platform.Err(503, 5003, "Dịch vụ lịch sử tồn kho chưa sẵn sàng")
+	}
+	deductions, err := history.MealDeductions(ctx, tx, sid, meal.ID)
+	if err != nil {
+		return CookResult{}, err
+	}
+	if deductions != nil {
+		out.Deductions = deductions
+	}
+	return out, nil
 }
 func parseVersion(v string) (int64, error) {
 	if len(v) >= 2 && v[0] == '"' && v[len(v)-1] == '"' {

@@ -198,7 +198,7 @@ func TestCookAdjustedConsumptionValidatesEveryLineAndUsesExactAmount(t *testing.
 	}); err != nil {
 		t.Fatal(err)
 	}
-	for name, lines := range map[string][]CookLine{"zero": {{FoodID: food, UnitID: unit}}, "precision": {{FoodID: food, UnitID: unit, Quantity: qty("0.001")}}, "duplicate": {{FoodID: food, UnitID: unit, Quantity: qty("0.1")}, {FoodID: food, UnitID: unit, Quantity: qty("0.1")}}, "other food": {{FoodID: "00000000-0000-7000-8000-000000000022", UnitID: unit, Quantity: qty("0.1")}}, "unit": {{FoodID: food, UnitID: platform.ID(), Quantity: qty("0.1")}}} {
+	for name, lines := range map[string][]CookLine{"negative": {{FoodID: food, UnitID: unit, Quantity: qty("-0.1")}}, "precision": {{FoodID: food, UnitID: unit, Quantity: qty("0.001")}}, "duplicate": {{FoodID: food, UnitID: unit, Quantity: qty("0.1")}, {FoodID: food, UnitID: unit, Quantity: qty("0.1")}}, "other food": {{FoodID: "00000000-0000-7000-8000-000000000022", UnitID: unit, Quantity: qty("0.1")}}, "unit": {{FoodID: food, UnitID: platform.ID(), Quantity: qty("0.1")}}} {
 		t.Run(name, func(t *testing.T) {
 			if _, err := s.Cook(ctx, user, sid, m.ID, CookInput{Lines: lines}); err == nil {
 				t.Fatal("invalid adjustment accepted")

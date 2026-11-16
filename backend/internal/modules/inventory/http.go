@@ -347,14 +347,14 @@ func (s *Service) consumeLot(w http.ResponseWriter, r *http.Request) error {
 		}
 		if explicit == "" {
 			var expiredOnly bool
-			if err := tx.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM pantry.food_lots WHERE space_id=$1 AND food_id=$2 AND lifecycle='active') AND NOT EXISTS(SELECT 1 FROM pantry.food_lots WHERE space_id=$1 AND food_id=$2 AND lifecycle='active' AND expires_on>=$3::date)`, sid, fid, s.db.Today().Format("2006-01-02")).Scan(&expiredOnly); err != nil {
+			if err := tx.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM pantry.food_lots WHERE space_id=$1 AND food_id=$2 AND dimension=$4 AND lifecycle='active' AND deleted_at IS NULL) AND NOT EXISTS(SELECT 1 FROM pantry.food_lots WHERE space_id=$1 AND food_id=$2 AND dimension=$4 AND lifecycle='active' AND deleted_at IS NULL AND expires_on>=$3::date)`, sid, fid, s.db.Today().Format("2006-01-02"), dimension).Scan(&expiredOnly); err != nil {
 				return err
 			}
 			if expiredOnly {
 				return platform.Rule("BR15: Cần chọn rõ lô đã hết hạn")
 			}
 		}
-		if err = s.Consume(r.Context(), tx, sid, "", []platform.Consumption{{FoodID: fid, LotID: explicit, Quantity: base, AllowExpired: c.Strategy == "lot"}}); err != nil {
+		if err = s.Consume(r.Context(), tx, sid, "", []platform.Consumption{{FoodID: fid, Dimension: dimension, LotID: explicit, Quantity: base, AllowExpired: c.Strategy == "lot"}}); err != nil {
 			return err
 		}
 		return s.db.Activity(r.Context(), tx, sid, uid, "lot.consumed", id, c)

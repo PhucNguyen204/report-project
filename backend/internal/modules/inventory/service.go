@@ -236,29 +236,45 @@ func (s *Service) Consume(ctx context.Context, tx pgx.Tx, sid, mealID string, li
 		if line.Quantity <= 0 {
 			return platform.Invalid("Số lượng phải dương")
 		}
-		if line.LotID != "" && !line.AllowExpired {
-			var expired bool
-			if err := tx.QueryRow(ctx, `SELECT expires_on<$3::date FROM pantry.food_lots WHERE id=$1 AND space_id=$2`, line.LotID, sid, s.db.Today().Format("2006-01-02")).Scan(&expired); err != nil {
+		if line.Dimension != "" && line.Dimension != "mass" && line.Dimension != "volume" && line.Dimension != "count" {
+			return platform.Invalid("Nhóm đại lượng không hợp lệ")
+		}
+		selected, err := selectedLotIDs(line)
+		if err != nil {
+			return err
+		}
+		if line.LotID != "" {
+			line.LotID, err = canonicalLotID(line.LotID)
+			if err != nil {
 				return err
 			}
-			if expired {
-				return platform.Rule("Cần xác nhận sử dụng lô đã hết hạn")
-			}
 		}
-		rows, err := tx.Query(ctx, `SELECT id::text,expires_on,base_remaining::text,unit_factor::text FROM pantry.food_lots WHERE space_id=$1 AND food_id=$2 AND lifecycle='active' AND deleted_at IS NULL AND (($3::text='' AND expires_on>=$4::date) OR id::text=$3) ORDER BY expires_on,id FOR UPDATE`, sid, line.FoodID, line.LotID, s.db.Today().Format("2006-01-02"))
+		chosen := selected
+		if line.LotID != "" {
+			chosen = []string{line.LotID}
+		}
+		rows, err := tx.Query(ctx, `SELECT id::text,expires_on,base_remaining::text,unit_factor::text,dimension,lifecycle FROM pantry.food_lots WHERE space_id=$1 AND food_id=$2 AND deleted_at IS NULL AND ($5::text='' OR dimension=$5) AND CASE WHEN COALESCE(cardinality($4::uuid[]),0)>0 THEN id=ANY($4::uuid[]) ELSE lifecycle='active' AND expires_on>=$3::date END ORDER BY expires_on,id FOR UPDATE`, sid, line.FoodID, s.db.Today().Format("2006-01-02"), chosen, line.Dimension)
 		if err != nil {
 			return err
 		}
 		lots := make([]AllocationLot, 0)
 		factors := map[string]kernel.Quantity{}
 		remaining := map[string]kernel.Quantity{}
+		eligibleDimension := ""
+		mixedDimensions, unavailable := false, false
 		for rows.Next() {
 			var lot AllocationLot
 			var factor kernel.Quantity
-			if err = rows.Scan(&lot.ID, &lot.ExpiresOn, &lot.Available, &factor); err != nil {
+			var dimension, lifecycle string
+			if err = rows.Scan(&lot.ID, &lot.ExpiresOn, &lot.Available, &factor, &dimension, &lifecycle); err != nil {
 				rows.Close()
 				return err
 			}
+			if eligibleDimension != "" && eligibleDimension != dimension {
+				mixedDimensions = true
+			}
+			unavailable = unavailable || lifecycle != "active" || lot.Available <= 0
+			eligibleDimension = dimension
 			lots = append(lots, lot)
 			factors[lot.ID] = factor
 			remaining[lot.ID] = lot.Available
@@ -267,7 +283,24 @@ func (s *Service) Consume(ctx context.Context, tx pgx.Tx, sid, mealID string, li
 		if err = rows.Err(); err != nil {
 			return err
 		}
-		allocations, err := Allocate(lots, line.Quantity, s.db.Today(), line.LotID)
+		if len(chosen) > 0 && len(lots) != len(chosen) {
+			return platform.NotFound()
+		}
+		if mixedDimensions {
+			return platform.Invalid("Không thể trừ kho khác nhóm đại lượng")
+		}
+		if len(chosen) > 0 && unavailable {
+			return platform.Err(422, 2003, "Số lượng vượt lượng còn lại")
+		}
+		if line.LotID != "" && !line.AllowExpired && lots[0].ExpiresOn.Before(s.db.Today()) {
+			return platform.Rule("Cần xác nhận sử dụng lô đã hết hạn")
+		}
+		var allocations []Allocation
+		if len(selected) > 0 {
+			allocations, err = allocateSelectedLots(lots, line.Quantity)
+		} else {
+			allocations, err = Allocate(lots, line.Quantity, s.db.Today(), line.LotID)
+		}
 		if err != nil {
 			return err
 		}
@@ -309,4 +342,26 @@ func (s *Service) Consume(ctx context.Context, tx pgx.Tx, sid, mealID string, li
 		}
 	}
 	return nil
+}
+
+func (s *Service) MealDeductions(ctx context.Context, tx pgx.Tx, sid, mealID string) ([]platform.StockDeduction, error) {
+	rows, err := tx.Query(ctx, `SELECT m.food_id::text,m.lot_id::text,u.id::text,l.dimension,m.quantity::text FROM pantry.stock_movements m JOIN pantry.food_lots l ON l.id=m.lot_id AND l.space_id=m.space_id LEFT JOIN catalog.units u ON u.dimension=l.dimension AND u.is_base WHERE m.space_id=$1 AND m.meal_id=$2 AND m.kind='consume' ORDER BY m.food_id,m.lot_id`, sid, mealID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []platform.StockDeduction{}
+	for rows.Next() {
+		var item platform.StockDeduction
+		var unit *string
+		if err := rows.Scan(&item.FoodID, &item.LotID, &unit, &item.Dimension, &item.Quantity); err != nil {
+			return nil, err
+		}
+		if unit == nil {
+			return nil, platform.Err(503, 5003, "Đơn vị cơ sở chưa sẵn sàng")
+		}
+		item.UnitID = *unit
+		out = append(out, item)
+	}
+	return out, rows.Err()
 }

@@ -49,6 +49,14 @@ func Fail(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(e.Status)
 	body := map[string]any{"code": e.Code, "message": e.Message}
+	var stockConflict *StockConflictError
+	if errors.As(err, &stockConflict) {
+		current := stockConflict.Current
+		if current == nil {
+			current = []StockLevel{}
+		}
+		body["current"] = current
+	}
 	if id := w.Header().Get("X-Trace-ID"); id != "" {
 		body["traceId"] = id
 	}

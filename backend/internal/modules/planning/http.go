@@ -221,14 +221,14 @@ func (s *Service) listMealsHTTP(w http.ResponseWriter, r *http.Request) error {
 		if _, err := s.db.RequireMember(r.Context(), tx, r.PathValue("sid"), platform.Current(r).UserID); err != nil {
 			return err
 		}
-		rows, err := tx.Query(r.Context(), `SELECT id::text,recipe_id::text,name,meal_date::text,meal_slot,servings,status,version FROM mealplan.meal_entries WHERE space_id=$1 AND meal_date BETWEEN $2 AND $3 AND deleted_at IS NULL AND ($4='' OR (meal_date,meal_slot,id)>(NULLIF($4,'')::date,$5,NULLIF($6,'')::uuid)) ORDER BY meal_date,meal_slot,id LIMIT $7`, r.PathValue("sid"), from, to, page.After[0], page.After[1], page.After[2], page.Limit+1)
+		rows, err := tx.Query(r.Context(), `SELECT id::text,recipe_id::text,name,meal_date::text,meal_slot,servings,status,version,cooked_at,cooked_by::text,skipped_stock FROM mealplan.meal_entries WHERE space_id=$1 AND meal_date BETWEEN $2 AND $3 AND deleted_at IS NULL AND ($4='' OR (meal_date,meal_slot,id)>(NULLIF($4,'')::date,$5,NULLIF($6,'')::uuid)) ORDER BY meal_date,meal_slot,id LIMIT $7`, r.PathValue("sid"), from, to, page.After[0], page.After[1], page.After[2], page.Limit+1)
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
 		for rows.Next() {
 			var meal Meal
-			if err = rows.Scan(&meal.ID, &meal.RecipeID, &meal.Name, &meal.Date, &meal.MealSlot, &meal.Servings, &meal.Status, &meal.Version); err != nil {
+			if err = rows.Scan(&meal.ID, &meal.RecipeID, &meal.Name, &meal.Date, &meal.MealSlot, &meal.Servings, &meal.Status, &meal.Version, &meal.CookedAt, &meal.CookedBy, &meal.SkippedStock); err != nil {
 				return err
 			}
 			out = append(out, meal)
